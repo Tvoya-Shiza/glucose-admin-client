@@ -1,0 +1,10 @@
+{
+    "home": {
+        "title": "Glucose Admin",
+        "subtitle": "Административная панель платформы Glucose"
+    },
+    "common": {
+        "language": "Язык",
+        "switch_to_kz": "Қазақша"
+    }
+}
