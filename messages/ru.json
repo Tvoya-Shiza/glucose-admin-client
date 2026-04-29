@@ -6,5 +6,37 @@
     "common": {
         "language": "Язык",
         "switch_to_kz": "Қазақша"
+    },
+    "login": {
+        "title": "Вход в админ-панель",
+        "subtitle": "Введите рабочий e-mail и пароль",
+        "email_label": "Электронная почта",
+        "email_placeholder": "name@glucose.kz",
+        "password_label": "Пароль",
+        "password_placeholder": "••••••••",
+        "submit": "Войти",
+        "submitting": "Вход..."
+    },
+    "admin": {
+        "auth": {
+            "login": "Вход выполнен",
+            "incorrect": "Неверный e-mail или пароль",
+            "ambiguous": "Учётная запись неоднозначна — обратитесь к администратору",
+            "not_staff": "Эта учётная запись не имеет доступа к админ-панели",
+            "no_refresh_token": "Сессия истекла, войдите снова",
+            "unauthorized": "Войдите, чтобы продолжить",
+            "logout": "Выход выполнен",
+            "upstream_error": "Сервис временно недоступен",
+            "invalid_body": "Некорректный запрос",
+            "email_required": "Укажите e-mail",
+            "email_invalid": "Некорректный e-mail",
+            "password_required": "Укажите пароль"
+        }
+    },
+    "dashboard": {
+        "title": "Панель управления",
+        "welcome": "Здравствуйте",
+        "role": "Роль",
+        "logout": "Выйти"
     }
 }

@@ -6,5 +6,37 @@
     "common": {
         "language": "Тіл",
         "switch_to_ru": "Русский"
+    },
+    "login": {
+        "title": "Әкімші панеліне кіру",
+        "subtitle": "Жұмыс e-mail және құпиясөзіңізді енгізіңіз",
+        "email_label": "Электрондық пошта",
+        "email_placeholder": "name@glucose.kz",
+        "password_label": "Құпиясөз",
+        "password_placeholder": "••••••••",
+        "submit": "Кіру",
+        "submitting": "Кіру..."
+    },
+    "admin": {
+        "auth": {
+            "login": "Кіру сәтті өтті",
+            "incorrect": "Қате e-mail немесе құпиясөз",
+            "ambiguous": "Есептік жазба түсініксіз — әкімшіге хабарласыңыз",
+            "not_staff": "Бұл есептік жазбаның әкімші панеліне рұқсаты жоқ",
+            "no_refresh_token": "Сессия мерзімі бітті, қайта кіріңіз",
+            "unauthorized": "Жалғастыру үшін кіріңіз",
+            "logout": "Шығу сәтті өтті",
+            "upstream_error": "Сервис уақытша қол жетімсіз",
+            "invalid_body": "Қате сұраныс",
+            "email_required": "E-mail енгізіңіз",
+            "email_invalid": "Қате e-mail",
+            "password_required": "Құпиясөз енгізіңіз"
+        }
+    },
+    "dashboard": {
+        "title": "Басқару панелі",
+        "welcome": "Сәлеметсіз бе",
+        "role": "Рөл",
+        "logout": "Шығу"
     }
 }
