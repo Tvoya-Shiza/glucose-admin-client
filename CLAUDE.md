@@ -17,6 +17,60 @@ Server: `next dev -p 4100` (or `next start -p 4100` in prod). Talks to glucose-a
 - **shadcn/ui only.** Don't install Material UI, Mantine, Chakra, Ant Design, or any other "kit" UI. Components are vendored under `src/components/ui/` — we own the code.
 - **BigInt-as-string from admin-api.** When admin-api responses include big integer fields, they are JSON strings. Do NOT call `Number(value)` on them; treat them as opaque IDs.
 
+## Auth + BFF cookie flow (Phase 2)
+
+### Cookie names
+
+Both cookies are HttpOnly + SameSite=Lax + Secure (prod) + Path=/ + no Domain attr (host-only on the deployed admin subdomain).
+- `glc_admin_at` — access token (15-minute TTL)
+- `glc_admin_rt` — refresh token (7-day TTL)
+
+Cookies are set ONLY by Next.js Route Handlers under `src/app/api/auth/*` — never by middleware, never by RSCs, never by Client Components.
+
+### Edge middleware (`middleware.ts`)
+
+Composes `adminMiddleware` BEFORE the next-intl middleware:
+1. Public paths (`/login`, `/[locale]/login`, `/favicon.ts`) skip the auth check and delegate to next-intl for locale rewriting.
+2. Protected paths read `glc_admin_at` and call `verifyAdminJwt(token)` (jose.jwtVerify with HS256 + JWT_ADMIN_SECRET).
+3. On verification failure → `NextResponse.redirect` to `/[locale]/login?next=<original-path>`.
+4. On success → delegate to next-intl.
+
+Middleware NEVER sets cookies (AUTH-08 rule).
+
+### BFF Route Handlers (`src/app/api/auth/*` + `/api/proxy/[...path]`)
+
+- `POST /api/auth/login` — forwards `{email, password}` body to `admin-api /admin-api/auth/login` server-to-server, mirrors upstream Set-Cookie headers onto the browser response.
+- `POST /api/auth/refresh` — reads `glc_admin_rt` via `cookies()`, forwards to `admin-api /admin-api/auth/refresh` as `{refresh_token}` body, mirrors new Set-Cookie.
+- `POST /api/auth/logout` — calls upstream + ALWAYS clears both cookies on the browser response (idempotent). Body is `{refresh_token}` when the cookie exists; `{}` when no cookie (per upstream LogoutDto contract — never `null`).
+- `GET /api/auth/me` — forwards `glc_admin_at` as `Authorization: Bearer ...` to `admin-api /admin-api/auth/me`.
+- `/api/proxy/[...path]` (GET/POST/PUT/PATCH/DELETE) — generic BFF proxy. Reads `glc_admin_at` via `cookies()` and attaches it as Bearer to the admin-api call. Does NOT forward request cookies. Streams the body for non-GET requests.
+
+The admin-api URL is read from `process.env.ADMIN_API_URL` (no `NEXT_PUBLIC_` prefix). The helper at `src/lib/auth/admin-api-client.ts` is marked `import 'server-only'` so it cannot be bundled into client code.
+
+**Proxy header pass-through trade-offs (Phase 2):** The `/api/proxy/[...path]` route copies ONLY `Content-Type` from the upstream response. `Cache-Control`, `ETag`, `Last-Modified`, and other caching headers are NOT forwarded by the proxy in Phase 2 — revisit if Phase 3+ list endpoints need browser caching. The trade-off is intentional: the proxy owns response shaping (cookie management, Bearer-token confidentiality), and any header pass-through must be explicit + audited.
+
+### Client-side wrappers
+
+- `src/lib/auth/refresh-on-401.ts` exports `fetchWithRefresh(input, init)` — retries ONCE on 401 by hitting `/api/auth/refresh`; on terminal 401 redirects to `/[locale]/login?next=...`. Concurrent 401s coalesce on a single in-flight refresh.
+- All TanStack Query queries that call `/api/proxy/*` or `/api/auth/me` use `fetchWithRefresh` as the queryFn.
+
+### Login UI
+
+- `src/app/[locale]/login/page.tsx` — server component, bilingual via `getTranslations('login')`.
+- `src/app/[locale]/login/login-form.tsx` — client component, react-hook-form + zod + shadcn `Form/Input/Label/Button` + sonner toast for errors.
+- `?next=` query param is sanitized to start with `/` (open-redirect guard).
+
+### Files (Phase 2)
+
+- `middleware.ts` (replaced Phase 0 next-intl pass-through)
+- `src/lib/auth/{cookies,jwt-verify,middleware-compose,refresh-on-401,admin-api-client}.ts`
+- `src/app/api/auth/{login,refresh,logout,me}/route.ts`
+- `src/app/api/proxy/[...path]/route.ts`
+- `src/app/[locale]/login/{page.tsx,login-form.tsx}`
+- `src/app/[locale]/(admin)/dashboard/page.tsx`
+- `src/components/ui/{form,input,label}.tsx` (shadcn or vendored)
+- `messages/{ru,kz}.json` (login.* + admin.auth.* + dashboard.* namespaces)
+
 ## Code style
 
 Prettier config (`.prettierrc`):
