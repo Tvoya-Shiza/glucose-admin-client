@@ -1,4 +1,5 @@
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import type { DryRunResult } from '@/hooks/use-dry-run-preview';
 import type { ListUsersQuery, UserActivityResponse, UserDetail, UserListResponse } from './types';
 
 /**
@@ -129,3 +130,46 @@ export const ROLE_OPTIONS: Array<{ id: number; name: 'admin' | 'curator' | 'teac
     { id: 3, name: 'teacher' },
     { id: 4, name: 'student' },
 ];
+
+/**
+ * Plan 05 — bulk-provision (USR-04 + USR-05). Single endpoint serves both dry-run
+ * and commit modes; admin-api discriminates via `mode` in the body.
+ *
+ * Dry-run can also be driven directly through `useDryRunPreview({ endpoint, body })`
+ * since admin-api echoes a `DryRunResult`-shaped payload — this wrapper is the
+ * canonical path for the commit call (mutation hook), and is reusable for any caller
+ * that wants a typed dry-run too.
+ *
+ * On success, callers should invalidate `['admin.users.list']` (any args) so the list
+ * page reflects updated `group_count`/access state, and clear bulk selection.
+ */
+export interface BulkProvisionInput {
+    mode: 'dry_run' | 'commit';
+    user_ids: number[];
+    webinar_ids: number[];
+    access_days?: number;
+    bulk_op_id?: string;
+    confirmed_count?: number;
+    reason?: string;
+}
+
+export interface BulkProvisionResult extends DryRunResult {
+    bulk_op_id: string;
+    mode: 'dry_run' | 'commit';
+}
+
+export async function bulkProvisionUsers(input: BulkProvisionInput): Promise<BulkProvisionResult> {
+    const res = await fetchWithRefresh(`${BASE}/bulk-provision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `bulkProvisionUsers failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    // bulk-provision response is raw (not apiResponse-wrapped) but tolerate both shapes.
+    return (json?.data ?? json) as BulkProvisionResult;
+}

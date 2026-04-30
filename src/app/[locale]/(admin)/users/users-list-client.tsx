@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { listUsers } from '@/lib/users/api';
 import type { UserStatus } from '@/lib/users/types';
+import { BulkGrantSheet } from './components/bulk-grant-sheet';
 import { UsersFilters } from './users-filters';
 import { UsersTable } from './users-table';
 
@@ -67,6 +68,11 @@ export function UsersListClient() {
 
     const anyFilterActive = Boolean(role_name || status || region_id || (q && q.trim().length > 0));
 
+    // Plan 05: bulk-grant flow. Sheet opens from BulkActionToolbar; on commit, list
+    // query is invalidated (inside BulkGrantSheet) and selection is cleared here.
+    const [bulkOpen, setBulkOpen] = useState(false);
+    const selectedUserIds = useMemo(() => Array.from(selection.selected), [selection.selected]);
+
     return (
         <div className='flex h-full flex-col'>
             <header className='flex items-center justify-between p-6'>
@@ -91,8 +97,16 @@ export function UsersListClient() {
                 }
             />
             <BulkActionToolbar selectedCount={selection.selectedCount} onClear={selection.clear}>
-                {/* Plan 05 mounts <BulkGrantSheet> trigger here. */}
+                <Button size='sm' onClick={() => setBulkOpen(true)} disabled={selection.selectedCount === 0}>
+                    {t('bulk_grant_access')}
+                </Button>
             </BulkActionToolbar>
+            <BulkGrantSheet
+                open={bulkOpen}
+                onOpenChange={setBulkOpen}
+                selectedUserIds={selectedUserIds}
+                onCommitted={() => selection.clear()}
+            />
             <div className='flex-1 overflow-auto'>
                 {error ? (
                     <EmptyState title={t('error_generic')} subtitle={(error as Error).message} />
