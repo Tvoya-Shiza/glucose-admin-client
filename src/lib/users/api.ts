@@ -235,3 +235,36 @@ export async function importUsers(input: ImportInput): Promise<ImportResultPaylo
     const json = await res.json();
     return (json?.data ?? json) as ImportResultPayload;
 }
+
+/**
+ * Plan 07 — CSV/XLSX export (USR-07). Returns a Blob the caller turns into a browser
+ * download via `URL.createObjectURL`. Filter shape mirrors `ListUsersQuery` minus
+ * pagination — exports respect filters + RBAC scope, but never paginate (admin-api
+ * caps at 50k rows server-side).
+ *
+ * Throttled at admin-api: 5 calls / 15 min / IP. Callers should surface 429 to the
+ * operator (toast.error on caught Error) — there is no client-side retry.
+ */
+export interface ExportInput {
+    format: 'csv' | 'xlsx';
+    role_name?: string;
+    status?: 'active' | 'inactive' | 'pending';
+    region_id?: number;
+    q?: string;
+    sort?: 'created_at' | 'full_name' | 'last_activity';
+    order?: 'asc' | 'desc';
+}
+
+export async function exportUsers(input: ExportInput): Promise<Blob> {
+    const res = await fetchWithRefresh(`${BASE}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `exportUsers failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    return res.blob();
+}

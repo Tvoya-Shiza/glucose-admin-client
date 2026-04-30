@@ -11,6 +11,7 @@ import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { listUsers } from '@/lib/users/api';
 import type { UserStatus } from '@/lib/users/types';
 import { BulkGrantSheet } from './components/bulk-grant-sheet';
+import { ExportButton } from './components/export-button';
 import { UsersFilters } from './users-filters';
 import { UsersTable } from './users-table';
 
@@ -80,6 +81,16 @@ export function UsersListClient() {
                     <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
                     <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
                 </div>
+                <ExportButton
+                    filters={{
+                        role_name: role_name ?? undefined,
+                        status: (status as 'active' | 'inactive' | 'pending' | null) ?? undefined,
+                        region_id: region_id ?? undefined,
+                        q: q ?? undefined,
+                        sort: sort as 'created_at' | 'full_name' | 'last_activity',
+                        order: order as 'asc' | 'desc',
+                    }}
+                />
             </header>
             <UsersFilters
                 value={{
