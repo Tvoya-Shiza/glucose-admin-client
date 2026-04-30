@@ -173,3 +173,65 @@ export async function bulkProvisionUsers(input: BulkProvisionInput): Promise<Bul
     // bulk-provision response is raw (not apiResponse-wrapped) but tolerate both shapes.
     return (json?.data ?? json) as BulkProvisionResult;
 }
+
+/**
+ * Plan 06 — CSV import (USR-06). Single endpoint serves both dry-run + commit modes
+ * (admin-api discriminates via `mode` in the body). Admin-only — curator/teacher
+ * receive 403 from RolesGuard upstream.
+ *
+ * Predicate symmetry: the dry-run preview is faithful — commit re-runs the SAME
+ * classification and applies the writes inside chunked $transaction. The
+ * `bulk_op_id` returned by dry-run should be passed back on commit so the audit
+ * trail links the preview attempt to the actual write.
+ *
+ * On commit success, callers should invalidate `['admin.users.list']` (any args)
+ * so the list page reflects new rows.
+ */
+export interface ImportRowInput {
+    row_id: string;
+    full_name?: string;
+    email?: string;
+    mobile?: string;
+    role_name?: 'admin' | 'curator' | 'teacher' | 'student';
+    status?: 'active' | 'inactive' | 'pending';
+}
+
+export interface ImportInput {
+    mode: 'dry_run' | 'commit';
+    rows: ImportRowInput[];
+    bulk_op_id?: string;
+    confirmed_count?: number;
+}
+
+export interface ImportResultRowPayload {
+    row_id: string;
+    status: 'insert' | 'update' | 'skip' | 'error';
+    reason: string | null;
+    user_id: number | null;
+}
+
+export interface ImportResultPayload {
+    bulk_op_id: string;
+    mode: 'dry_run' | 'commit';
+    affected: number;
+    insert: number;
+    update: number;
+    skip: number;
+    error: number;
+    rows: ImportResultRowPayload[];
+}
+
+export async function importUsers(input: ImportInput): Promise<ImportResultPayload> {
+    const res = await fetchWithRefresh(`${BASE}/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `importUsers failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json?.data ?? json) as ImportResultPayload;
+}
