@@ -35,10 +35,64 @@ export interface UserListResponse {
     next_cursor: string | null;
 }
 
-/** Plan 03 detail-page shape (placeholder; Plan 03 may extend with more relations). */
-export interface UserDetail extends UserRow {
-    groups: Array<{ id: number; name: string }>;
-    recent_purchases: Array<{ webinar_id: number; webinar_name: string; created_at: number }>;
+/**
+ * Plan 03 detail-page shape — mirrors admin-api UserDetailDto exactly.
+ *
+ * Differs from UserRow in the additional region/profile fields, the groups list,
+ * and the course-access + recent-payments aggregates.
+ */
+export interface UserDetail {
+    id: number;
+    full_name: string | null;
+    email: string | null;
+    mobile: string | null;
+    role_id: number;
+    role_name: AnyRoleName;
+    status: UserStatus;
+    last_activity: number | null;
+    created_at: number;
+    updated_at: number | null;
+    country_id: number | null;
+    province_id: number | null;
+    city_id: number | null;
+    school_id: number | null;
+    avatar: string | null;
+    about: string | null;
+    verified: boolean;
+    groups: Array<{ id: number; name: string; supervisor_id: number | null }>;
+    course_access: Array<{
+        sale_id: number;
+        webinar_id: number | null;
+        webinar_name: string | null;
+        manual_added: boolean;
+        access_days: number | null;
+        created_at: number;
+        refund_at: number | null;
+    }>;
+    recent_payments: Array<{
+        id: number;
+        amount: string;
+        total_amount: string | null;
+        created_at: number;
+        refund_at: number | null;
+    }>;
+}
+
+export interface UserActivityRow {
+    id: number;
+    ts: number;
+    actor_id: number | null;
+    action: string;
+    entity: string;
+    entity_id: string | null;
+    meta: unknown;
+}
+
+export interface UserActivityResponse {
+    rows: UserActivityRow[];
+    total: number;
+    page: number;
+    page_size: number;
 }
 
 export interface ListUsersQuery {

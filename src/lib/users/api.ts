@@ -1,5 +1,5 @@
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
-import type { ListUsersQuery, UserDetail, UserListResponse } from './types';
+import type { ListUsersQuery, UserActivityResponse, UserDetail, UserListResponse } from './types';
 
 /**
  * Typed wrappers around the admin-api users endpoints.
@@ -47,6 +47,39 @@ export async function patchUserProfile(id: number | string, body: Record<string,
         body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`patchUserProfile failed: ${res.status}`);
+    const json = await res.json();
+    return (json?.data ?? json) as UserDetail;
+}
+
+/**
+ * Plan 03 — paginated activity feed (AdminAuditLog rows scoped to entity='user' AND
+ * entity_id=<id>). Lazy-loaded by the Activity tab so the audit-log query only runs
+ * when the user clicks that tab (D-10).
+ */
+export async function getUserActivity(id: number | string, page = 1, page_size = 50): Promise<UserActivityResponse> {
+    const res = await fetchWithRefresh(
+        `${BASE}/${encodeURIComponent(String(id))}/activity?page=${page}&page_size=${page_size}`,
+    );
+    if (!res.ok) throw new Error(`getUserActivity failed: ${res.status}`);
+    const json = await res.json();
+    return (json?.data ?? json) as UserActivityResponse;
+}
+
+/**
+ * Plan 03 — replace/adjust user's group memberships. `add` and `remove` are independent
+ * arrays of group_ids. Server enforces curator-scope on `add` (must be a group the curator
+ * supervises) and rejects with 403 + `groups_out_of_scope:<ids>`.
+ */
+export async function patchUserMemberships(
+    id: number | string,
+    body: { add?: number[]; remove?: number[] },
+): Promise<UserDetail> {
+    const res = await fetchWithRefresh(`${BASE}/${encodeURIComponent(String(id))}/memberships`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`patchUserMemberships failed: ${res.status}`);
     const json = await res.json();
     return (json?.data ?? json) as UserDetail;
 }
