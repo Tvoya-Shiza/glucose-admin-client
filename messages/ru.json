@@ -170,7 +170,13 @@
             "delete_success": "Поток удалён",
             "delete_error": "Не удалось удалить поток",
             "cascade_sample_students": "Список затронутых студентов",
-            "cascade_more_students": "…и ещё {count}"
+            "cascade_more_students": "…и ещё {count}",
+            "members_tab_placeholder": "Список участников появится в Plan 04",
+            "forbidden_scope": "У вас нет доступа к этому потоку",
+            "supervisor_change_title": "Сменить куратора",
+            "supervisor_input_help": "Введите 0 чтобы снять назначение",
+            "supervisor_not_found": "Куратор не найден",
+            "saved": "Сохранено"
         }
     },
     "dashboard": {

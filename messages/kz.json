@@ -170,7 +170,13 @@
             "delete_success": "Ағым жойылды",
             "delete_error": "Ағымды жою мүмкін болмады",
             "cascade_sample_students": "Әсер еткен студенттер тізімі",
-            "cascade_more_students": "…және тағы {count}"
+            "cascade_more_students": "…және тағы {count}",
+            "members_tab_placeholder": "Қатысушылар тізімі Plan 04-те қосылады",
+            "forbidden_scope": "Сізде бұл ағымға қолжетімділік жоқ",
+            "supervisor_change_title": "Кураторды ауыстыру",
+            "supervisor_input_help": "Тағайындауды алып тастау үшін 0 енгізіңіз",
+            "supervisor_not_found": "Куратор табылмады",
+            "saved": "Сақталды"
         }
     },
     "dashboard": {
