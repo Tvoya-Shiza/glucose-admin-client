@@ -12,7 +12,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard' },
     { href: '/users', labelKey: 'users' },
-    // Phase 4+: groups, courses, quizzes, stories, banners, blogs, push, payments, audit
+    { href: '/groups', labelKey: 'groups' },
+    // Phase 5+: courses, quizzes, stories, banners, blogs, push, payments, audit
 ];
 
 /**
