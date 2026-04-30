@@ -1,6 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { routing, type Locale } from '@/i18n/routing';
 import { QueryProvider } from '@/lib/query-provider';
 import { Toaster } from '@/components/ui/sonner';
@@ -28,10 +29,12 @@ export default async function LocaleLayout({
         <html lang={locale}>
             <body>
                 <NextIntlClientProvider locale={locale} messages={messages}>
-                    <QueryProvider>
-                        {children}
-                        <Toaster />
-                    </QueryProvider>
+                    <NuqsAdapter>
+                        <QueryProvider>
+                            {children}
+                            <Toaster />
+                        </QueryProvider>
+                    </NuqsAdapter>
                 </NextIntlClientProvider>
             </body>
         </html>
