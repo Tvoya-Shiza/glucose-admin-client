@@ -83,3 +83,49 @@ export async function patchUserMemberships(
     const json = await res.json();
     return (json?.data ?? json) as UserDetail;
 }
+
+/**
+ * Plan 04 — admin-only role change. Body MUST carry both `role_id` and `role_name`;
+ * admin-api validates they refer to the same `roles` row (T-03-31). When `role_name`
+ * is `'admin'`, `confirmation` MUST equal `String(user_id)` — RoleChangeDialog enforces
+ * this client-side via TypeTheCountConfirmation, but server-side gate is independent.
+ *
+ * On success, callers should invalidate `['admin.users.detail', String(id)]` AND
+ * `['admin.users.list']` so the detail page + list page reflect the new role.
+ */
+export async function changeUserRole(
+    id: number | string,
+    body: {
+        role_id: number;
+        role_name: 'admin' | 'curator' | 'teacher' | 'student';
+        reason?: string;
+        confirmation?: string;
+    },
+): Promise<{ id: number; role_id: number; role_name: string }> {
+    const res = await fetchWithRefresh(`${BASE}/${encodeURIComponent(String(id))}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `changeUserRole failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json?.data ?? json) as { id: number; role_id: number; role_name: string };
+}
+
+/**
+ * Hardcoded role list for the RoleChangeDialog Select. role_id values vary per
+ * environment seed; the admin-api validates the (id, name) pair against `roles`
+ * regardless, so a wrong id surfaces as a 400 `role_mismatch` and the operator
+ * can correct it via the manual role_id input. Phase 4+ may swap this to a
+ * server-fed list (`GET /admin-api/v1/admin/roles`).
+ */
+export const ROLE_OPTIONS: Array<{ id: number; name: 'admin' | 'curator' | 'teacher' | 'student' }> = [
+    { id: 1, name: 'admin' },
+    { id: 2, name: 'curator' },
+    { id: 3, name: 'teacher' },
+    { id: 4, name: 'student' },
+];
