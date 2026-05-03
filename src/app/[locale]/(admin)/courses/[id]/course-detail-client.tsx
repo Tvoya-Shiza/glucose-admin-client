@@ -195,10 +195,10 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         <OverviewTab course={data} role={role} />
                     </TabsContent>
                     <TabsContent value='content'>
-                        {/* Lazy-mount: Plan 05 will swap this body for the chapter/item Tiptap
-                            editor; keep it gated by active-tab so the editor never mounts on
-                            first paint when the user only wants Overview. */}
-                        {safeTab === 'content' ? <ContentTab /> : null}
+                        {/* Lazy-mount: Plan 05 swaps this body for the dnd-kit chapter/item
+                            tree + Tiptap rich-text editor. Gated by active-tab so the editor
+                            never mounts on first paint when the user only wants Overview. */}
+                        {safeTab === 'content' ? <ContentTab courseId={courseId} /> : null}
                     </TabsContent>
                     <TabsContent value='schedule'>
                         {safeTab === 'schedule' ? <ScheduleTab /> : null}
