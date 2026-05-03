@@ -513,6 +513,12 @@
             "delete_dialog_description": "Тест белсенді емес деп белгіленеді. Сұрақтар, жауаптар және нәтижелер сақталады.",
             "delete_soft_note": "Әрекет қайтымды — өңдеу арқылы күйді «Белсенді» қайтаруға болады.",
             "delete_success": "Тест архивке жіберілді",
+            "questions_tab_placeholder": "Сұрақтар редакторы Plan 05-те қосылады",
+            "results_tab_placeholder": "Нәтижелер тізімі Plan 07-де қосылады",
+            "field_saved_inline": "Сақталды",
+            "field_saving": "Сақталуда…",
+            "title_placeholder": "Тест атауын енгізіңіз",
+            "description_label": "Сипаттамасы",
             "categories": {
                 "page_title": "Тест санаттары",
                 "page_subtitle": "Санат ағашын басқару — RU + KZ атаулары, ішкі санаттарды сүйреп ауыстыру",

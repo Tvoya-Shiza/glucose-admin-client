@@ -513,6 +513,12 @@
             "delete_dialog_description": "Тест будет помечен как неактивный. Вопросы, ответы и результаты сохраняются.",
             "delete_soft_note": "Действие обратимо — статус можно вернуть на «Активен» через редактирование.",
             "delete_success": "Тест архивирован",
+            "questions_tab_placeholder": "Редактор вопросов появится в Plan 05",
+            "results_tab_placeholder": "Список результатов появится в Plan 07",
+            "field_saved_inline": "Сохранено",
+            "field_saving": "Сохраняется…",
+            "title_placeholder": "Введите название теста",
+            "description_label": "Описание",
             "categories": {
                 "page_title": "Категории тестов",
                 "page_subtitle": "Управление деревом категорий — RU + KZ названия, перенос подкатегорий перетаскиванием",
