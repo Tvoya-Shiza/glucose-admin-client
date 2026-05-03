@@ -302,7 +302,14 @@
             "cascade_soft_delete_note": "Курс будет скрыт из списка. Переводы, главы, элементы и расписания останутся в базе данных и доступны через служебные запросы.",
             "slug_invalid_format": "Slug должен содержать только латиницу, цифры и дефисы",
             "teacher_id_invalid": "Укажите корректный ID преподавателя",
-            "col_chapters": "Главы"
+            "col_chapters": "Главы",
+            "content_tab_placeholder_plan_05": "Редактор глав и элементов появится в Plan 05",
+            "schedule_tab_placeholder_plan_06": "Расписание по потокам появится в Plan 06",
+            "preview_tab_placeholder_plan_07": "Превью «как у студента» появится в Plan 07",
+            "cover_upload_disabled_until_plan_04": "Загрузка обложки появится после Plan 04",
+            "change_teacher_disabled_until_plan_07": "Смена преподавателя появится в Plan 07",
+            "title_required": "Название обязательно",
+            "category_id_invalid": "Введите корректный числовой ID категории"
         }
     },
     "dashboard": {

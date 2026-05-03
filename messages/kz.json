@@ -302,7 +302,14 @@
             "cascade_soft_delete_note": "Курс тізімнен жасырылады. Аудармалар, тараулар, элементтер және кестелер дерекқорда қалады және қызметтік сұраулар арқылы қолжетімді болады.",
             "slug_invalid_format": "Slug тек латын әріптерін, сандарды және дефистерді қамтуы тиіс",
             "teacher_id_invalid": "Дұрыс оқытушы ID-ін көрсетіңіз",
-            "col_chapters": "Тараулар"
+            "col_chapters": "Тараулар",
+            "content_tab_placeholder_plan_05": "Тараулар мен элементтер редакторы Plan 05-те қосылады",
+            "schedule_tab_placeholder_plan_06": "Ағымдар бойынша кесте Plan 06-да қосылады",
+            "preview_tab_placeholder_plan_07": "«Студент көрінісі» алдын ала қарауы Plan 07-де қосылады",
+            "cover_upload_disabled_until_plan_04": "Мұқабаны жүктеу Plan 04-тен кейін қол жетімді болады",
+            "change_teacher_disabled_until_plan_07": "Оқытушыны ауыстыру Plan 07-де қол жетімді болады",
+            "title_required": "Атауы міндетті",
+            "category_id_invalid": "Дұрыс сандық санат ID-ін енгізіңіз"
         }
     },
     "dashboard": {
