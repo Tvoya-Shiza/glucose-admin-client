@@ -14,7 +14,8 @@ const NAV_ITEMS: NavItem[] = [
     { href: '/users', labelKey: 'users' },
     { href: '/groups', labelKey: 'groups' },
     { href: '/courses', labelKey: 'courses' },
-    // Phase 6+: quizzes, stories, banners, blogs, push, payments, audit
+    { href: '/quizzes', labelKey: 'quizzes' },
+    // Phase 7+: stories, banners, blogs, push, payments, audit
 ];
 
 /**

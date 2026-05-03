@@ -1,0 +1,337 @@
+import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import type {
+    CreateQuiz,
+    ListQuizzesQuery,
+    ListResultsQuery,
+    QuizBadge,
+    QuizBadgeItem,
+    QuizCategory,
+    QuizDetail,
+    QuizListResponse,
+    QuizResultsListResponse,
+    ReorderBadgeItemsEntry,
+    ReorderQuestions,
+    UpdateQuiz,
+    UpsertAnswer,
+    UpsertBadge,
+    UpsertBadgeItem,
+    UpsertCategory,
+    UpsertQuestion,
+} from './types';
+
+/**
+ * Typed wrappers around the admin-api Quizzes endpoints (Phase 6 Plan 01 — skeletons).
+ *
+ * All quiz endpoints route through the BFF proxy `/api/proxy/v1/admin/quizzes/*`,
+ * `/api/proxy/v1/admin/quiz-categories/*`, and `/api/proxy/v1/admin/quiz-badges/*`.
+ * The browser never attaches a Bearer token directly to admin-api (CLAUDE.md
+ * "Bypassing the BFF proxy" forbidden). Auth + cookie management happens in the
+ * BFF Route Handler.
+ *
+ * Wrappers are FULLY IMPLEMENTED here (real fetchWithRefresh calls), but the
+ * downstream admin-api endpoints don't exist yet — they land in:
+ *   - listQuizzes / getQuiz / createQuiz / updateQuiz / deleteQuiz / duplicateQuiz → Plan 02 + Plan 04
+ *   - upsertQuestion / deleteQuestion / upsertAnswer / deleteAnswer / reorderQuestions → Plan 05
+ *   - listCategories / upsertCategory / deleteCategory → Plan 03
+ *   - listBadges / upsertBadge / deleteBadge / addBadgeItem / removeBadgeItem / reorderBadgeItems → Plan 06
+ *   - listResults → Plan 07
+ *
+ * Calling a wrapper before its endpoint lands returns a real 404 from admin-api.
+ * The wrappers do NOT throw at IMPORT time — they only fail when invoked.
+ */
+
+export const QUIZZES_API_BASE = '/api/proxy/v1/admin/quizzes';
+export const QUIZ_CATEGORIES_API_BASE = '/api/proxy/v1/admin/quiz-categories';
+export const QUIZ_BADGES_API_BASE = '/api/proxy/v1/admin/quiz-badges';
+export const QUIZ_RESULTS_API_BASE = '/api/proxy/v1/admin/quiz-results';
+
+function buildQuery(query: Record<string, unknown> | undefined): string {
+    if (!query) return '';
+    const usp = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+        if (v === undefined || v === null || v === '') continue;
+        usp.set(k, String(v));
+    }
+    const s = usp.toString();
+    return s ? `?${s}` : '';
+}
+
+function unwrapData<T>(json: unknown): T {
+    if (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)) {
+        return (json as { data: T }).data;
+    }
+    return json as T;
+}
+
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+    const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+    return (json as { message?: string })?.message ?? fallback;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Quizzes CRUD (Plan 02 + Plan 04)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listQuizzes(query?: ListQuizzesQuery): Promise<QuizListResponse> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listQuizzes failed: ${res.status}`);
+    return res.json();
+}
+
+export async function getQuiz(id: number): Promise<QuizDetail> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(`getQuiz failed: ${res.status}`);
+    const json = await res.json();
+    return unwrapData<QuizDetail>(json);
+}
+
+export async function createQuiz(payload: CreateQuiz): Promise<QuizDetail> {
+    const res = await fetchWithRefresh(QUIZZES_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createQuiz failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizDetail>(json);
+}
+
+export async function updateQuiz(id: number, payload: UpdateQuiz): Promise<QuizDetail> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateQuiz failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizDetail>(json);
+}
+
+export async function deleteQuiz(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuiz failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+export async function duplicateQuiz(id: number): Promise<QuizDetail> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${encodeURIComponent(String(id))}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `duplicateQuiz failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizDetail>(json);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Questions / Answers (Plan 05)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function upsertQuestion(
+    quizId: number,
+    payload: UpsertQuestion,
+): Promise<{ question: import('./types').QuestionDetail; version: number }> {
+    const isUpdate = typeof payload.id === 'number';
+    const url = isUpdate
+        ? `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/${encodeURIComponent(String(payload.id))}`
+        : `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions`;
+    const res = await fetchWithRefresh(url, {
+        method: isUpdate ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `upsertQuestion failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ question: import('./types').QuestionDetail; version: number }>(json);
+}
+
+export async function deleteQuestion(
+    quizId: number,
+    questionId: number,
+    force_confirm_token?: string,
+): Promise<{ id: number; version: number }> {
+    const qs = force_confirm_token ? `?force_confirm_token=${encodeURIComponent(force_confirm_token)}` : '';
+    const res = await fetchWithRefresh(
+        `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/${encodeURIComponent(String(questionId))}${qs}`,
+        { method: 'DELETE' },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuestion failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; version: number }>(json);
+}
+
+export async function upsertAnswer(
+    questionId: number,
+    payload: UpsertAnswer,
+): Promise<{ answer: import('./types').AnswerDetail; version: number }> {
+    const isUpdate = typeof payload.id === 'number';
+    const url = isUpdate
+        ? `${QUIZZES_API_BASE}/questions/${encodeURIComponent(String(questionId))}/answers/${encodeURIComponent(String(payload.id))}`
+        : `${QUIZZES_API_BASE}/questions/${encodeURIComponent(String(questionId))}/answers`;
+    const res = await fetchWithRefresh(url, {
+        method: isUpdate ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `upsertAnswer failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ answer: import('./types').AnswerDetail; version: number }>(json);
+}
+
+export async function deleteAnswer(
+    questionId: number,
+    answerId: number,
+    force_confirm_token?: string,
+): Promise<{ id: number; version: number }> {
+    const qs = force_confirm_token ? `?force_confirm_token=${encodeURIComponent(force_confirm_token)}` : '';
+    const res = await fetchWithRefresh(
+        `${QUIZZES_API_BASE}/questions/${encodeURIComponent(String(questionId))}/answers/${encodeURIComponent(String(answerId))}${qs}`,
+        { method: 'DELETE' },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteAnswer failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; version: number }>(json);
+}
+
+export async function reorderQuestions(
+    quizId: number,
+    items: ReorderQuestions['items'],
+): Promise<{ items: Array<{ id: number; order: number }> }> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/reorder`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `reorderQuestions failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ items: Array<{ id: number; order: number }> }>(json);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Categories (Plan 03)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listCategories(): Promise<QuizCategory[]> {
+    const res = await fetchWithRefresh(QUIZ_CATEGORIES_API_BASE);
+    if (!res.ok) throw new Error(`listCategories failed: ${res.status}`);
+    const json = await res.json();
+    // Some endpoints wrap in {data}; tolerate both list-shape and unwrapped envelope.
+    if (Array.isArray(json)) return json as QuizCategory[];
+    if (json && typeof json === 'object' && Array.isArray((json as { rows?: unknown }).rows)) {
+        return (json as { rows: QuizCategory[] }).rows;
+    }
+    return unwrapData<QuizCategory[]>(json);
+}
+
+export async function upsertCategory(payload: UpsertCategory): Promise<QuizCategory> {
+    const isUpdate = typeof payload.id === 'number';
+    const url = isUpdate
+        ? `${QUIZ_CATEGORIES_API_BASE}/${encodeURIComponent(String(payload.id))}`
+        : QUIZ_CATEGORIES_API_BASE;
+    const res = await fetchWithRefresh(url, {
+        method: isUpdate ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `upsertCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizCategory>(json);
+}
+
+export async function deleteCategory(id: number, force?: boolean): Promise<{ id: number; deleted: true }> {
+    const qs = force ? '?force=true' : '';
+    const res = await fetchWithRefresh(`${QUIZ_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}${qs}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Badges + Badge Items (Plan 06)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listBadges(): Promise<QuizBadge[]> {
+    const res = await fetchWithRefresh(QUIZ_BADGES_API_BASE);
+    if (!res.ok) throw new Error(`listBadges failed: ${res.status}`);
+    const json = await res.json();
+    if (Array.isArray(json)) return json as QuizBadge[];
+    if (json && typeof json === 'object' && Array.isArray((json as { rows?: unknown }).rows)) {
+        return (json as { rows: QuizBadge[] }).rows;
+    }
+    return unwrapData<QuizBadge[]>(json);
+}
+
+export async function upsertBadge(payload: UpsertBadge): Promise<QuizBadge> {
+    const isUpdate = typeof payload.id === 'number';
+    const url = isUpdate
+        ? `${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(payload.id))}`
+        : QUIZ_BADGES_API_BASE;
+    const res = await fetchWithRefresh(url, {
+        method: isUpdate ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `upsertBadge failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizBadge>(json);
+}
+
+export async function deleteBadge(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBadge failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+export async function addBadgeItem(payload: UpsertBadgeItem): Promise<QuizBadgeItem> {
+    const res = await fetchWithRefresh(
+        `${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(payload.quiz_badge_id))}/items`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `addBadgeItem failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizBadgeItem>(json);
+}
+
+export async function removeBadgeItem(badgeId: number, itemId: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(
+        `${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(badgeId))}/items/${encodeURIComponent(String(itemId))}`,
+        { method: 'DELETE' },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `removeBadgeItem failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+export async function reorderBadgeItems(badgeId: number, items: ReorderBadgeItemsEntry[]): Promise<void> {
+    const res = await fetchWithRefresh(
+        `${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(badgeId))}/items/reorder`,
+        {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items }),
+        },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `reorderBadgeItems failed: ${res.status}`));
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Results (Plan 07)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listResults(query?: ListResultsQuery): Promise<QuizResultsListResponse> {
+    const res = await fetchWithRefresh(`${QUIZ_RESULTS_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listResults failed: ${res.status}`);
+    return res.json();
+}
