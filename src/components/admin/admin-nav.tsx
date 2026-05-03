@@ -13,7 +13,8 @@ const NAV_ITEMS: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard' },
     { href: '/users', labelKey: 'users' },
     { href: '/groups', labelKey: 'groups' },
-    // Phase 5+: courses, quizzes, stories, banners, blogs, push, payments, audit
+    { href: '/courses', labelKey: 'courses' },
+    // Phase 6+: quizzes, stories, banners, blogs, push, payments, audit
 ];
 
 /**
