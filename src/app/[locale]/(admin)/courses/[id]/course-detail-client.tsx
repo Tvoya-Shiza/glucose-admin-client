@@ -9,13 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { getCourse } from '@/lib/courses/api';
 import { statusBadgeVariant } from '@/lib/courses/format';
 import type { CourseDetail, CourseRow } from '@/lib/courses/types';
 import { TranslationCompletenessBadge } from '../components/translation-completeness-badge';
 import { DeleteCourseDialog } from '../components/delete-course-dialog';
+import { TeacherChangeDialog } from './components/teacher-change-dialog';
 import { OverviewTab } from './tabs/overview-tab';
 import { ContentTab } from './tabs/content-tab';
 import { ScheduleTab } from './tabs/schedule-tab';
@@ -53,8 +54,13 @@ interface MeResponse {
  *
  * Page header: course title (RU translation, fallback to slug) + status Badge +
  * <TranslationCompletenessBadge> (reused from Plan 02) + Delete button (admin/teacher
- * own — opens <DeleteCourseDialog>) + "Change teacher" button (admin only — disabled
- * with tooltip "Available after Plan 07" until Plan 07 lands).
+ * own — opens <DeleteCourseDialog>) + "Change teacher" button (admin only — opens
+ * <TeacherChangeDialog>, Plan 07 / CRS-06).
+ *
+ * Plan 07 wire-up: TeacherChangeDialog is admin-only at the client (button hidden
+ * for non-admin) AND admin-only at the server (@Roles('admin') on PATCH
+ * /admin-api/v1/admin/courses/:id/teacher). The dialog strips the response's
+ * `previous_teacher_id` audit-meta field before caching as CourseDetail.
  */
 export function CourseDetailClient({ courseId }: { courseId: number }) {
     const t = useTranslations('admin.courses');
@@ -78,6 +84,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
     });
 
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [teacherOpen, setTeacherOpen] = useState(false);
 
     if (isLoading) {
         return (
@@ -163,18 +170,9 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                     </div>
                     <div className='flex items-center gap-2'>
                         {isAdmin ? (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span tabIndex={0}>
-                                        <Button variant='outline' disabled>
-                                            {t('change_teacher')}
-                                        </Button>
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {t('change_teacher_disabled_until_plan_07')}
-                                </TooltipContent>
-                            </Tooltip>
+                            <Button variant='outline' onClick={() => setTeacherOpen(true)}>
+                                {t('change_teacher')}
+                            </Button>
                         ) : null}
                         {canDelete ? (
                             <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
@@ -204,7 +202,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         {safeTab === 'schedule' ? <ScheduleTab courseId={courseId} /> : null}
                     </TabsContent>
                     <TabsContent value='preview'>
-                        {safeTab === 'preview' ? <PreviewTab /> : null}
+                        {safeTab === 'preview' ? <PreviewTab courseId={courseId} /> : null}
                     </TabsContent>
                 </Tabs>
 
@@ -213,6 +211,14 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         open={deleteOpen}
                         onOpenChange={setDeleteOpen}
                         course={synthesizedRow}
+                    />
+                ) : null}
+
+                {isAdmin ? (
+                    <TeacherChangeDialog
+                        open={teacherOpen}
+                        onOpenChange={setTeacherOpen}
+                        course={data}
                     />
                 ) : null}
             </div>

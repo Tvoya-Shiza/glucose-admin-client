@@ -5,6 +5,7 @@ import type {
     ChangeTeacherPayload,
     CourseDetail,
     CourseListResponse,
+    CoursePreview,
     CreateCoursePayload,
     ListCoursesQuery,
     ReorderPayload,
@@ -240,6 +241,34 @@ export async function deleteSchedule(
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteSchedule failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<{ id: string; deleted: true }>(json);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Preview-as-student (Plan 07 — CRS-09)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Read-only "preview as student" mirror render. Optional groupId applies the
+ * per-group schedule visibility filter; omitted = admin see-everything mode.
+ *
+ * Endpoint: GET /admin-api/v1/admin/courses/:id/preview?group_id=
+ *
+ * Auth: BFF Bearer (admin / teacher only — curator excluded at @Roles).
+ *
+ * NOT impersonation — the admin's session stays admin throughout. The PreviewRenderer
+ * surfaces a banner to make this unambiguous to the operator.
+ */
+export async function getCoursePreview(
+    courseId: number,
+    groupId?: number,
+): Promise<CoursePreview> {
+    const qs = buildQuery(groupId !== undefined ? { group_id: groupId } : undefined);
+    const res = await fetchWithRefresh(
+        `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/preview${qs}`,
+    );
+    if (!res.ok) throw new Error(`getCoursePreview failed: ${res.status}`);
+    const json = await res.json();
+    return unwrapData<CoursePreview>(json);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

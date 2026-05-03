@@ -349,3 +349,82 @@ export interface UploadFileResult {
     content_type: string;
     size: number;
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Preview-as-student (Plan 07 — CRS-09)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Preview response shape — mirror of the read-only "preview as student" endpoint
+ * (GET /admin-api/v1/admin/courses/:id/preview?group_id=).
+ *
+ * Distinct from CourseDetail: drops admin-only fields (capacity, certificate, etc.)
+ * and adds visibility flags + a `now` server timestamp + group_context. The
+ * PreviewRenderer in admin-client uses `visible_now` per item as the gate for
+ * "show full content" vs "show 'not visible' placeholder".
+ *
+ * The endpoint is an in-place mirror — NO impersonation. The admin-client
+ * surfaces a banner so operators don't confuse this for a real student session.
+ */
+export interface PreviewFileTranslation {
+    locale: Locale;
+    title: string;
+    description: string | null;
+}
+
+export interface PreviewFileRef {
+    id: number;
+    file: string;
+    file_type: string;
+    volume: string;
+    translations: PreviewFileTranslation[];
+}
+
+export interface PreviewScheduleWindow {
+    start_date: number;
+    end_date: number;
+    is_before_start: boolean;
+    expiration_check: boolean;
+}
+
+export interface PreviewChapterItem {
+    id: number;
+    type: ChapterItemType;
+    order: number | null;
+    item_id: number;
+    /** When ?group_id was omitted, always true. Otherwise derived from schedule window. */
+    visible_now: boolean;
+    /** null when no schedule exists for this (group, item) pair, or when group_id was omitted. */
+    schedule_window: PreviewScheduleWindow | null;
+    file: PreviewFileRef | null;
+    quiz: { id: number } | null;
+    assignment: { id: number } | null;
+}
+
+export interface PreviewChapter {
+    id: number;
+    order: number | null;
+    status: ChapterStatus;
+    translations: { locale: Locale; title: string }[];
+    items: PreviewChapterItem[];
+}
+
+export interface PreviewGroupContext {
+    id: number;
+    name: string;
+}
+
+export interface CoursePreview {
+    id: number;
+    slug: string;
+    type: CourseType;
+    status: CourseStatus;
+    image_cover: string;
+    thumbnail: string;
+    translations: Translation[];
+    chapters: PreviewChapter[];
+    /** null when ?group_id was omitted. */
+    group_context: PreviewGroupContext | null;
+    /** Server's "now" in Unix seconds. */
+    now: number;
+}

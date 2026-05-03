@@ -377,7 +377,18 @@
             "schedule_end_before_start": "Аяқталу күні басталу күнінен ерте болмауы керек",
             "schedule_item_id_required": "Элемент ID-ін енгізіңіз",
             "schedule_loading_failed": "Кестені жүктеу мүмкін болмады",
-            "schedule_no_groups_for_teacher": "Оқытушыға ағымдар тағайындалмайды. Әкімшіге хабарласыңыз."
+            "schedule_no_groups_for_teacher": "Оқытушыға ағымдар тағайындалмайды. Әкімшіге хабарласыңыз.",
+            "preview_banner_title": "Студент көзімен қарау",
+            "preview_banner_no_real_session": "Бұл — статикалық алдын ала көрініс. Нақты сессия ауыстырылмайды — сіз әкімші ролінде қаласыз.",
+            "preview_active_group_context": "Ағым контексі: {name}. Элементтердің көрінуі осы ағымның кестесіне сәйкес есептелді.",
+            "preview_no_group_admin_view_active": "Ағым таңдалмаған — курстың барлық элементтері көрсетіліп тұр (әкімші режимі).",
+            "preview_item_not_visible": "Бұл элемент таңдалған ағым контексінде студентке көрінбейді.",
+            "preview_item_window_range": "Қолжетімділік терезесі: {start} — {end}",
+            "preview_item_no_schedule_for_group": "Бұл ағым үшін кесте әлі реттелмеген.",
+            "preview_quiz_assignment_pending_phase_6": "Тесттер мен тапсырмалардың толық алдын ала көрінісі 6-фазада қосылады.",
+            "preview_failed": "Алдын ала көріністі жүктеу мүмкін болмады",
+            "preview_pick_group_help": "Курсты ағым студентінің көзімен көру үшін ағымды таңдаңыз немесе жалпы көрініс үшін бос қалдырыңыз.",
+            "no_group_selected_preview_admin_view": "(Ағымсыз — әкімші режимі)"
         }
     },
     "dashboard": {

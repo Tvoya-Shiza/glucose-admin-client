@@ -377,7 +377,18 @@
             "schedule_end_before_start": "Дата окончания должна быть не раньше даты начала",
             "schedule_item_id_required": "Укажите ID элемента",
             "schedule_loading_failed": "Не удалось загрузить расписание",
-            "schedule_no_groups_for_teacher": "Преподавателю не назначаются потоки. Обратитесь к администратору."
+            "schedule_no_groups_for_teacher": "Преподавателю не назначаются потоки. Обратитесь к администратору.",
+            "preview_banner_title": "Просмотр от лица студента",
+            "preview_banner_no_real_session": "Это статичный предпросмотр. Реальная сессия не подменяется — вы остаётесь в роли администратора.",
+            "preview_active_group_context": "Контекст потока: {name}. Видимость элементов рассчитана по расписанию этого потока.",
+            "preview_no_group_admin_view_active": "Поток не выбран — отображаются все элементы курса (режим администратора).",
+            "preview_item_not_visible": "Элемент не виден студенту в выбранном контексте потока.",
+            "preview_item_window_range": "Окно доступа: {start} — {end}",
+            "preview_item_no_schedule_for_group": "Для этого потока расписание ещё не настроено.",
+            "preview_quiz_assignment_pending_phase_6": "Полный предпросмотр тестов и заданий появится в Фазе 6.",
+            "preview_failed": "Не удалось загрузить предпросмотр",
+            "preview_pick_group_help": "Выберите поток, чтобы увидеть курс глазами его студента, или оставьте пустым для общего вида.",
+            "no_group_selected_preview_admin_view": "(Без потока — режим администратора)"
         }
     },
     "dashboard": {
