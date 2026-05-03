@@ -297,7 +297,12 @@
             "not_found": "Курс не найден",
             "validation_failed": "Проверьте поля и повторите",
             "generic_error": "Произошла ошибка",
-            "loading": "Загрузка..."
+            "loading": "Загрузка...",
+            "cascade_chapter_count": "{count, plural, =0 {Нет глав} one {# глава} few {# главы} other {# глав}}",
+            "cascade_soft_delete_note": "Курс будет скрыт из списка. Переводы, главы, элементы и расписания останутся в базе данных и доступны через служебные запросы.",
+            "slug_invalid_format": "Slug должен содержать только латиницу, цифры и дефисы",
+            "teacher_id_invalid": "Укажите корректный ID преподавателя",
+            "col_chapters": "Главы"
         }
     },
     "dashboard": {

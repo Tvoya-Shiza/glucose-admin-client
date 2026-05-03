@@ -78,6 +78,12 @@ export interface CourseRow {
     image_cover: string;
     translation_completeness: TranslationCompleteness;
     missing_locales: Locale[];
+    /**
+     * Count of WebinarChapter rows whose `webinar_id === this.id`. Surfaced for the
+     * Plan 02 DeleteCourseDialog cascade copy + TypeTheCountConfirmation gate.
+     * Computed via Prisma `_count.chapters` server-side — no N+1.
+     */
+    chapter_count: number;
     created_at: number;
     updated_at: number | null;
 }
