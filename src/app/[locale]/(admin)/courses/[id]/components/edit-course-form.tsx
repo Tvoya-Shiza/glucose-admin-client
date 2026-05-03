@@ -19,7 +19,7 @@ import {
 import { updateCourse } from '@/lib/courses/api';
 import { SLUG_REGEX } from '@/lib/courses/format';
 import type { CourseDetail, CourseStatus, Translation } from '@/lib/courses/types';
-import { CoverImageUploaderStub } from './cover-image-uploader-stub';
+import { CoverImageUploader } from './cover-image-uploader';
 import { TranslationForm } from './translation-form';
 
 /**
@@ -39,7 +39,10 @@ import { TranslationForm } from './translation-form';
  *
  * Teacher field is rendered read-only by the parent OverviewTab (Plan 07's
  * <TeacherChangeDialog> is a separate component). Cover image goes through the
- * <CoverImageUploaderStub> until Plan 04 lands the upload-token flow.
+ * <CoverImageUploader> (Plan 04) — uploads via the BFF-bypass token flow and
+ * patches image_cover via updateCourse from the parent OverviewTab; in this
+ * edit form we render it for visual continuity but the upload itself persists
+ * the field independently.
  *
  * Save semantics:
  *   - We always send ALL non-empty translations (RU + KZ) so the user can fix a
@@ -152,10 +155,16 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
             onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
             className='space-y-5 pt-4'
         >
-            {/* Cover image (stub until Plan 04) */}
+            {/* Cover image (Plan 04 — BFF-bypass upload). The uploader patches
+                image_cover via its own updateCourse mutation; this edit form's
+                save path does NOT need to round-trip the URL. */}
             <div className='space-y-1'>
                 <Label>{t('cover_label')}</Label>
-                <CoverImageUploaderStub imageCover={course.image_cover} />
+                <CoverImageUploader
+                    courseId={course.id}
+                    currentCoverUrl={course.image_cover}
+                    onUploaded={() => undefined}
+                />
             </div>
 
             {/* Side-by-side RU + KZ translations */}

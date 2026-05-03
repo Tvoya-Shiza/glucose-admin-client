@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { statusBadgeVariant } from '@/lib/courses/format';
+import { updateCourse } from '@/lib/courses/api';
 import type { CourseDetail } from '@/lib/courses/types';
-import { CoverImageUploaderStub } from '../components/cover-image-uploader-stub';
+import { CoverImageUploader } from '../components/cover-image-uploader';
 import { EditCourseForm } from '../components/edit-course-form';
 import { TranslationForm } from '../components/translation-form';
 
@@ -43,8 +46,24 @@ export interface OverviewTabProps {
 export function OverviewTab({ course, role }: OverviewTabProps) {
     const t = useTranslations('admin.courses');
     const [editing, setEditing] = useState(false);
+    const queryClient = useQueryClient();
 
     const canEdit = role === 'admin' || role === 'teacher';
+
+    // Plan 04: persist cover URL after a successful upload via updateCourse.
+    // Separate mutation from EditCourseForm's save path so the user doesn't
+    // need to be in edit-mode to swap the cover.
+    const coverMutation = useMutation({
+        mutationFn: (newUrl: string) => updateCourse(course.id, { image_cover: newUrl }),
+        onSuccess: () => {
+            toast.success(t('upload_succeeded'));
+            void queryClient.invalidateQueries({ queryKey: ['course', course.id] });
+            void queryClient.invalidateQueries({ queryKey: ['courses'] });
+        },
+        onError: () => {
+            toast.error(t('upload_failed'));
+        },
+    });
 
     if (editing && canEdit) {
         return (
@@ -64,7 +83,22 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
             {/* Cover image */}
             <div className='space-y-1'>
                 <div className='text-muted-foreground text-sm'>{t('cover_label')}</div>
-                <CoverImageUploaderStub imageCover={course.image_cover} />
+                {canEdit ? (
+                    <CoverImageUploader
+                        courseId={course.id}
+                        currentCoverUrl={course.image_cover}
+                        onUploaded={(newUrl) => coverMutation.mutate(newUrl)}
+                    />
+                ) : (
+                    <div className='bg-muted text-muted-foreground flex h-24 w-40 items-center justify-center overflow-hidden rounded border text-xs'>
+                        {course.image_cover && course.image_cover.length > 0 ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={course.image_cover} alt='' className='h-full w-full object-cover' />
+                        ) : (
+                            <span>{t('cover_label')}</span>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Side-by-side RU + KZ translations (read-only preview) */}

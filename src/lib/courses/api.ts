@@ -258,32 +258,21 @@ export async function requestUploadToken(payload: UploadTokenRequest): Promise<U
 }
 
 /**
- * BFF-bypass binary upload (CONTEXT D-13).
+ * BFF-bypass binary upload (CONTEXT D-13). Plan 04 implementation.
  *
- * The browser hits `uploadUrl` (admin-api host) DIRECTLY using `X-Upload-Token`
- * as the credential. Do NOT use `fetchWithRefresh` here — the admin Bearer cookie
- * is irrelevant for this call; the upload token IS the credential, and a 401 from
- * the admin host should NOT trigger a refresh-token rotation.
- *
- * `onProgress` is exposed for future XHR-based progress reporting; the current
- * skeleton uses `fetch` (no progress events). Plan 04 may switch to XMLHttpRequest
- * if a real progress UI is needed.
+ * Delegates to upload-client.ts which uses XMLHttpRequest for upload-progress
+ * events. The browser hits `uploadUrl` (admin-api host) DIRECTLY using
+ * `X-Upload-Token` as the credential. Do NOT use `fetchWithRefresh` here —
+ * the admin Bearer cookie is irrelevant for this call; the upload token IS
+ * the credential, and a 401 from the admin host should NOT trigger a
+ * refresh-token rotation.
  */
 export async function uploadFile(
     uploadUrl: string,
     token: string,
     file: File,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _onProgress?: (p: number) => void,
+    onProgress?: (p: number) => void,
 ): Promise<UploadFileResult> {
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'X-Upload-Token': token },
-        body: fd,
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `uploadFile failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<UploadFileResult>(json);
+    const { uploadFileDirect } = await import('./upload-client');
+    return uploadFileDirect(uploadUrl, token, file, onProgress);
 }
