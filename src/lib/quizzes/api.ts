@@ -1,5 +1,7 @@
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
+    CategoryCascadeBlocked,
+    CategoryDeleteResult,
     CreateQuiz,
     ListQuizzesQuery,
     ListResultsQuery,
@@ -223,7 +225,12 @@ export async function listCategories(): Promise<QuizCategory[]> {
     if (json && typeof json === 'object' && Array.isArray((json as { rows?: unknown }).rows)) {
         return (json as { rows: QuizCategory[] }).rows;
     }
-    return unwrapData<QuizCategory[]>(json);
+    const inner = unwrapData<unknown>(json);
+    if (Array.isArray(inner)) return inner as QuizCategory[];
+    if (inner && typeof inner === 'object' && Array.isArray((inner as { rows?: unknown }).rows)) {
+        return (inner as { rows: QuizCategory[] }).rows;
+    }
+    return [];
 }
 
 export async function upsertCategory(payload: UpsertCategory): Promise<QuizCategory> {
@@ -241,14 +248,51 @@ export async function upsertCategory(payload: UpsertCategory): Promise<QuizCateg
     return unwrapData<QuizCategory>(json);
 }
 
-export async function deleteCategory(id: number, force?: boolean): Promise<{ id: number; deleted: true }> {
+/**
+ * Typed error thrown by `deleteCategory` on 409 cascade-blocked responses.
+ * Allows the cascade-warning Dialog to display real quiz_count + child_count
+ * before the admin opts into ?force=true.
+ */
+export class CategoryCascadeBlockedError extends Error {
+    public readonly quiz_count: number;
+    public readonly child_count: number;
+    public readonly status = 'quiz_categories.cascade_blocked' as const;
+
+    constructor(body: CategoryCascadeBlocked) {
+        super(body.message ?? 'quiz_categories.cascade_blocked');
+        this.name = 'CategoryCascadeBlockedError';
+        this.quiz_count = body.quiz_count;
+        this.child_count = body.child_count;
+    }
+}
+
+export async function deleteCategory(id: number, force?: boolean): Promise<CategoryDeleteResult> {
     const qs = force ? '?force=true' : '';
     const res = await fetchWithRefresh(`${QUIZ_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}${qs}`, {
         method: 'DELETE',
     });
+    if (res.status === 409) {
+        // Nest's default exception filter wraps thrown ConflictException's body
+        // under `response.message` when constructed with an object (it places the
+        // entire object at `response`). We tolerate both shapes.
+        const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        const inner =
+            body && typeof body === 'object' && body.message && typeof body.message === 'object'
+                ? (body.message as Record<string, unknown>)
+                : body;
+        const status = String(inner.status ?? body.status ?? 'quiz_categories.cascade_blocked');
+        if (status === 'quiz_categories.cascade_blocked') {
+            throw new CategoryCascadeBlockedError({
+                status: 'quiz_categories.cascade_blocked',
+                message: String(inner.message ?? body.message ?? 'cascade_blocked'),
+                quiz_count: Number(inner.quiz_count ?? 0),
+                child_count: Number(inner.child_count ?? 0),
+            });
+        }
+    }
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteCategory failed: ${res.status}`));
     const json = await res.json();
-    return unwrapData<{ id: number; deleted: true }>(json);
+    return unwrapData<CategoryDeleteResult>(json);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

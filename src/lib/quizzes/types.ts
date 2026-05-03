@@ -309,10 +309,38 @@ export interface QuizCategory {
     parent_id: number | null;
     subject_id: number | null;
     translations: Translation[];
+    /** Number of quizzes assigned to this category (Plan 03 list response). */
+    quiz_count?: number;
+    /** Number of direct child categories (Plan 03 list response). */
+    child_count?: number;
     /** Unix seconds (Int? on schema; null when not yet stamped). */
     created_at: number | null;
     /** Unix seconds. */
     updated_at: number | null;
+}
+
+/**
+ * 409 cascade-blocked body shape returned by DELETE /quiz-categories/:id when
+ * the category has dependents and ?force=true was not passed (Plan 03).
+ */
+export interface CategoryCascadeBlocked {
+    status: 'quiz_categories.cascade_blocked';
+    message: string;
+    quiz_count: number;
+    child_count: number;
+}
+
+/**
+ * Successful delete payload (200) — surfaced when ?force=true is supplied or no
+ * dependents existed. quizzes_repointed/children_repointed reflect the safe-cascade
+ * (D-16 / T-06-31): quizzes were repointed to NULL category, children were
+ * repointed to the deleted row's parent — quizzes survive.
+ */
+export interface CategoryDeleteResult {
+    id: number;
+    deleted: true;
+    quizzes_repointed: number;
+    children_repointed: number;
 }
 
 export interface UpsertCategory {
