@@ -357,7 +357,27 @@
             "tiptap_link_url_prompt": "Введите URL ссылки",
             "tiptap_image": "Изображение",
             "drag_handle_aria": "Перетащить",
-            "saving_dot": "Сохранение..."
+            "saving_dot": "Сохранение...",
+            "schedule_pick_group_help": "Выберите поток, чтобы увидеть и отредактировать его расписание",
+            "select_a_group": "Выберите поток...",
+            "schedule_form_title_create": "Новая запись расписания",
+            "schedule_form_title_edit": "Редактировать запись расписания",
+            "schedule_field_item_id": "ID элемента (из вкладки Контент)",
+            "schedule_field_item_id_help": "Введите числовой ID элемента — найдите его во вкладке Контент",
+            "schedule_field_start_date": "Старт",
+            "schedule_field_end_date": "Завершение",
+            "schedule_field_is_before_start": "Доступно до старта",
+            "schedule_field_expiration_check": "Проверять срок",
+            "schedule_saved": "Запись расписания сохранена",
+            "schedule_deleted": "Запись расписания удалена",
+            "edit_schedule": "Редактировать",
+            "delete_schedule_confirm": "Удалить эту запись расписания?",
+            "save_schedule": "Сохранить",
+            "schedule_chapter_section": "Глава {label}",
+            "schedule_end_before_start": "Дата окончания должна быть не раньше даты начала",
+            "schedule_item_id_required": "Укажите ID элемента",
+            "schedule_loading_failed": "Не удалось загрузить расписание",
+            "schedule_no_groups_for_teacher": "Преподавателю не назначаются потоки. Обратитесь к администратору."
         }
     },
     "dashboard": {

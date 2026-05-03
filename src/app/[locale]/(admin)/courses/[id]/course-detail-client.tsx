@@ -201,7 +201,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         {safeTab === 'content' ? <ContentTab courseId={courseId} /> : null}
                     </TabsContent>
                     <TabsContent value='schedule'>
-                        {safeTab === 'schedule' ? <ScheduleTab /> : null}
+                        {safeTab === 'schedule' ? <ScheduleTab courseId={courseId} /> : null}
                     </TabsContent>
                     <TabsContent value='preview'>
                         {safeTab === 'preview' ? <PreviewTab /> : null}

@@ -357,7 +357,27 @@
             "tiptap_link_url_prompt": "Сілтеме URL-ін енгізіңіз",
             "tiptap_image": "Сурет",
             "drag_handle_aria": "Жылжыту",
-            "saving_dot": "Сақталуда..."
+            "saving_dot": "Сақталуда...",
+            "schedule_pick_group_help": "Кестені көру және өңдеу үшін ағымды таңдаңыз",
+            "select_a_group": "Ағымды таңдаңыз...",
+            "schedule_form_title_create": "Жаңа кесте жазбасы",
+            "schedule_form_title_edit": "Кесте жазбасын өңдеу",
+            "schedule_field_item_id": "Элемент ID-і (Контент қойындысынан)",
+            "schedule_field_item_id_help": "Элементтің сандық ID-ін енгізіңіз — оны Контент қойындысынан табасыз",
+            "schedule_field_start_date": "Басталуы",
+            "schedule_field_end_date": "Аяқталуы",
+            "schedule_field_is_before_start": "Басталуға дейін қолжетімді",
+            "schedule_field_expiration_check": "Мерзімін тексеру",
+            "schedule_saved": "Кесте жазбасы сақталды",
+            "schedule_deleted": "Кесте жазбасы жойылды",
+            "edit_schedule": "Өңдеу",
+            "delete_schedule_confirm": "Осы кесте жазбасын жоясыз ба?",
+            "save_schedule": "Сақтау",
+            "schedule_chapter_section": "{label} тарауы",
+            "schedule_end_before_start": "Аяқталу күні басталу күнінен ерте болмауы керек",
+            "schedule_item_id_required": "Элемент ID-ін енгізіңіз",
+            "schedule_loading_failed": "Кестені жүктеу мүмкін болмады",
+            "schedule_no_groups_for_teacher": "Оқытушыға ағымдар тағайындалмайды. Әкімшіге хабарласыңыз."
         }
     },
     "dashboard": {

@@ -269,6 +269,27 @@ export interface UpsertItemPayload {
 // Schedule (BigInt id → string)
 // ──────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Joined item ref surfaced on each schedule row so the UI can label the row
+ * without an extra round-trip. type/item_id are echoed for icon-rendering.
+ */
+export interface ScheduleItemRef {
+    id: number;
+    type: ChapterItemType;
+    item_id: number;
+    order: number | null;
+}
+
+/**
+ * Joined chapter ref surfaced on each schedule row. The UI groups schedules
+ * by chapter.id and uses the chapter's translation title for the section header.
+ */
+export interface ScheduleChapterRef {
+    id: number;
+    order: number | null;
+    translations: Translation[];
+}
+
 export interface ScheduleRow {
     /** BigInt on schema, string on the wire. */
     id: string;
@@ -282,6 +303,10 @@ export interface ScheduleRow {
     /** ISO timestamps from admin-api (DateTime on schema). */
     created_at: string;
     updated_at: string;
+    /** Joined item ref (server-side select). */
+    item: ScheduleItemRef | null;
+    /** Joined chapter ref (server-side select). The UI groups by this. */
+    chapter: ScheduleChapterRef | null;
 }
 
 export interface ScheduleListResponse {

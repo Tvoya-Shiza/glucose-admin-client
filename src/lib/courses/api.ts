@@ -208,7 +208,7 @@ export async function listSchedules(
     query?: { group_id?: number },
 ): Promise<ScheduleListResponse> {
     const res = await fetchWithRefresh(
-        `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedule${buildQuery(query as Record<string, unknown> | undefined)}`,
+        `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedules${buildQuery(query as Record<string, unknown> | undefined)}`,
     );
     if (!res.ok) throw new Error(`listSchedules failed: ${res.status}`);
     return res.json();
@@ -217,8 +217,8 @@ export async function listSchedules(
 export async function upsertSchedule(courseId: number, payload: ScheduleUpsertPayload): Promise<ScheduleRow> {
     const isUpdate = typeof payload.id === 'string' && payload.id.length > 0;
     const url = isUpdate
-        ? `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedule/${encodeURIComponent(payload.id as string)}`
-        : `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedule`;
+        ? `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedules/${encodeURIComponent(payload.id as string)}`
+        : `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedules`;
     const res = await fetchWithRefresh(url, {
         method: isUpdate ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -234,7 +234,7 @@ export async function deleteSchedule(
     scheduleId: string,
 ): Promise<{ id: string; deleted: true }> {
     const res = await fetchWithRefresh(
-        `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedule/${encodeURIComponent(scheduleId)}`,
+        `${COURSES_API_BASE}/${encodeURIComponent(String(courseId))}/schedules/${encodeURIComponent(scheduleId)}`,
         { method: 'DELETE' },
     );
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteSchedule failed: ${res.status}`));
