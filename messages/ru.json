@@ -500,7 +500,19 @@
             "forbidden_scope": "У вас нет доступа к этому тесту",
             "not_found": "Тест не найден",
             "validation_failed": "Проверьте поля и повторите",
-            "generic_error": "Произошла ошибка"
+            "generic_error": "Произошла ошибка",
+            "loading": "Загрузка…",
+            "actions": "Действия",
+            "row_actions": "Действия со строкой",
+            "view_detail": "Открыть",
+            "empty_no_results": "По этим фильтрам ничего не найдено",
+            "create_dialog_title": "Новый тест",
+            "create_dialog_description": "Заполните основные поля и переводы (RU + KZ)",
+            "created_success": "Тест создан",
+            "delete_dialog_title": "Архивировать тест?",
+            "delete_dialog_description": "Тест будет помечен как неактивный. Вопросы, ответы и результаты сохраняются.",
+            "delete_soft_note": "Действие обратимо — статус можно вернуть на «Активен» через редактирование.",
+            "delete_success": "Тест архивирован"
         }
     },
     "dashboard": {

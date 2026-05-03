@@ -500,7 +500,19 @@
             "forbidden_scope": "Сізде бұл тестке қолжетімділік жоқ",
             "not_found": "Тест табылмады",
             "validation_failed": "Өрістерді тексеріп, қайталап көріңіз",
-            "generic_error": "Қате орын алды"
+            "generic_error": "Қате орын алды",
+            "loading": "Жүктелуде…",
+            "actions": "Әрекеттер",
+            "row_actions": "Жол бойынша әрекеттер",
+            "view_detail": "Ашу",
+            "empty_no_results": "Бұл сүзгілер бойынша ештеңе табылмады",
+            "create_dialog_title": "Жаңа тест",
+            "create_dialog_description": "Негізгі өрістер мен аудармаларды (RU + KZ) толтырыңыз",
+            "created_success": "Тест құрылды",
+            "delete_dialog_title": "Тестті архивтейсіз бе?",
+            "delete_dialog_description": "Тест белсенді емес деп белгіленеді. Сұрақтар, жауаптар және нәтижелер сақталады.",
+            "delete_soft_note": "Әрекет қайтымды — өңдеу арқылы күйді «Белсенді» қайтаруға болады.",
+            "delete_success": "Тест архивке жіберілді"
         }
     },
     "dashboard": {
