@@ -1,18 +1,16 @@
 'use client';
 /**
- * Phase 7 Plan 01 — BFF wrappers for the blogs surface.
+ * Phase 7 Plan 04 — BFF wrappers for the blogs surface.
  *
- * Function bodies are STUBS — every function throws a "Plan 04 not landed yet"
- * error. Plan 04 fills the bodies with fetchWithRefresh + endpoint URLs.
- *
- * Endpoints route through the BFF proxy `/api/proxy/v1/admin/blogs/*`.
+ * Endpoints route through the BFF proxy `/api/proxy/v1/admin/blogs/*` —
+ * the browser NEVER attaches a Bearer token directly to admin-api.
  *
  * Note (D-11): changeBlogAuthor mirrors the Phase 3 RoleChangeDialog audit
- * trail. Server-side validation (target must be admin or teacher) lives in Plan 04.
+ * trail. Server validates target user has 'admin' or 'teacher' role + requires
+ * `confirmation === String(blog.id)` (T-07-04-04).
  *
- * Note (BlogCategory schema): the BlogCategory model has NO slug column — see
- * blogs/types.ts comment. createBlogCategory / updateBlogCategory therefore take
- * { title_ru, title_kz } only (no slug field).
+ * Note (BlogCategory schema — Plan 01 lock): BlogCategory has NO slug column.
+ * createBlogCategory / updateBlogCategory take { title_ru, title_kz } only.
  */
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
@@ -39,33 +37,78 @@ export interface ListBlogsQuery {
     order?: 'asc' | 'desc';
 }
 
-// TODO Plan 04: implement
-export async function listBlogs(_q?: ListBlogsQuery): Promise<BlogListResponse> {
-    throw new Error('listBlogs: stub — Plan 04 not landed yet');
+function buildQuery(query: Record<string, unknown> | undefined): string {
+    if (!query) return '';
+    const usp = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+        if (v === undefined || v === null || v === '') continue;
+        usp.set(k, String(v));
+    }
+    const s = usp.toString();
+    return s ? `?${s}` : '';
 }
 
-// TODO Plan 04: implement
-export async function getBlog(_id: number): Promise<BlogDetail> {
-    throw new Error('getBlog: stub — Plan 04 not landed yet');
+function unwrapData<T>(json: unknown): T {
+    if (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)) {
+        return (json as { data: T }).data;
+    }
+    return json as T;
 }
 
-// TODO Plan 04: implement
-export async function createBlog(_input: BlogUpsertInput): Promise<BlogDetail> {
-    throw new Error('createBlog: stub — Plan 04 not landed yet');
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+    const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+    return (json as { message?: string })?.message ?? fallback;
 }
 
-// TODO Plan 04: implement
-export async function updateBlog(_id: number, _input: Partial<BlogUpsertInput>): Promise<BlogDetail> {
-    throw new Error('updateBlog: stub — Plan 04 not landed yet');
+// ──────────────────────────────────────────────────────────────────────────────
+// Blogs CRUD
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listBlogs(q?: ListBlogsQuery): Promise<BlogListResponse> {
+    const res = await fetchWithRefresh(`${BLOGS_API_BASE}${buildQuery(q as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listBlogs failed: ${res.status}`);
+    return res.json();
 }
 
-// TODO Plan 04: implement
-export async function deleteBlog(_id: number): Promise<{ id: number; deleted: true }> {
-    throw new Error('deleteBlog: stub — Plan 04 not landed yet');
+export async function getBlog(id: number): Promise<BlogDetail> {
+    const res = await fetchWithRefresh(`${BLOGS_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getBlog failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogDetail>(json);
 }
 
-// TODO Plan 04: implement
-export async function bulkUpdateBlogStatus(_input: {
+export async function createBlog(input: BlogUpsertInput): Promise<BlogDetail> {
+    const res = await fetchWithRefresh(BLOGS_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createBlog failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogDetail>(json);
+}
+
+export async function updateBlog(id: number, input: Partial<BlogUpsertInput>): Promise<BlogDetail> {
+    const res = await fetchWithRefresh(`${BLOGS_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateBlog failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogDetail>(json);
+}
+
+export async function deleteBlog(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${BLOGS_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBlog failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+export async function bulkUpdateBlogStatus(input: {
     mode: 'dry_run' | 'commit';
     blog_ids: number[];
     status: BlogStatus;
@@ -73,39 +116,87 @@ export async function bulkUpdateBlogStatus(_input: {
     confirmed_count?: number;
     reason?: string;
 }): Promise<BulkStatusToggleResult> {
-    throw new Error('bulkUpdateBlogStatus: stub — Plan 04 not landed yet');
+    const res = await fetchWithRefresh(`${BLOGS_API_BASE}/bulk-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `bulkUpdateBlogStatus failed: ${res.status}`));
+    return res.json();
 }
 
 /**
- * D-11 — author reassignment. Mirrors Phase 3 RoleChangeDialog audit trail.
- * Server validates target user has 'admin' or 'teacher' role.
+ * D-11 — author reassignment. Server validates target user has 'admin' or 'teacher'
+ * role and requires `confirmation === String(id)` (T-07-04-04).
  */
-// TODO Plan 04: implement
-export async function changeBlogAuthor(_id: number, _input: BlogChangeAuthorInput): Promise<BlogDetail> {
-    throw new Error('changeBlogAuthor: stub — Plan 04 not landed yet');
+export async function changeBlogAuthor(
+    id: number,
+    input: BlogChangeAuthorInput & { confirmation?: string },
+): Promise<BlogDetail> {
+    const res = await fetchWithRefresh(`${BLOGS_API_BASE}/${encodeURIComponent(String(id))}/author`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `changeBlogAuthor failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogDetail>(json);
 }
 
-// Categories — TODO Plan 04. NOTE: BlogCategory has no slug column on schema.
+// ──────────────────────────────────────────────────────────────────────────────
+// Blog categories  (NO slug field — schema-truth lock from Plan 01)
+// ──────────────────────────────────────────────────────────────────────────────
+
 export async function listBlogCategories(): Promise<BlogCategoryRow[]> {
-    throw new Error('listBlogCategories: stub — Plan 04 not landed yet');
+    const res = await fetchWithRefresh(BLOG_CATEGORIES_API_BASE);
+    if (!res.ok) throw new Error(`listBlogCategories failed: ${res.status}`);
+    const json = await res.json();
+    if (json && typeof json === 'object' && 'rows' in (json as Record<string, unknown>)) {
+        return (json as { rows: BlogCategoryRow[] }).rows;
+    }
+    return Array.isArray(json) ? (json as BlogCategoryRow[]) : [];
 }
 
-export async function createBlogCategory(_input: {
+export async function getBlogCategory(id: number): Promise<BlogCategoryRow & { blog_count: number }> {
+    const res = await fetchWithRefresh(`${BLOG_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getBlogCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogCategoryRow & { blog_count: number }>(json);
+}
+
+export async function createBlogCategory(input: {
     title_ru: string;
     title_kz: string;
 }): Promise<BlogCategoryRow> {
-    throw new Error('createBlogCategory: stub — Plan 04 not landed yet');
+    const res = await fetchWithRefresh(BLOG_CATEGORIES_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createBlogCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogCategoryRow>(json);
 }
 
 export async function updateBlogCategory(
-    _id: number,
-    _input: Partial<{ title_ru: string; title_kz: string }>,
+    id: number,
+    input: Partial<{ title_ru: string; title_kz: string }>,
 ): Promise<BlogCategoryRow> {
-    throw new Error('updateBlogCategory: stub — Plan 04 not landed yet');
+    const res = await fetchWithRefresh(`${BLOG_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateBlogCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BlogCategoryRow>(json);
 }
 
-export async function deleteBlogCategory(_id: number): Promise<{ id: number; deleted: true }> {
-    throw new Error('deleteBlogCategory: stub — Plan 04 not landed yet');
+export async function deleteBlogCategory(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${BLOG_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBlogCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
 }
-
-void fetchWithRefresh;

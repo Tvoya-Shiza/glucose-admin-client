@@ -54,6 +54,25 @@ export interface BlogDetail extends BlogRow {
     page_type: string | null;
     link: string | null;
     translations: BlogTranslationRow[];
+    /**
+     * Plan 04 lock — admin-api detail response embeds the resolved category +
+     * author shapes. BlogCategory has no slug column (schema-truth), hence
+     * `id + title_ru + title_kz` only.
+     */
+    category: {
+        id: number;
+        title_ru: string | null;
+        title_kz: string | null;
+    } | null;
+    /**
+     * Plan 04 / D-11 — author shape needed by AuthorChangeDialog (mirrors RoleChangeDialog).
+     * `role_name` is included for the read-only "current author" line in the dialog.
+     */
+    author: {
+        id: number;
+        full_name: string | null;
+        role_name: string | null;
+    } | null;
 }
 
 export interface BlogListResponse {
