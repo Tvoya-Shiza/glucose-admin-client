@@ -132,6 +132,64 @@ export async function duplicateQuiz(id: number): Promise<QuizDetail> {
 // Questions / Answers (Plan 05)
 // ──────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Typed error thrown by question/answer mutations when the server returns 409
+ * with `status='quizzes.force_confirm_required'`. The dialog flow re-submits
+ * the SAME payload with `force_confirm_token` populated.
+ *
+ * The token's edit_intent_hash binds it to the exact retry payload — any drift
+ * between the original DTO and the retry produces a different hash and rejects
+ * with 401 'force_confirm.payload_changed'. Callers MUST therefore retry with
+ * the EXACT same payload (only adding force_confirm_token).
+ */
+export class ForceConfirmRequiredError extends Error {
+    public readonly open_attempts_count: number;
+    public readonly force_confirm_token: string;
+    public readonly expires_at: number;
+    public readonly status = 'quizzes.force_confirm_required' as const;
+
+    constructor(body: { open_attempts_count: number; force_confirm_token: string; expires_at: number }) {
+        super('quizzes.force_confirm_required');
+        this.name = 'ForceConfirmRequiredError';
+        this.open_attempts_count = body.open_attempts_count;
+        this.force_confirm_token = body.force_confirm_token;
+        this.expires_at = body.expires_at;
+    }
+}
+
+/**
+ * Parse a 409 response and throw ForceConfirmRequiredError if it carries the
+ * destructive-edit envelope. Nest's default exception filter wraps a thrown
+ * ConflictException's body under `response.message` when the body is an object.
+ * Tolerate both shapes.
+ */
+async function maybeThrowForceConfirm(res: Response): Promise<void> {
+    if (res.status !== 409) return;
+    const body = (await res.clone().json().catch(() => ({}))) as Record<string, unknown>;
+    const inner =
+        body && typeof body === 'object' && body.message && typeof body.message === 'object'
+            ? (body.message as Record<string, unknown>)
+            : body;
+    const status = String(inner.status ?? body.status ?? '');
+    if (status === 'quizzes.force_confirm_required') {
+        throw new ForceConfirmRequiredError({
+            open_attempts_count: Number(inner.open_attempts_count ?? body.open_attempts_count ?? 0),
+            force_confirm_token: String(inner.force_confirm_token ?? body.force_confirm_token ?? ''),
+            expires_at: Number(inner.expires_at ?? body.expires_at ?? 0),
+        });
+    }
+}
+
+export async function listQuestions(quizId: number): Promise<{
+    rows: import('./types').QuestionDetail[];
+    version: number;
+}> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `listQuestions failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ rows: import('./types').QuestionDetail[]; version: number }>(json);
+}
+
 export async function upsertQuestion(
     quizId: number,
     payload: UpsertQuestion,
@@ -145,6 +203,7 @@ export async function upsertQuestion(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
+    await maybeThrowForceConfirm(res);
     if (!res.ok) throw new Error(await readErrorMessage(res, `upsertQuestion failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<{ question: import('./types').QuestionDetail; version: number }>(json);
@@ -160,39 +219,44 @@ export async function deleteQuestion(
         `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/${encodeURIComponent(String(questionId))}${qs}`,
         { method: 'DELETE' },
     );
+    await maybeThrowForceConfirm(res);
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuestion failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<{ id: number; version: number }>(json);
 }
 
 export async function upsertAnswer(
+    quizId: number,
     questionId: number,
     payload: UpsertAnswer,
 ): Promise<{ answer: import('./types').AnswerDetail; version: number }> {
     const isUpdate = typeof payload.id === 'number';
     const url = isUpdate
-        ? `${QUIZZES_API_BASE}/questions/${encodeURIComponent(String(questionId))}/answers/${encodeURIComponent(String(payload.id))}`
-        : `${QUIZZES_API_BASE}/questions/${encodeURIComponent(String(questionId))}/answers`;
+        ? `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/${encodeURIComponent(String(questionId))}/answers/${encodeURIComponent(String(payload.id))}`
+        : `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/${encodeURIComponent(String(questionId))}/answers`;
     const res = await fetchWithRefresh(url, {
         method: isUpdate ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
+    await maybeThrowForceConfirm(res);
     if (!res.ok) throw new Error(await readErrorMessage(res, `upsertAnswer failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<{ answer: import('./types').AnswerDetail; version: number }>(json);
 }
 
 export async function deleteAnswer(
+    quizId: number,
     questionId: number,
     answerId: number,
     force_confirm_token?: string,
 ): Promise<{ id: number; version: number }> {
     const qs = force_confirm_token ? `?force_confirm_token=${encodeURIComponent(force_confirm_token)}` : '';
     const res = await fetchWithRefresh(
-        `${QUIZZES_API_BASE}/questions/${encodeURIComponent(String(questionId))}/answers/${encodeURIComponent(String(answerId))}${qs}`,
+        `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/${encodeURIComponent(String(questionId))}/answers/${encodeURIComponent(String(answerId))}${qs}`,
         { method: 'DELETE' },
     );
+    await maybeThrowForceConfirm(res);
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteAnswer failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<{ id: number; version: number }>(json);

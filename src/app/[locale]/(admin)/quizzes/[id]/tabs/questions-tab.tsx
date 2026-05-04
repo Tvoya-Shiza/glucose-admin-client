@@ -1,26 +1,57 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { listQuestions } from '@/lib/quizzes/api';
+import { QuestionsList } from '../components/questions-list';
 
 /**
- * Questions tab — Plan 04 placeholder.
+ * Questions tab — Phase 6 Plan 05 real implementation.
  *
- * Plan 05 (Wave 4) replaces the body wholesale with the dnd-kit question editor +
- * Tiptap rich-text + identificative-pair UI + force-confirm dialog flow. The
- * placeholder exists so:
- *   1. The Tabs primitive in QuizDetailClient has a real component to render — no
- *      "undefined" tab content while waves 4 / 5 land.
- *   2. data-testid='questions-tab-placeholder' lets manual QA verify the
- *      placeholder is present (and Plan 05 verify the placeholder is GONE).
+ * Replaces Plan 04's placeholder. Renders <QuestionsList> with dnd-kit reorder,
+ * Add Question button, and per-row Edit/Delete actions. The list, the
+ * UpsertQuestionDialog, AnswersEditor, and IdentificativePairsEditor each handle
+ * their own ForceConfirmDialog when 409 ForceConfirmRequiredError surfaces.
+ *
+ * Query key: ['admin.quizzes.questions', quizId]. Server-side cache TTL 60s
+ * (geonline-admin:quizzes:questions:<id>); admin mutations invalidate
+ * geonline-admin:quizzes:* aggressively per D-26.
  */
-export function QuestionsTab({ quizId: _quizId }: { quizId: number }) {
+export function QuestionsTab({ quizId }: { quizId: number }) {
     const t = useTranslations('admin.quizzes');
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['admin.quizzes.questions', quizId],
+        queryFn: () => listQuestions(quizId),
+        retry: false,
+    });
+
+    if (isLoading) {
+        return (
+            <div className='space-y-2 p-4'>
+                <Skeleton className='h-10 w-full' />
+                <Skeleton className='h-10 w-full' />
+                <Skeleton className='h-10 w-full' />
+            </div>
+        );
+    }
+
+    if (error) {
+        const msg = error instanceof Error ? error.message : '';
+        return (
+            <div className='p-4'>
+                <Alert variant='destructive'>
+                    <AlertTitle>{t('generic_error')}</AlertTitle>
+                    <AlertDescription>{msg}</AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
     return (
-        <div
-            data-testid='questions-tab-placeholder'
-            className='text-muted-foreground p-8 text-center text-sm'
-        >
-            {t('questions_tab_placeholder')}
+        <div className='p-4'>
+            <QuestionsList quizId={quizId} questions={data?.rows ?? []} />
         </div>
     );
 }
