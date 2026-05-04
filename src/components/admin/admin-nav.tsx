@@ -32,7 +32,10 @@ const NAV_ITEMS: NavItem[] = [
     { href: '/banners', labelKey: 'banners', adminOnly: true },
     { href: '/blogs', labelKey: 'blogs', adminOnly: true },
     { href: '/promocodes', labelKey: 'promocodes', adminOnly: true },
-    // Phase 8+: push, mailings, payments, audit
+    // Phase 8 — push + mailings (admin-only per D-19).
+    { href: '/push', labelKey: 'push', adminOnly: true },
+    { href: '/mailings', labelKey: 'mailings', adminOnly: true },
+    // Phase 9+: payments, audit
 ];
 
 interface MeResponse {
