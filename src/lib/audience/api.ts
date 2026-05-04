@@ -1,15 +1,26 @@
 'use client';
 /**
- * Phase 8 Plan 01 — BFF wrapper for audience preview.
- * Body is a STUB — Plan 02 fills it with fetchWithRefresh against
- * POST /api/proxy/admin-api/v1/admin/push/audience-preview.
+ * Phase 8 Plan 02 — BFF wrapper for audience preview.
+ *
+ * Hits POST /api/proxy/v1/admin/push/audience-preview which the proxy
+ * forwards to admin-api as /admin-api/v1/admin/push/audience-preview with
+ * the access-token Bearer attached server-to-server (browser never sees JWT).
+ *
+ * Wired into useAudiencePreview() (TanStack Query) for the AudienceSelector
+ * compose flow + AudiencePreview render. Used by Plans 03/04/05 compose pages.
  */
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type { AudienceShape, AudiencePreview } from './types';
 
-// TODO Plan 02: implement
-export async function previewAudience(_audience: AudienceShape): Promise<AudiencePreview> {
-    throw new Error('previewAudience: stub — Plan 02 not landed yet');
+export async function previewAudience(audience: AudienceShape): Promise<AudiencePreview> {
+    const res = await fetchWithRefresh('/api/proxy/v1/admin/push/audience-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(audience),
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`previewAudience: ${res.status} ${text || res.statusText}`);
+    }
+    return (await res.json()) as AudiencePreview;
 }
-
-void fetchWithRefresh;
