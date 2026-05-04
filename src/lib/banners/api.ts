@@ -1,11 +1,12 @@
 'use client';
 /**
- * Phase 7 Plan 01 — BFF wrappers for the banners (Advertisement) surface.
+ * Phase 7 Plan 03 — BFF wrappers for the banners (Advertisement) surface.
  *
- * Function bodies are STUBS — every function throws a "Plan 03 not landed yet"
- * error. Plan 03 fills the bodies with fetchWithRefresh + endpoint URLs.
+ * Endpoints route through the BFF proxy `/api/proxy/v1/admin/banners/*` —
+ * the browser NEVER attaches a Bearer token directly to admin-api.
  *
- * Endpoints route through the BFF proxy `/api/proxy/v1/admin/banners/*`.
+ * Mirrors lib/stories/api.ts (Plan 02). The wire field for bulk status is
+ * `banner_ids` (matches admin-api DTO).
  */
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
@@ -30,33 +31,78 @@ export interface ListBannersQuery {
     order?: 'asc' | 'desc';
 }
 
-// TODO Plan 03: implement
-export async function listBanners(_q?: ListBannersQuery): Promise<BannerListResponse> {
-    throw new Error('listBanners: stub — Plan 03 not landed yet');
+function buildQuery(query: Record<string, unknown> | undefined): string {
+    if (!query) return '';
+    const usp = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+        if (v === undefined || v === null || v === '') continue;
+        usp.set(k, String(v));
+    }
+    const s = usp.toString();
+    return s ? `?${s}` : '';
 }
 
-// TODO Plan 03: implement
-export async function getBanner(_id: number): Promise<BannerDetail> {
-    throw new Error('getBanner: stub — Plan 03 not landed yet');
+function unwrapData<T>(json: unknown): T {
+    if (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)) {
+        return (json as { data: T }).data;
+    }
+    return json as T;
 }
 
-// TODO Plan 03: implement
-export async function createBanner(_input: BannerUpsertInput): Promise<BannerDetail> {
-    throw new Error('createBanner: stub — Plan 03 not landed yet');
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+    const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+    return (json as { message?: string })?.message ?? fallback;
 }
 
-// TODO Plan 03: implement
-export async function updateBanner(_id: number, _input: Partial<BannerUpsertInput>): Promise<BannerDetail> {
-    throw new Error('updateBanner: stub — Plan 03 not landed yet');
+// ──────────────────────────────────────────────────────────────────────────────
+// Banners CRUD
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listBanners(q?: ListBannersQuery): Promise<BannerListResponse> {
+    const res = await fetchWithRefresh(`${BANNERS_API_BASE}${buildQuery(q as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listBanners failed: ${res.status}`);
+    return res.json();
 }
 
-// TODO Plan 03: implement
-export async function deleteBanner(_id: number): Promise<{ id: number; deleted: true }> {
-    throw new Error('deleteBanner: stub — Plan 03 not landed yet');
+export async function getBanner(id: number): Promise<BannerDetail> {
+    const res = await fetchWithRefresh(`${BANNERS_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getBanner failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BannerDetail>(json);
 }
 
-// TODO Plan 03: implement
-export async function bulkUpdateBannerStatus(_input: {
+export async function createBanner(input: BannerUpsertInput): Promise<BannerDetail> {
+    const res = await fetchWithRefresh(BANNERS_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createBanner failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BannerDetail>(json);
+}
+
+export async function updateBanner(id: number, input: Partial<BannerUpsertInput>): Promise<BannerDetail> {
+    const res = await fetchWithRefresh(`${BANNERS_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateBanner failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BannerDetail>(json);
+}
+
+export async function deleteBanner(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${BANNERS_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBanner failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+export async function bulkUpdateBannerStatus(input: {
     mode: 'dry_run' | 'commit';
     banner_ids: number[];
     status: BannerStatus;
@@ -64,31 +110,70 @@ export async function bulkUpdateBannerStatus(_input: {
     confirmed_count?: number;
     reason?: string;
 }): Promise<BulkStatusToggleResult> {
-    throw new Error('bulkUpdateBannerStatus: stub — Plan 03 not landed yet');
+    const res = await fetchWithRefresh(`${BANNERS_API_BASE}/bulk-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `bulkUpdateBannerStatus failed: ${res.status}`));
+    return res.json();
 }
 
-// Categories — TODO Plan 03
+// ──────────────────────────────────────────────────────────────────────────────
+// Banner categories
+// ──────────────────────────────────────────────────────────────────────────────
+
 export async function listBannerCategories(): Promise<BannerCategoryRow[]> {
-    throw new Error('listBannerCategories: stub — Plan 03 not landed yet');
+    const res = await fetchWithRefresh(BANNER_CATEGORIES_API_BASE);
+    if (!res.ok) throw new Error(`listBannerCategories failed: ${res.status}`);
+    const json = await res.json();
+    if (json && typeof json === 'object' && 'rows' in (json as Record<string, unknown>)) {
+        return (json as { rows: BannerCategoryRow[] }).rows;
+    }
+    return Array.isArray(json) ? (json as BannerCategoryRow[]) : [];
 }
 
-export async function createBannerCategory(_input: {
+export async function getBannerCategory(id: number): Promise<BannerCategoryRow & { banner_count: number }> {
+    const res = await fetchWithRefresh(`${BANNER_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getBannerCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BannerCategoryRow & { banner_count: number }>(json);
+}
+
+export async function createBannerCategory(input: {
     slug: string;
     title_ru: string;
     title_kz: string;
 }): Promise<BannerCategoryRow> {
-    throw new Error('createBannerCategory: stub — Plan 03 not landed yet');
+    const res = await fetchWithRefresh(BANNER_CATEGORIES_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createBannerCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BannerCategoryRow>(json);
 }
 
 export async function updateBannerCategory(
-    _id: number,
-    _input: Partial<{ slug: string; title_ru: string; title_kz: string }>,
+    id: number,
+    input: Partial<{ slug: string; title_ru: string; title_kz: string }>,
 ): Promise<BannerCategoryRow> {
-    throw new Error('updateBannerCategory: stub — Plan 03 not landed yet');
+    const res = await fetchWithRefresh(`${BANNER_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateBannerCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<BannerCategoryRow>(json);
 }
 
-export async function deleteBannerCategory(_id: number): Promise<{ id: number; deleted: true }> {
-    throw new Error('deleteBannerCategory: stub — Plan 03 not landed yet');
+export async function deleteBannerCategory(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${BANNER_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBannerCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
 }
-
-void fetchWithRefresh;
