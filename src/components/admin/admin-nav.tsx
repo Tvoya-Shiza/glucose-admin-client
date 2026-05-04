@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
     { href: '/courses', labelKey: 'courses' },
     { href: '/quizzes', labelKey: 'quizzes' },
     { href: '/quizzes/badges', labelKey: 'badges' },
+    { href: '/quizzes/results', labelKey: 'results' },
     // Phase 7+: stories, banners, blogs, push, payments, audit
 ];
 

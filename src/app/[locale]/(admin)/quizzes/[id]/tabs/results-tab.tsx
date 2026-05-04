@@ -1,23 +1,26 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { ResultsList } from '../components/results-list';
 
 /**
- * Results tab — Plan 04 placeholder.
+ * Results tab — Plan 07 (replaces Plan 04 placeholder).
  *
- * Plan 07 (Wave 5) replaces the body wholesale with the QuizResult list with
- * RBAC-aware filters (admin all; curator narrowed to own group; teacher narrowed
- * to own webinar). The placeholder exists so QuizDetailClient's Tabs primitive
- * has a real component to render until Plan 07 lands.
+ * Renders the reusable ResultsList scoped to the current quiz. The quiz column
+ * is hidden because every row in this view is for the same quiz; quiz/badge
+ * filter inputs are also hidden by ResultsList when scopedQuizId is provided.
+ *
+ * Server-side RBAC narrows visibility regardless of UI:
+ *   - admin → all results for this quiz
+ *   - curator → only this quiz's results from users in their group
+ *   - teacher → only this quiz's results when this quiz's webinar belongs to them
+ *
+ * Stale-version Badge per row surfaces the QZ-06 invariant when an attempt
+ * started before a force-confirmed destructive edit.
  */
-export function ResultsTab({ quizId: _quizId }: { quizId: number }) {
-    const t = useTranslations('admin.quizzes');
+export function ResultsTab({ quizId }: { quizId: number }) {
     return (
-        <div
-            data-testid='results-tab-placeholder'
-            className='text-muted-foreground p-8 text-center text-sm'
-        >
-            {t('results_tab_placeholder')}
+        <div className='p-4'>
+            <ResultsList scopedQuizId={quizId} hideQuizColumn />
         </div>
     );
 }

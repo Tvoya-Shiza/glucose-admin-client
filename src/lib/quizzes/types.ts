@@ -474,6 +474,10 @@ export interface QuizResultUserRef {
 export interface QuizResultQuizRef {
     id: number;
     title_ru: string | null;
+    /** KZ title — Plan 07 surfaces alongside title_ru for locale-aware row rendering. */
+    kz_title?: string | null;
+    /** Current quiz version (for is_stale_version comparison). Plan 07. */
+    version: number;
 }
 
 export interface QuizResultRow {
@@ -486,6 +490,13 @@ export interface QuizResultRow {
     quiz_version_at_start: number | null;
     user_grade: number | null;
     status: QuizResultStatus;
+    /**
+     * Computed server-side (Plan 07): true when
+     * `quiz_version_at_start != null && quiz_version_at_start !== quiz.version`.
+     * Surfaces the QZ-06 invariant: this attempt started before a force-confirmed
+     * destructive edit; the grader will use the OLD version's question set.
+     */
+    is_stale_version: boolean;
     /** Unix seconds. */
     created_at: number;
 }
