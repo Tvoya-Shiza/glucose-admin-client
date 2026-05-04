@@ -87,13 +87,39 @@ export async function listPushHistory(q: ListPushHistoryQuery): Promise<PushHist
     return (await res.json()) as PushHistoryListResponse;
 }
 
-// TODO Plan 04: implement.
-export async function schedulePush(_input: PushScheduleInput): Promise<ScheduledPushDetail> {
-    throw new Error('schedulePush: stub — Plan 04 not landed yet');
+// Plan 04 — schedule + scheduled list + cancel.
+export async function schedulePush(input: PushScheduleInput): Promise<ScheduledPushDetail> {
+    const res = await fetchWithRefresh('/api/proxy/v1/admin/push/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`schedulePush: ${res.status} ${text || res.statusText}`);
+    }
+    return (await res.json()) as ScheduledPushDetail;
 }
-export async function listScheduledPushes(_q: ListScheduledPushesQuery): Promise<ScheduledPushListResponse> {
-    throw new Error('listScheduledPushes: stub — Plan 04 not landed yet');
+
+export async function listScheduledPushes(q: ListScheduledPushesQuery): Promise<ScheduledPushListResponse> {
+    const params = new URLSearchParams();
+    Object.entries(q).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    const res = await fetchWithRefresh(`/api/proxy/v1/admin/push/scheduled${qs ? `?${qs}` : ''}`);
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`listScheduledPushes: ${res.status} ${text || res.statusText}`);
+    }
+    return (await res.json()) as ScheduledPushListResponse;
 }
-export async function cancelScheduledPush(_id: string): Promise<ScheduledPushDetail> {
-    throw new Error('cancelScheduledPush: stub — Plan 04 not landed yet');
+
+export async function cancelScheduledPush(id: string): Promise<ScheduledPushDetail> {
+    const res = await fetchWithRefresh(`/api/proxy/v1/admin/push/scheduled/${id}/cancel`, { method: 'POST' });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`cancelScheduledPush: ${res.status} ${text || res.statusText}`);
+    }
+    return (await res.json()) as ScheduledPushDetail;
 }

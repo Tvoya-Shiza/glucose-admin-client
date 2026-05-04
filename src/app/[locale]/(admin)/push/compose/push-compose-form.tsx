@@ -29,8 +29,9 @@ import { AudiencePreview } from '@/components/audience/audience-preview';
 import { AudienceSelector } from '@/components/audience/audience-selector';
 import { useAudiencePreview } from '@/lib/audience/use-audience-preview';
 import type { AudienceShape } from '@/lib/audience/types';
-import { broadcastPush, sendTestPushToMe } from '@/lib/push/api';
+import { broadcastPush, schedulePush, sendTestPushToMe } from '@/lib/push/api';
 import type { NotificationCategory, PushPayload } from '@/lib/push/types';
+import { SchedulePushDialog } from '../schedule/schedule-push-dialog';
 
 /**
  * Phase 8 Plan 03 — Compose form (PSH-01, D-04 + D-05 + D-20).
@@ -97,6 +98,7 @@ export function PushComposeForm() {
 
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [confirmCount, setConfirmCount] = useState('');
+    const [scheduleOpen, setScheduleOpen] = useState(false);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(SCHEMA),
@@ -118,6 +120,18 @@ export function PushComposeForm() {
             }
         },
         onError: (e) => toast.error(`${t('test_to_me_failure')}: ${(e as Error).message}`),
+    });
+
+    const scheduleMut = useMutation({
+        mutationFn: (input: { payload: PushPayload; audience: AudienceShape; scheduled_at: number }) =>
+            schedulePush(input),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['admin.push.scheduled'] });
+            toast.success(t('schedule_created'));
+            setScheduleOpen(false);
+            form.reset(DEFAULT_VALUES);
+        },
+        onError: (e) => toast.error(`${t('schedule_failed')}: ${(e as Error).message}`),
     });
 
     const broadcastMut = useMutation({
@@ -280,6 +294,19 @@ export function PushComposeForm() {
                 >
                     {t('broadcast_button')}
                 </Button>
+                <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() => setScheduleOpen(true)}
+                    disabled={
+                        !form.formState.isValid ||
+                        preview.isLoading ||
+                        recipientCount === 0 ||
+                        scheduleMut.isPending
+                    }
+                >
+                    {t('schedule_button')}
+                </Button>
             </div>
 
             {/* Type-the-count confirm dialog */}
@@ -323,6 +350,20 @@ export function PushComposeForm() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Plan 04 — Schedule date-time picker dialog (Asia/Almaty → UTC). */}
+            <SchedulePushDialog
+                open={scheduleOpen}
+                onClose={() => setScheduleOpen(false)}
+                onConfirm={(scheduledAt) =>
+                    scheduleMut.mutate({
+                        payload: form.getValues('payload'),
+                        audience: form.getValues('audience'),
+                        scheduled_at: scheduledAt,
+                    })
+                }
+                pending={scheduleMut.isPending}
+            />
 
             {/* Hidden helper — keeps the audience-section title key referenced (avoids unused-import lint warnings). */}
             <span className='hidden'>{tCommon('preview_title')}</span>
