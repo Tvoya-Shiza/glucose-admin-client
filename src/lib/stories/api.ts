@@ -1,15 +1,9 @@
 'use client';
 /**
- * Phase 7 Plan 01 — BFF wrappers for the stories surface.
- *
- * Function bodies are STUBS — every function throws a "Plan 02 not landed yet"
- * error. Plan 02 fills the bodies with fetchWithRefresh + endpoint URLs. The
- * signatures are locked here so the UI components Plan 02 builds can import
- * stable types without circular planning dependencies.
+ * Phase 7 Plan 02 — BFF wrappers for the stories surface.
  *
  * Endpoints route through the BFF proxy `/api/proxy/v1/admin/stories/*` —
- * the browser NEVER attaches a Bearer token directly to admin-api (CLAUDE.md
- * "Bypassing the BFF proxy" forbidden).
+ * the browser NEVER attaches a Bearer token directly to admin-api.
  */
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
@@ -34,33 +28,78 @@ export interface ListStoriesQuery {
     order?: 'asc' | 'desc';
 }
 
-// TODO Plan 02: implement
-export async function listStories(_q?: ListStoriesQuery): Promise<StoryListResponse> {
-    throw new Error('listStories: stub — Plan 02 not landed yet');
+function buildQuery(query: Record<string, unknown> | undefined): string {
+    if (!query) return '';
+    const usp = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+        if (v === undefined || v === null || v === '') continue;
+        usp.set(k, String(v));
+    }
+    const s = usp.toString();
+    return s ? `?${s}` : '';
 }
 
-// TODO Plan 02: implement
-export async function getStory(_id: number): Promise<StoryDetail> {
-    throw new Error('getStory: stub — Plan 02 not landed yet');
+function unwrapData<T>(json: unknown): T {
+    if (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)) {
+        return (json as { data: T }).data;
+    }
+    return json as T;
 }
 
-// TODO Plan 02: implement
-export async function createStory(_input: StoryUpsertInput): Promise<StoryDetail> {
-    throw new Error('createStory: stub — Plan 02 not landed yet');
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+    const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+    return (json as { message?: string })?.message ?? fallback;
 }
 
-// TODO Plan 02: implement
-export async function updateStory(_id: number, _input: Partial<StoryUpsertInput>): Promise<StoryDetail> {
-    throw new Error('updateStory: stub — Plan 02 not landed yet');
+// ──────────────────────────────────────────────────────────────────────────────
+// Stories CRUD
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listStories(q?: ListStoriesQuery): Promise<StoryListResponse> {
+    const res = await fetchWithRefresh(`${STORIES_API_BASE}${buildQuery(q as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listStories failed: ${res.status}`);
+    return res.json();
 }
 
-// TODO Plan 02: implement
-export async function deleteStory(_id: number): Promise<{ id: number; deleted: true }> {
-    throw new Error('deleteStory: stub — Plan 02 not landed yet');
+export async function getStory(id: number): Promise<StoryDetail> {
+    const res = await fetchWithRefresh(`${STORIES_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getStory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<StoryDetail>(json);
 }
 
-// TODO Plan 02: implement
-export async function bulkUpdateStoryStatus(_input: {
+export async function createStory(input: StoryUpsertInput): Promise<StoryDetail> {
+    const res = await fetchWithRefresh(STORIES_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createStory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<StoryDetail>(json);
+}
+
+export async function updateStory(id: number, input: Partial<StoryUpsertInput>): Promise<StoryDetail> {
+    const res = await fetchWithRefresh(`${STORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateStory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<StoryDetail>(json);
+}
+
+export async function deleteStory(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${STORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteStory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
+export async function bulkUpdateStoryStatus(input: {
     mode: 'dry_run' | 'commit';
     story_ids: number[];
     status: StoryStatus;
@@ -68,33 +107,70 @@ export async function bulkUpdateStoryStatus(_input: {
     confirmed_count?: number;
     reason?: string;
 }): Promise<BulkStatusToggleResult> {
-    throw new Error('bulkUpdateStoryStatus: stub — Plan 02 not landed yet');
+    const res = await fetchWithRefresh(`${STORIES_API_BASE}/bulk-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `bulkUpdateStoryStatus failed: ${res.status}`));
+    return res.json();
 }
 
-// Categories — TODO Plan 02
+// ──────────────────────────────────────────────────────────────────────────────
+// Story categories
+// ──────────────────────────────────────────────────────────────────────────────
+
 export async function listStoryCategories(): Promise<StoryCategoryRow[]> {
-    throw new Error('listStoryCategories: stub — Plan 02 not landed yet');
+    const res = await fetchWithRefresh(STORY_CATEGORIES_API_BASE);
+    if (!res.ok) throw new Error(`listStoryCategories failed: ${res.status}`);
+    const json = await res.json();
+    if (json && typeof json === 'object' && 'rows' in (json as Record<string, unknown>)) {
+        return (json as { rows: StoryCategoryRow[] }).rows;
+    }
+    return Array.isArray(json) ? (json as StoryCategoryRow[]) : [];
 }
 
-export async function createStoryCategory(_input: {
+export async function getStoryCategory(id: number): Promise<StoryCategoryRow & { story_count: number }> {
+    const res = await fetchWithRefresh(`${STORY_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getStoryCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<StoryCategoryRow & { story_count: number }>(json);
+}
+
+export async function createStoryCategory(input: {
     slug: string;
     title_ru: string;
     title_kz: string;
 }): Promise<StoryCategoryRow> {
-    throw new Error('createStoryCategory: stub — Plan 02 not landed yet');
+    const res = await fetchWithRefresh(STORY_CATEGORIES_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createStoryCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<StoryCategoryRow>(json);
 }
 
 export async function updateStoryCategory(
-    _id: number,
-    _input: Partial<{ slug: string; title_ru: string; title_kz: string }>,
+    id: number,
+    input: Partial<{ slug: string; title_ru: string; title_kz: string }>,
 ): Promise<StoryCategoryRow> {
-    throw new Error('updateStoryCategory: stub — Plan 02 not landed yet');
+    const res = await fetchWithRefresh(`${STORY_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateStoryCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<StoryCategoryRow>(json);
 }
 
-export async function deleteStoryCategory(_id: number): Promise<{ id: number; deleted: true }> {
-    throw new Error('deleteStoryCategory: stub — Plan 02 not landed yet');
+export async function deleteStoryCategory(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${STORY_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteStoryCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
 }
-
-// Plan 02 will use fetchWithRefresh inside the stubs above; the import is held
-// here so TS doesn't strip it during the stub→real transition.
-void fetchWithRefresh;
