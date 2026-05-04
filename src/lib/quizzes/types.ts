@@ -370,6 +370,45 @@ export interface QuizBadge {
     updated_at: string | null;
 }
 
+/**
+ * Admin Plan 06 list/detail response shape — translations folded into a
+ * { ru, kz } object for ergonomic rendering. item_count and results_count are
+ * server-aggregated counts.
+ */
+export interface QuizBadgeRow {
+    id: number;
+    is_active: boolean;
+    quiz_category_id: number | null;
+    translations: { ru: string | null; kz: string | null };
+    item_count: number;
+    results_count: number;
+    /** ISO 8601 string. */
+    created_at: string;
+    /** ISO 8601 string. null until first update. */
+    updated_at: string | null;
+}
+
+export interface QuizBadgeItemRow {
+    id: number;
+    quiz_id: number;
+    order: number | null;
+    /** ISO 8601 string. */
+    created_at: string;
+    updated_at: string | null;
+    quiz: {
+        id: number;
+        version: number;
+        status: QuizStatus;
+        translations: Translation[];
+        question_count: number;
+    } | null;
+}
+
+/** GET /quiz-badges/:id detail response. */
+export interface QuizBadgeDetail extends QuizBadgeRow {
+    items: QuizBadgeItemRow[];
+}
+
 export interface UpsertBadge {
     /** Omit on create. */
     id?: number;

@@ -5,8 +5,9 @@ import type {
     CreateQuiz,
     ListQuizzesQuery,
     ListResultsQuery,
-    QuizBadge,
+    QuizBadgeDetail,
     QuizBadgeItem,
+    QuizBadgeRow,
     QuizCategory,
     QuizDetail,
     QuizListResponse,
@@ -363,18 +364,45 @@ export async function deleteCategory(id: number, force?: boolean): Promise<Categ
 // Badges + Badge Items (Plan 06)
 // ──────────────────────────────────────────────────────────────────────────────
 
-export async function listBadges(): Promise<QuizBadge[]> {
+/**
+ * GET /admin-api/v1/admin/quiz-badges — flat array of badge rows.
+ *
+ * Admin-api Plan 06 returns { rows: QuizBadgeRow[] } where each row carries
+ * folded `translations: { ru, kz }` plus item_count + results_count aggregates.
+ *
+ * NOTE: Earlier callers (Plan 02 list page, badge filter dropdown) imported a
+ * different `QuizBadge` shape from this module. Plan 06 narrows the contract
+ * to the row-aggregate shape — direct callers should consume the row's
+ * folded translations instead of expecting the legacy `translations[]` array.
+ */
+export async function listBadges(): Promise<QuizBadgeRow[]> {
     const res = await fetchWithRefresh(QUIZ_BADGES_API_BASE);
     if (!res.ok) throw new Error(`listBadges failed: ${res.status}`);
     const json = await res.json();
-    if (Array.isArray(json)) return json as QuizBadge[];
+    if (Array.isArray(json)) return json as QuizBadgeRow[];
     if (json && typeof json === 'object' && Array.isArray((json as { rows?: unknown }).rows)) {
-        return (json as { rows: QuizBadge[] }).rows;
+        return (json as { rows: QuizBadgeRow[] }).rows;
     }
-    return unwrapData<QuizBadge[]>(json);
+    const inner = unwrapData<unknown>(json);
+    if (Array.isArray(inner)) return inner as QuizBadgeRow[];
+    if (inner && typeof inner === 'object' && Array.isArray((inner as { rows?: unknown }).rows)) {
+        return (inner as { rows: QuizBadgeRow[] }).rows;
+    }
+    return [];
 }
 
-export async function upsertBadge(payload: UpsertBadge): Promise<QuizBadge> {
+/**
+ * GET /admin-api/v1/admin/quiz-badges/:id — single badge with items list,
+ * each item including the underlying quiz's translations + version + question_count.
+ */
+export async function getBadge(id: number): Promise<QuizBadgeDetail> {
+    const res = await fetchWithRefresh(`${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(id))}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getBadge failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuizBadgeDetail>(json);
+}
+
+export async function upsertBadge(payload: UpsertBadge): Promise<QuizBadgeRow> {
     const isUpdate = typeof payload.id === 'number';
     const url = isUpdate
         ? `${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(payload.id))}`
@@ -386,16 +414,28 @@ export async function upsertBadge(payload: UpsertBadge): Promise<QuizBadge> {
     });
     if (!res.ok) throw new Error(await readErrorMessage(res, `upsertBadge failed: ${res.status}`));
     const json = await res.json();
-    return unwrapData<QuizBadge>(json);
+    return unwrapData<QuizBadgeRow>(json);
 }
 
-export async function deleteBadge(id: number): Promise<{ id: number; deleted: true }> {
+export async function deleteBadge(id: number): Promise<{ id: number; is_active: false; deleted: true }> {
     const res = await fetchWithRefresh(`${QUIZ_BADGES_API_BASE}/${encodeURIComponent(String(id))}`, {
         method: 'DELETE',
     });
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBadge failed: ${res.status}`));
     const json = await res.json();
-    return unwrapData<{ id: number; deleted: true }>(json);
+    return unwrapData<{ id: number; is_active: false; deleted: true }>(json);
+}
+
+/**
+ * Typed error thrown by addBadgeItem on 409 duplicate-quiz responses.
+ * Allows the caller to display localized 'этот тест уже добавлен' toast.
+ */
+export class DuplicateQuizInBadgeError extends Error {
+    public readonly status = 'quiz_badges.duplicate_quiz_in_badge' as const;
+    constructor() {
+        super('quiz_badges.duplicate_quiz_in_badge');
+        this.name = 'DuplicateQuizInBadgeError';
+    }
 }
 
 export async function addBadgeItem(payload: UpsertBadgeItem): Promise<QuizBadgeItem> {
@@ -407,6 +447,17 @@ export async function addBadgeItem(payload: UpsertBadgeItem): Promise<QuizBadgeI
             body: JSON.stringify(payload),
         },
     );
+    if (res.status === 409) {
+        const body = (await res.clone().json().catch(() => ({}))) as Record<string, unknown>;
+        const inner =
+            body && typeof body === 'object' && body.message && typeof body.message === 'object'
+                ? (body.message as Record<string, unknown>)
+                : body;
+        const status = String(inner.status ?? body.status ?? '');
+        if (status === 'duplicate_quiz_in_badge' || status === 'quiz_badges.duplicate_quiz_in_badge') {
+            throw new DuplicateQuizInBadgeError();
+        }
+    }
     if (!res.ok) throw new Error(await readErrorMessage(res, `addBadgeItem failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<QuizBadgeItem>(json);
