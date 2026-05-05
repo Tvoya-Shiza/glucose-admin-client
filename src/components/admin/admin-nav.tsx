@@ -39,6 +39,11 @@ const NAV_ITEMS: NavItem[] = [
     // already exists at the top of NAV_ITEMS (visible to all staff per D-19).
     { href: '/payments', labelKey: 'payments', adminOnly: true },
     { href: '/sales', labelKey: 'sales', adminOnly: true },
+    // Phase 10 — audit log surface (visible to all staff; server narrows
+    // curator/teacher to own actions per D-02/D-24, see AUDIT_READ_SCOPE_RULES).
+    // Page lands in Plan 02; link 404s until then by design (same convention as
+    // Phase 5 Plan 01 Courses entry pre-page).
+    { href: '/audit', labelKey: 'audit' },
 ];
 
 interface MeResponse {
