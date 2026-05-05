@@ -35,7 +35,10 @@ const NAV_ITEMS: NavItem[] = [
     // Phase 8 — push + mailings (admin-only per D-19).
     { href: '/push', labelKey: 'push', adminOnly: true },
     { href: '/mailings', labelKey: 'mailings', adminOnly: true },
-    // Phase 9+: payments, audit
+    // Phase 9 — payments + sales (admin-only per D-18 + D-20). Dashboard entry
+    // already exists at the top of NAV_ITEMS (visible to all staff per D-19).
+    { href: '/payments', labelKey: 'payments', adminOnly: true },
+    { href: '/sales', labelKey: 'sales', adminOnly: true },
 ];
 
 interface MeResponse {
