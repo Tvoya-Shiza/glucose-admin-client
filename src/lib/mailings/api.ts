@@ -1,10 +1,17 @@
 'use client';
 /**
- * Phase 8 Plan 01 — BFF wrappers for the mailings surface.
- * Function bodies are STUBS — Plan 05 fills them.
+ * Phase 8 — BFF wrappers for the mailings surface.
+ *
+ * Plan 01: stubs.
+ * Plan 05: sendMailing, listMailingHistory implemented.
+ *
+ * URL convention: /api/proxy/v1/admin/mailings/<path> — the BFF proxy at
+ * /api/proxy/[...path]/route.ts strips '/api/proxy/' and prepends '/admin-api/'
+ * before forwarding server-to-server with the access-token Bearer attached. The
+ * browser NEVER sees the JWT.
  */
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
-import type { MailingSendInput, MailingSendResult, MailingHistoryListResponse } from './types';
+import type { MailingHistoryListResponse, MailingSendInput, MailingSendResult } from './types';
 
 export interface ListMailingHistoryQuery {
     page?: number;
@@ -19,12 +26,31 @@ export interface ListMailingHistoryQuery {
     order?: 'asc' | 'desc';
 }
 
-// TODO Plan 05: implement
-export async function sendMailing(_input: MailingSendInput): Promise<MailingSendResult> {
-    throw new Error('sendMailing: stub — Plan 05 not landed yet');
-}
-export async function listMailingHistory(_q: ListMailingHistoryQuery): Promise<MailingHistoryListResponse> {
-    throw new Error('listMailingHistory: stub — Plan 05 not landed yet');
+// Plan 05 — send.
+export async function sendMailing(input: MailingSendInput): Promise<MailingSendResult> {
+    const res = await fetchWithRefresh('/api/proxy/v1/admin/mailings/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`sendMailing: ${res.status} ${text || res.statusText}`);
+    }
+    return (await res.json()) as MailingSendResult;
 }
 
-void fetchWithRefresh;
+// Plan 05 — history list.
+export async function listMailingHistory(q: ListMailingHistoryQuery): Promise<MailingHistoryListResponse> {
+    const params = new URLSearchParams();
+    Object.entries(q).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    });
+    const qs = params.toString();
+    const res = await fetchWithRefresh(`/api/proxy/v1/admin/mailings/history${qs ? `?${qs}` : ''}`);
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`listMailingHistory: ${res.status} ${text || res.statusText}`);
+    }
+    return (await res.json()) as MailingHistoryListResponse;
+}
