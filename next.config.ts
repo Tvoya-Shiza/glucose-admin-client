@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
     reactStrictMode: true,
+    output: 'standalone',
     // Phase 2 will add a rewrites() block for the BFF /api/proxy/* path.
     // Phase 0 keeps this clean.
 };
