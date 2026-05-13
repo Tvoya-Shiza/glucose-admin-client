@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -8,12 +8,19 @@ import { BulkActionToolbar } from '@/components/users/bulk-action-toolbar';
 import { EmptyState } from '@/components/users/empty-state';
 import { Button } from '@/components/ui/button';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
+import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { listUsers } from '@/lib/users/api';
 import type { UserStatus } from '@/lib/users/types';
 import { BulkGrantSheet } from './components/bulk-grant-sheet';
+import { CreateUserDialog } from './components/create-user-dialog';
 import { ExportButton } from './components/export-button';
 import { UsersFilters } from './users-filters';
 import { UsersTable } from './users-table';
+
+interface MeResponse {
+    success: boolean;
+    data?: { user_id: number; email: string | null; role_name: 'admin' | 'curator' | 'teacher' };
+}
 
 /**
  * USR-01 — TanStack-Query-driven list page with nuqs URL state.
@@ -69,9 +76,27 @@ export function UsersListClient() {
 
     const anyFilterActive = Boolean(role_name || status || region_id || (q && q.trim().length > 0));
 
+    // Role detection — gates the "Create user" button (admin-only).
+    const me = useQuery<MeResponse>({
+        queryKey: ['auth.me'],
+        queryFn: async () => {
+            const res = await fetchWithRefresh('/api/auth/me');
+            return res.json();
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+    // Defer conditional UI until after hydration. SSR has no /api/auth/me result, but
+    // a warm TanStack Query cache may resolve it synchronously on the client — that
+    // mismatch was triggering "data-slot=button vs data-slot=dropdown-menu-trigger"
+    // hydration errors when the Create button shifted ExportButton's DOM position.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    const isAdmin = mounted && me.data?.data?.role_name === 'admin';
+
     // Plan 05: bulk-grant flow. Sheet opens from BulkActionToolbar; on commit, list
     // query is invalidated (inside BulkGrantSheet) and selection is cleared here.
     const [bulkOpen, setBulkOpen] = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
     const selectedUserIds = useMemo(() => Array.from(selection.selected), [selection.selected]);
 
     return (
@@ -81,17 +106,21 @@ export function UsersListClient() {
                     <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
                     <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
                 </div>
-                <ExportButton
-                    filters={{
-                        role_name: role_name ?? undefined,
-                        status: (status as 'active' | 'inactive' | 'pending' | null) ?? undefined,
-                        region_id: region_id ?? undefined,
-                        q: q ?? undefined,
-                        sort: sort as 'created_at' | 'full_name' | 'last_activity',
-                        order: order as 'asc' | 'desc',
-                    }}
-                />
+                <div className='flex items-center gap-2'>
+                    {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    <ExportButton
+                        filters={{
+                            role_name: role_name ?? undefined,
+                            status: (status as 'active' | 'inactive' | 'pending' | null) ?? undefined,
+                            region_id: region_id ?? undefined,
+                            q: q ?? undefined,
+                            sort: sort as 'created_at' | 'full_name' | 'last_activity',
+                            order: order as 'asc' | 'desc',
+                        }}
+                    />
+                </div>
             </header>
+            <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
             <UsersFilters
                 value={{
                     q: q ?? undefined,

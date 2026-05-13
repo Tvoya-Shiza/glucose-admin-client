@@ -34,6 +34,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserPicker } from '@/components/users/user-picker';
+import { CategoryPicker } from '@/components/courses/category-picker';
 import { createCourse } from '@/lib/courses/api';
 import { SLUG_REGEX, slugify } from '@/lib/courses/format';
 import type { CreateCourseStatus, Translation } from '@/lib/courses/types';
@@ -44,9 +46,12 @@ import type { CreateCourseStatus, Translation } from '@/lib/courses/types';
  * Slug is validated against SLUG_REGEX (kebab-case) at the boundary; admin-api also
  * validates `@Length(3, 255)`.
  *
- * teacher_id is a free-form numeric string here; coercion + validation happens at
- * submit time. This avoids the input/output-type mismatch that zod `.transform()`
- * introduces with react-hook-form (resolver expects matching types).
+ * teacher_id is now a numeric value sourced from the searchable UserPicker. The
+ * picker emits `null` until a teacher is chosen; we encode "no selection" as `0`
+ * in the form value so the same `.positive()` check that catches manual zero-entry
+ * also catches "operator hit submit without picking anyone."
+ *
+ * category_id is optional — backend DTO accepts `category_id?: number | null`.
  *
  * RU translation is required (CONTEXT D-03 — RU canonical); KZ translation title
  * is required at create time too because the Phase 5 i18n posture treats KZ as
@@ -60,12 +65,8 @@ const createCourseSchema = z.object({
         .max(255)
         .refine((v) => SLUG_REGEX.test(v), { message: 'slug_invalid_format' }),
     status: z.enum(['active', 'pending', 'is_draft']),
-    teacher_id: z
-        .string()
-        .min(1)
-        .refine((v) => Number.isFinite(Number(v.trim())) && Number(v.trim()) > 0, {
-            message: 'teacher_id_invalid',
-        }),
+    teacher_id: z.number().int().positive({ message: 'teacher_id_invalid' }),
+    category_id: z.number().int().positive().nullable(),
     ru_title: z.string().min(1).max(255),
     ru_description: z.string().max(65535).optional(),
     kz_title: z.string().min(1).max(255),
@@ -115,7 +116,8 @@ export function CreateCourseDialog({
         defaultValues: {
             slug: '',
             status: 'is_draft',
-            teacher_id: actorRole === 'teacher' && actorId ? String(actorId) : '',
+            teacher_id: actorRole === 'teacher' && actorId ? actorId : 0,
+            category_id: null,
             ru_title: '',
             ru_description: '',
             kz_title: '',
@@ -130,7 +132,8 @@ export function CreateCourseDialog({
             form.reset({
                 slug: '',
                 status: 'is_draft',
-                teacher_id: actorRole === 'teacher' && actorId ? String(actorId) : '',
+                teacher_id: actorRole === 'teacher' && actorId ? actorId : 0,
+                category_id: null,
                 ru_title: '',
                 ru_description: '',
                 kz_title: '',
@@ -159,7 +162,8 @@ export function CreateCourseDialog({
             return createCourse({
                 slug: values.slug,
                 status: values.status as CreateCourseStatus,
-                teacher_id: Number(values.teacher_id.trim()),
+                teacher_id: values.teacher_id,
+                category_id: values.category_id ?? null,
                 translations,
             });
         },
@@ -239,32 +243,50 @@ export function CreateCourseDialog({
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name='teacher_id'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{t('teacher_label')}</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            inputMode='numeric'
-                                            placeholder={t('teacher_placeholder')}
-                                            value={field.value ?? ''}
-                                            onChange={(e) =>
-                                                field.onChange(e.target.value.replace(/[^\d]/g, ''))
-                                            }
-                                            onBlur={field.onBlur}
-                                            ref={field.ref}
-                                            name={field.name}
-                                            // Lock the field for teacher actors per CRS-07 (T-05-10 mitigation).
-                                            disabled={actorRole === 'teacher'}
-                                            readOnly={actorRole === 'teacher'}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div className='grid grid-cols-2 gap-3'>
+                            <FormField
+                                control={form.control}
+                                name='teacher_id'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('teacher_label')}</FormLabel>
+                                        <FormControl>
+                                            <UserPicker
+                                                roles={['teacher']}
+                                                value={field.value > 0 ? field.value : null}
+                                                onChange={(id) => field.onChange(id ?? 0)}
+                                                placeholder={t('teacher_picker_placeholder')}
+                                                // Lock the field for teacher actors per CRS-07 (T-05-10 mitigation).
+                                                disabled={actorRole === 'teacher'}
+                                                initialLabel={
+                                                    actorRole === 'teacher' && actorId
+                                                        ? `#${actorId}`
+                                                        : null
+                                                }
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='category_id'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('category_label')}</FormLabel>
+                                        <FormControl>
+                                            <CategoryPicker
+                                                value={field.value ?? null}
+                                                onChange={(id) => field.onChange(id)}
+                                                placeholder={t('category_placeholder')}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <Tabs defaultValue='ru' className='w-full'>
                             <TabsList className='grid w-full grid-cols-2'>

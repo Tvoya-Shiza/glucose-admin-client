@@ -72,6 +72,40 @@ async function readErrorMessage(res: Response, fallback: string): Promise<string
 // Courses CRUD
 // ──────────────────────────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Course categories (read-only) — feeds the create-course dialog category picker.
+// Backend: GET /admin-api/v1/admin/courses/categories
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface CourseCategoryRow {
+    id: number;
+    parent_id: number | null;
+    slug: string;
+    icon: string | null;
+    title_ru: string | null;
+    title_kz: string | null;
+}
+
+export interface CourseCategoryListResponse {
+    rows: CourseCategoryRow[];
+    total: number;
+}
+
+export interface ListCourseCategoriesQuery {
+    q?: string;
+    page_size?: number;
+}
+
+export async function listCourseCategories(
+    query?: ListCourseCategoriesQuery,
+): Promise<CourseCategoryListResponse> {
+    const res = await fetchWithRefresh(
+        `${COURSES_API_BASE}/categories${buildQuery(query as Record<string, unknown> | undefined)}`,
+    );
+    if (!res.ok) throw new Error(`listCourseCategories failed: ${res.status}`);
+    return res.json();
+}
+
 export async function listCourses(query?: ListCoursesQuery): Promise<CourseListResponse> {
     const res = await fetchWithRefresh(`${COURSES_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
     if (!res.ok) throw new Error(`listCourses failed: ${res.status}`);

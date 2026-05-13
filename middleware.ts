@@ -12,5 +12,5 @@ export const config = {
     // The login path is NOT in this exclusion list because next-intl needs to rewrite
     // /login → /ru/login (or /kz/login) — that work happens in the auth middleware's
     // public-path branch.
-    matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+    matcher: ['/', '/((?!api|_next|_vercel|.*\\..*).*)'],
 };

@@ -106,3 +106,17 @@ export interface ListUsersQuery {
     order?: 'asc' | 'desc';
     cursor?: string;
 }
+
+/**
+ * Mirrors admin-api `CreateUserDto` (POST /admin-api/v1/admin/users). At least one of
+ * `email` / `mobile` is required; admin-api enforces this at the service boundary.
+ * `password` is optional — when omitted, the user logs in via the SMS-code flow.
+ */
+export interface CreateUserPayload {
+    full_name?: string;
+    email?: string;
+    mobile?: string;
+    password?: string;
+    role_name: 'admin' | 'curator' | 'teacher' | 'student';
+    status?: UserStatus;
+}

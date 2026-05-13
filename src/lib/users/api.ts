@@ -1,6 +1,12 @@
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type { DryRunResult } from '@/hooks/use-dry-run-preview';
-import type { ListUsersQuery, UserActivityResponse, UserDetail, UserListResponse } from './types';
+import type {
+    CreateUserPayload,
+    ListUsersQuery,
+    UserActivityResponse,
+    UserDetail,
+    UserListResponse,
+} from './types';
 
 /**
  * Typed wrappers around the admin-api users endpoints.
@@ -253,6 +259,28 @@ export interface ExportInput {
     q?: string;
     sort?: 'created_at' | 'full_name' | 'last_activity';
     order?: 'asc' | 'desc';
+}
+
+/**
+ * Admin-only single-user creation. Mirrors admin-api POST /admin-api/v1/admin/users.
+ *
+ * On success, callers should invalidate `['admin.users.list']` (any args) so the new
+ * row appears, and may navigate to `/${locale}/users/${created.id}` for the detail
+ * page. The admin-api response is wrapped in `apiResponse({data})`; we unwrap here.
+ */
+export async function createUser(payload: CreateUserPayload): Promise<UserDetail> {
+    const res = await fetchWithRefresh(BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `createUser failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json?.data ?? json) as UserDetail;
 }
 
 export async function exportUsers(input: ExportInput): Promise<Blob> {
