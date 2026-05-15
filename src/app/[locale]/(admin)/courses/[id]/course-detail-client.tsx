@@ -130,6 +130,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
     const synthesizedRow: CourseRow = {
         id: data.id,
         slug: data.slug,
+        title_kz: data.translations.find((tr) => tr.locale === 'kz')?.title ?? null,
         status: data.status,
         teacher: data.teacher
             ? { id: data.teacher.id, full_name: data.teacher.full_name }

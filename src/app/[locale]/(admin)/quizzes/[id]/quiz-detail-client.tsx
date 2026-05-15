@@ -116,6 +116,7 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
     // defensively for future-proofing — mirrors Phase 5 Plan 03 synthesis pattern).
     const synthesizedRow: QuizRow = {
         id: data.id,
+        title_kz: data.translations.find((tr) => tr.locale === 'kz')?.title ?? null,
         status: data.status,
         version: data.version,
         category: data.category
