@@ -72,7 +72,7 @@ export function DeleteBlogDialog({ open, onOpenChange, blog, onDeleted }: Delete
 
                 {blog ? (
                     <div className='space-y-3 text-sm'>
-                        <p className='font-medium'>{blog.title_ru ?? blog.slug}</p>
+                        <p className='font-medium'>{blog.title_kz ?? blog.slug}</p>
                         <p className='text-xs text-muted-foreground'>#{blog.id}</p>
                     </div>
                 ) : null}

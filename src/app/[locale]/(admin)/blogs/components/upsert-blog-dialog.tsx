@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
@@ -26,9 +26,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { requestUploadToken, uploadFileDirect } from '@/lib/courses/upload-client';
+import { FileUploader } from '@/components/ui/file-uploader';
 import { createBlog, listBlogCategories, updateBlog } from '@/lib/blogs/api';
 import type { BlogDetail, BlogStatus, BlogUpsertInput } from '@/lib/blogs/types';
 import { slugify, SLUG_REGEX } from '@/lib/courses/format';
@@ -63,10 +62,8 @@ const upsertBlogSchema = z.object({
     link_type: z.string().max(255).optional(),
     page_type: z.string().max(255).optional(),
     link: z.string().max(255).optional(),
-    ru_title: z.string().min(1).max(255),
-    ru_description: z.string().max(2000),
-    kz_title: z.string().min(1).max(255),
-    kz_description: z.string().max(2000),
+    title: z.string().min(1).max(255),
+    description: z.string().max(2000),
 });
 
 type UpsertBlogValues = z.infer<typeof upsertBlogSchema>;
@@ -79,7 +76,6 @@ export interface UpsertBlogDialogProps {
 }
 
 function defaultValues(blog: BlogDetail | null | undefined): UpsertBlogValues {
-    const ru = blog?.translations?.find((t) => t.locale === 'ru');
     const kz = blog?.translations?.find((t) => t.locale === 'kz');
     return {
         slug: blog?.slug ?? '',
@@ -90,16 +86,14 @@ function defaultValues(blog: BlogDetail | null | undefined): UpsertBlogValues {
         link_type: blog?.link_type ?? '',
         page_type: blog?.page_type ?? '',
         link: blog?.link ?? '',
-        ru_title: ru?.title ?? '',
-        ru_description: ru?.description ?? '',
-        kz_title: kz?.title ?? '',
-        kz_description: kz?.description ?? '',
+        title: kz?.title ?? '',
+        description: kz?.description ?? '',
     };
 }
 
 export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogProps) {
     const t = useTranslations('admin.blogs');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
     const qc = useQueryClient();
     const isEdit = !!blog?.id;
@@ -112,7 +106,6 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
     });
 
     const [slugTouched, setSlugTouched] = useState(false);
-    const imageInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<UpsertBlogValues>({
         resolver: zodResolver(upsertBlogSchema),
@@ -128,17 +121,16 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, blog?.id]);
 
-    const ruTitle = form.watch('ru_title');
+    const title = form.watch('title');
     useEffect(() => {
         if (!slugTouched) {
-            form.setValue('slug', slugify(ruTitle ?? ''), { shouldValidate: false });
+            form.setValue('slug', slugify(title ?? ''), { shouldValidate: false });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ruTitle, slugTouched]);
+    }, [title, slugTouched]);
 
     const buildPayload = (values: UpsertBlogValues): BlogUpsertInput => {
         // Edit mode preserves existing translation content; create mode starts blank.
-        const ru = blog?.translations?.find((t) => t.locale === 'ru');
         const kz = blog?.translations?.find((t) => t.locale === 'kz');
         return {
             slug: values.slug,
@@ -151,15 +143,9 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
             link: values.link || null,
             translations: [
                 {
-                    locale: 'ru',
-                    title: values.ru_title,
-                    description: values.ru_description ?? '',
-                    content: ru?.content ?? '',
-                },
-                {
                     locale: 'kz',
-                    title: values.kz_title,
-                    description: values.kz_description ?? '',
+                    title: values.title,
+                    description: values.description ?? '',
                     content: kz?.content ?? '',
                 },
             ],
@@ -187,24 +173,8 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
         },
     });
 
-    const onUpload = async (file: File) => {
-        try {
-            // kind='cover' (10 MB cap per Phase 5 Plan 04). content_type cast: admin-api
-            // validates against allowed_content_types — pass through browser MIME and let
-            // server reject unsupported.
-            const tok = await requestUploadToken({
-                kind: 'cover' as const,
-                size: file.size,
-                content_type: file.type as unknown as 'image/jpeg',
-            });
-            const result = await uploadFileDirect(tok.upload_url, tok.token, file);
-            form.setValue('image', result.file_url ?? '', { shouldValidate: true });
-            toast.success(t('saved'));
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : t('save_failed');
-            toast.error(msg);
-        }
-    };
+    // Upload UX is now owned by <FileUploader> (kind-aware validation, progress,
+    // toasts, abort) — see the cover_image_label FormField below.
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -259,7 +229,7 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
                                             <SelectContent>
                                                 {(cats.data ?? []).map((c) => (
                                                     <SelectItem key={c.id} value={String(c.id)}>
-                                                        {c.title_ru ?? `#${c.id}`}
+                                                        {c.title_kz ?? `#${c.id}`}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -330,106 +300,50 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>{t('cover_image_label')}</FormLabel>
-                                    <div className='flex gap-2'>
-                                        <FormControl>
-                                            <Input
-                                                placeholder='https://...'
-                                                value={field.value ?? ''}
-                                                onChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                        <input
-                                            ref={imageInputRef}
-                                            type='file'
-                                            accept='image/jpeg,image/png,image/webp'
-                                            hidden
-                                            onChange={(e) => {
-                                                const f = e.target.files?.[0];
-                                                if (f) void onUpload(f);
-                                                e.target.value = '';
-                                            }}
-                                        />
-                                        <Button
-                                            type='button'
-                                            variant='outline'
-                                            onClick={() => imageInputRef.current?.click()}
-                                        >
-                                            {t('upload_image_button')}
-                                        </Button>
-                                    </div>
+                                    <FileUploader
+                                        kind='cover'
+                                        variant='inline'
+                                        previewSize='md'
+                                        value={field.value ?? ''}
+                                        onChange={(url) => field.onChange(url)}
+                                        onClear={() => field.onChange('')}
+                                    />
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        <Tabs defaultValue='ru' className='w-full'>
-                            <TabsList className='grid w-full grid-cols-2'>
-                                <TabsTrigger value='ru'>{t('ru_translation')}</TabsTrigger>
-                                <TabsTrigger value='kz'>{t('kz_translation')}</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value='ru' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='ru_title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('title_ru_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder={t('title_ru_placeholder')}
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name='ru_description'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('description_ru_label')}</FormLabel>
-                                            <FormControl>
-                                                <Textarea rows={3} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                            <TabsContent value='kz' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='kz_title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('title_kz_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder={t('title_kz_placeholder')}
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name='kz_description'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('description_kz_label')}</FormLabel>
-                                            <FormControl>
-                                                <Textarea rows={3} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                        </Tabs>
+                        <div className='space-y-3'>
+                            <FormField
+                                control={form.control}
+                                name='title'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('title_kz_label')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder={t('title_kz_placeholder')}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='description'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('description_kz_label')}</FormLabel>
+                                        <FormControl>
+                                            <Textarea rows={3} {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         {!isEdit ? (
                             <p className='text-xs text-muted-foreground'>{t('content_after_create_hint')}</p>

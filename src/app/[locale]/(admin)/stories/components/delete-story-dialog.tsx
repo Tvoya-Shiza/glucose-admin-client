@@ -73,7 +73,7 @@ export function DeleteStoryDialog({ open, onOpenChange, story, onDeleted }: Dele
 
                 {story ? (
                     <div className='space-y-3 text-sm'>
-                        <p className='font-medium'>{story.title_ru ?? story.slug}</p>
+                        <p className='font-medium'>{story.title_kz ?? story.slug}</p>
                         <p className='text-xs text-muted-foreground'>#{story.id}</p>
                     </div>
                 ) : null}

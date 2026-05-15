@@ -52,7 +52,7 @@ export interface CreateUserDialogProps {
 
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
     const t = useTranslations('admin.users');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
     const qc = useQueryClient();
 

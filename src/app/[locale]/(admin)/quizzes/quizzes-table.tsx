@@ -21,7 +21,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { formatUnixSecondsOrDash } from '@/lib/courses/format';
-import type { Locale, QuizRow, QuizStatus, TranslationCompleteness } from '@/lib/quizzes/types';
+import type { QuizRow, QuizStatus } from '@/lib/quizzes/types';
 import { DuplicateQuizButton } from './components/duplicate-quiz-button';
 
 export interface QuizzesTableProps {
@@ -35,31 +35,6 @@ export interface QuizzesTableProps {
 
 function statusVariant(status: QuizStatus): 'default' | 'destructive' {
     return status === 'active' ? 'default' : 'destructive';
-}
-
-function CompletenessBadge({
-    completeness,
-    missing,
-}: {
-    completeness: TranslationCompleteness;
-    missing: Locale[];
-}) {
-    const t = useTranslations('admin.quizzes');
-    if (completeness === 'complete') {
-        return (
-            <Badge variant='default' className='gap-1'>
-                <span aria-hidden>✓</span>
-                <span>{t('translation_complete')}</span>
-            </Badge>
-        );
-    }
-    const labels = missing.map((l) => (l === 'ru' ? t('missing_ru') : t('missing_kz')));
-    return (
-        <Badge variant='secondary' className='gap-1'>
-            <span aria-hidden>⚠</span>
-            <span>{labels.length > 0 ? labels.join(', ') : t('translation_incomplete')}</span>
-        </Badge>
-    );
 }
 
 /**
@@ -81,7 +56,7 @@ export function QuizzesTable({
     skeletonRowCount = 10,
 }: QuizzesTableProps) {
     const t = useTranslations('admin.quizzes');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const columnCount = canMutate ? 8 : 7;
 
@@ -110,7 +85,7 @@ export function QuizzesTable({
                       ))
                     : rows.map((r) => (
                           <TableRow key={r.id}>
-                              <TableCell className='space-y-1'>
+                              <TableCell>
                                   <div className='flex items-center gap-2'>
                                       <Link
                                           href={`/${locale}/quizzes/${r.id}`}
@@ -118,10 +93,7 @@ export function QuizzesTable({
                                       >
                                           {`#${r.id}`}
                                       </Link>
-                                      <CompletenessBadge
-                                          completeness={r.translation_completeness}
-                                          missing={r.missing_locales}
-                                      />
+                                      <span>{r.title_kz ?? '—'}</span>
                                   </div>
                               </TableCell>
                               <TableCell>
@@ -130,7 +102,7 @@ export function QuizzesTable({
                                   </Badge>
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
-                                  {r.category?.title_ru ?? '—'}
+                                  {r.category?.title_kz ?? '—'}
                               </TableCell>
                               <TableCell className='tabular-nums text-sm'>
                                   {r.question_count}

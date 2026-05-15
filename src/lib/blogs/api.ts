@@ -10,7 +10,7 @@
  * `confirmation === String(blog.id)` (T-07-04-04).
  *
  * Note (BlogCategory schema — Plan 01 lock): BlogCategory has NO slug column.
- * createBlogCategory / updateBlogCategory take { title_ru, title_kz } only.
+ * createBlogCategory / updateBlogCategory take { title_kz, title_kz } only.
  */
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
@@ -165,7 +165,6 @@ export async function getBlogCategory(id: number): Promise<BlogCategoryRow & { b
 }
 
 export async function createBlogCategory(input: {
-    title_ru: string;
     title_kz: string;
 }): Promise<BlogCategoryRow> {
     const res = await fetchWithRefresh(BLOG_CATEGORIES_API_BASE, {
@@ -180,7 +179,7 @@ export async function createBlogCategory(input: {
 
 export async function updateBlogCategory(
     id: number,
-    input: Partial<{ title_ru: string; title_kz: string }>,
+    input: Partial<{ title_kz: string }>,
 ): Promise<BlogCategoryRow> {
     const res = await fetchWithRefresh(`${BLOG_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
         method: 'PATCH',

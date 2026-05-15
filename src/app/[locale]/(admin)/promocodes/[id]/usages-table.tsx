@@ -21,7 +21,7 @@ export interface UsagesTableProps {
     promocodeId: number;
 }
 
-function formatUnixSecondsOrDash(value: number | null | undefined, locale: 'ru' | 'kz'): string {
+function formatUnixSecondsOrDash(value: number | null | undefined, locale: string): string {
     if (value == null) return '—';
     const d = new Date(value * 1000);
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
@@ -39,7 +39,7 @@ function formatUnixSecondsOrDash(value: number | null | undefined, locale: 'ru' 
  */
 export function UsagesTable({ promocodeId }: UsagesTableProps) {
     const t = useTranslations('admin.promocodes');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const [{ usages_page, usages_page_size, usages_order }, setQ] = useQueryStates({
         usages_page: parseAsInteger.withDefault(1),

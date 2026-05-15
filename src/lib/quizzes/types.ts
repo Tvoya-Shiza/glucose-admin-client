@@ -37,7 +37,7 @@
 export type QuizStatus = 'active' | 'inactive';
 export type QuizQuestionType = 'single' | 'multiple' | 'descriptive' | 'identificative';
 export type QuizResultStatus = 'waiting' | 'passed' | 'failed';
-export type Locale = 'ru' | 'kz';
+export type Locale = 'kz';
 export type TranslationCompleteness = 'complete' | 'incomplete';
 export type QuizSortField = 'created_at' | 'updated_at' | 'title';
 export type SortOrder = 'asc' | 'desc';
@@ -70,16 +70,18 @@ export interface ListQuizzesQuery {
 
 export interface QuizRowCategoryRef {
     id: number;
-    title_ru: string | null;
+    title_kz: string | null;
 }
 
 export interface QuizRowBadgeRef {
     id: number;
-    title_ru: string | null;
+    title_kz: string | null;
 }
 
 export interface QuizRow {
     id: number;
+    /** KZ title from QuizTranslation join. null when missing. */
+    title_kz: string | null;
     status: QuizStatus;
     /** Phase 1.08 versioning column — surfaced for the "v{n}" pill. */
     version: number;
@@ -155,17 +157,17 @@ export interface QuestionDetail {
 export interface QuizDetailCategoryRef {
     id: number;
     parent_id: number | null;
-    title_ru: string | null;
+    title_kz: string | null;
 }
 
 export interface QuizDetailSubjectRef {
     id: number;
-    title_ru: string | null;
+    title_kz: string | null;
 }
 
 export interface QuizDetailBadgeRef {
     id: number;
-    title_ru: string | null;
+    title_kz: string | null;
     is_active: boolean;
 }
 
@@ -473,8 +475,8 @@ export interface QuizResultUserRef {
 
 export interface QuizResultQuizRef {
     id: number;
-    title_ru: string | null;
-    /** KZ title — Plan 07 surfaces alongside title_ru for locale-aware row rendering. */
+    title_kz: string | null;
+    /** KZ title — Plan 07 surfaces alongside title_kz for locale-aware row rendering. */
     kz_title?: string | null;
     /** Current quiz version (for is_stale_version comparison). Plan 07. */
     version: number;

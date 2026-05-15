@@ -178,7 +178,6 @@ export function BadgesListClient() {
                               id: editTarget.id,
                               is_active: editTarget.is_active,
                               quiz_category_id: editTarget.quiz_category_id,
-                              ru_title: editTarget.translations.ru ?? '',
                               kz_title: editTarget.translations.kz ?? '',
                           }
                         : undefined

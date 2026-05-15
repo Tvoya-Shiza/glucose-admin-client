@@ -22,7 +22,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { ForceConfirmRequiredError, upsertQuestion } from '@/lib/quizzes/api';
 import type {
@@ -89,20 +88,11 @@ export function UpsertQuestionDialog({
     const [videoUrl, setVideoUrl] = useState<string>(question?.video ?? '');
     const [answerVideoUrl, setAnswerVideoUrl] = useState<string>(question?.answer_video_url ?? '');
 
-    const [ruTitle, setRuTitle] = useState<string>(
-        question?.translations.find((tr) => tr.locale === 'ru')?.title ?? '',
-    );
     const [kzTitle, setKzTitle] = useState<string>(
         question?.translations.find((tr) => tr.locale === 'kz')?.title ?? '',
     );
-    const [ruDescription, setRuDescription] = useState<string>(
-        question?.translations.find((tr) => tr.locale === 'ru')?.description ?? '',
-    );
     const [kzDescription, setKzDescription] = useState<string>(
         question?.translations.find((tr) => tr.locale === 'kz')?.description ?? '',
-    );
-    const [ruCorrect, setRuCorrect] = useState<string>(
-        question?.translations.find((tr) => tr.locale === 'ru')?.correct ?? '',
     );
     const [kzCorrect, setKzCorrect] = useState<string>(
         question?.translations.find((tr) => tr.locale === 'kz')?.correct ?? '',
@@ -121,11 +111,8 @@ export function UpsertQuestionDialog({
         setImageUrl(question?.image ?? null);
         setVideoUrl(question?.video ?? '');
         setAnswerVideoUrl(question?.answer_video_url ?? '');
-        setRuTitle(question?.translations.find((tr) => tr.locale === 'ru')?.title ?? '');
         setKzTitle(question?.translations.find((tr) => tr.locale === 'kz')?.title ?? '');
-        setRuDescription(question?.translations.find((tr) => tr.locale === 'ru')?.description ?? '');
         setKzDescription(question?.translations.find((tr) => tr.locale === 'kz')?.description ?? '');
-        setRuCorrect(question?.translations.find((tr) => tr.locale === 'ru')?.correct ?? '');
         setKzCorrect(question?.translations.find((tr) => tr.locale === 'kz')?.correct ?? '');
         setForceDialogOpen(false);
         setPendingPayload(null);
@@ -139,7 +126,7 @@ export function UpsertQuestionDialog({
             toast.error(t('validation_failed'));
             return null;
         }
-        if (!ruTitle.trim() || !kzTitle.trim()) {
+        if (!kzTitle.trim()) {
             toast.error(t('validation_failed'));
             return null;
         }
@@ -151,12 +138,6 @@ export function UpsertQuestionDialog({
             video: videoUrl.trim().length > 0 ? videoUrl.trim() : null,
             answer_video_url: answerVideoUrl.trim().length > 0 ? answerVideoUrl.trim() : null,
             translations: [
-                {
-                    locale: 'ru',
-                    title: ruTitle,
-                    description: ruDescription,
-                    correct: type === 'descriptive' ? ruCorrect : null,
-                },
                 {
                     locale: 'kz',
                     title: kzTitle,
@@ -294,73 +275,36 @@ export function UpsertQuestionDialog({
                             </div>
                         </div>
 
-                        {/* RU/KZ translation tabs */}
-                        <Tabs defaultValue='ru'>
-                            <TabsList>
-                                <TabsTrigger value='ru'>{t('ru_translation')}</TabsTrigger>
-                                <TabsTrigger value='kz'>{t('kz_translation')}</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value='ru' className='space-y-3'>
+                        <div className='space-y-3'>
+                            <div className='space-y-1.5'>
+                                <Label>{t('q_title_label')}</Label>
+                                <Input
+                                    value={kzTitle}
+                                    onChange={(e) => setKzTitle(e.target.value)}
+                                    placeholder={t('q_title_placeholder')}
+                                    maxLength={2000}
+                                />
+                            </div>
+                            <div className='space-y-1.5'>
+                                <Label>{t('q_description_label')}</Label>
+                                <TiptapEditor
+                                    initialHtml={kzDescription}
+                                    onChange={setKzDescription}
+                                />
+                            </div>
+                            {type === 'descriptive' ? (
                                 <div className='space-y-1.5'>
-                                    <Label>{t('q_title_label')}</Label>
-                                    <Input
-                                        value={ruTitle}
-                                        onChange={(e) => setRuTitle(e.target.value)}
-                                        placeholder={t('q_title_placeholder')}
-                                        maxLength={2000}
+                                    <Label>{t('descriptive_correct_label')}</Label>
+                                    <Textarea
+                                        value={kzCorrect}
+                                        onChange={(e) => setKzCorrect(e.target.value)}
+                                        placeholder={t('descriptive_correct_placeholder')}
+                                        rows={3}
+                                        maxLength={5000}
                                     />
                                 </div>
-                                <div className='space-y-1.5'>
-                                    <Label>{t('q_description_label')}</Label>
-                                    <TiptapEditor
-                                        initialHtml={ruDescription}
-                                        onChange={setRuDescription}
-                                    />
-                                </div>
-                                {type === 'descriptive' ? (
-                                    <div className='space-y-1.5'>
-                                        <Label>{t('descriptive_correct_label')}</Label>
-                                        <Textarea
-                                            value={ruCorrect}
-                                            onChange={(e) => setRuCorrect(e.target.value)}
-                                            placeholder={t('descriptive_correct_placeholder')}
-                                            rows={3}
-                                            maxLength={5000}
-                                        />
-                                    </div>
-                                ) : null}
-                            </TabsContent>
-                            <TabsContent value='kz' className='space-y-3'>
-                                <div className='space-y-1.5'>
-                                    <Label>{t('q_title_label')}</Label>
-                                    <Input
-                                        value={kzTitle}
-                                        onChange={(e) => setKzTitle(e.target.value)}
-                                        placeholder={t('q_title_placeholder')}
-                                        maxLength={2000}
-                                    />
-                                </div>
-                                <div className='space-y-1.5'>
-                                    <Label>{t('q_description_label')}</Label>
-                                    <TiptapEditor
-                                        initialHtml={kzDescription}
-                                        onChange={setKzDescription}
-                                    />
-                                </div>
-                                {type === 'descriptive' ? (
-                                    <div className='space-y-1.5'>
-                                        <Label>{t('descriptive_correct_label')}</Label>
-                                        <Textarea
-                                            value={kzCorrect}
-                                            onChange={(e) => setKzCorrect(e.target.value)}
-                                            placeholder={t('descriptive_correct_placeholder')}
-                                            rows={3}
-                                            maxLength={5000}
-                                        />
-                                    </div>
-                                ) : null}
-                            </TabsContent>
-                        </Tabs>
+                            ) : null}
+                        </div>
 
                         {/* Answers section — gated by type, only shown in edit mode (need question.id) */}
                         {isEdit && question ? (

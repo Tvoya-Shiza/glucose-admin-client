@@ -66,7 +66,7 @@ export function ChapterRow({ courseId, chapter }: ChapterRowProps) {
         deleteMutation.mutate();
     };
 
-    const ruTitle = chapter.translations?.find((tr) => tr.locale === 'ru')?.title;
+    const ruTitle = chapter.translations?.find((tr) => tr.locale === 'kz')?.title;
     const headerLabel = ruTitle && ruTitle.length > 0 ? ruTitle : `#${chapter.id}`;
 
     const itemSortableIds = chapter.items.map((i) => `item-${i.id}`);

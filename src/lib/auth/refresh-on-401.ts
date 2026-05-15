@@ -41,7 +41,7 @@ async function refreshTokens(): Promise<boolean> {
 }
 
 function getCurrentLocale(): AdminLocale {
-    if (typeof window === 'undefined') return 'ru';
+    if (typeof window === 'undefined') return 'kz';
     return extractLocaleFromPath(window.location.pathname);
 }
 

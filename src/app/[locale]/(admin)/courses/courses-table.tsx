@@ -50,14 +50,15 @@ export function CoursesTable({
     skeletonRowCount = 10,
 }: CoursesTableProps) {
     const t = useTranslations('admin.courses');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
-    const columnCount = canMutate ? 7 : 6;
+    const columnCount = canMutate ? 8 : 7;
 
     return (
         <Table>
             <TableHeader>
                 <TableRow>
+                    <TableHead>{t('col_title')}</TableHead>
                     <TableHead>{t('col_slug')}</TableHead>
                     <TableHead>{t('col_translations')}</TableHead>
                     <TableHead>{t('col_teacher')}</TableHead>
@@ -83,8 +84,11 @@ export function CoursesTable({
                                       href={`/${locale}/courses/${r.id}`}
                                       className='font-medium hover:underline'
                                   >
-                                      {r.slug}
+                                      {r.title_kz ?? '—'}
                                   </Link>
+                              </TableCell>
+                              <TableCell className='text-muted-foreground text-sm'>
+                                  {r.slug}
                               </TableCell>
                               <TableCell>
                                   <TranslationCompletenessBadge

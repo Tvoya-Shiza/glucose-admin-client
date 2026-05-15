@@ -78,7 +78,7 @@ export function OverviewTab({ quiz, role }: OverviewTabProps) {
     }
 
     // Translation save handlers — one per locale.
-    async function saveTranslation(locale: 'ru' | 'kz', title: string) {
+    async function saveTranslation(locale: 'kz', title: string) {
         // Server's update path does upsert per (quiz_id, locale) in the existing list;
         // sending a single-locale array is sufficient (Plan 02 mutations service does
         // find-then-update inside $transaction).
@@ -86,26 +86,17 @@ export function OverviewTab({ quiz, role }: OverviewTabProps) {
         await patch({ translations: next });
     }
 
-    const ruTr = quiz.translations.find((tr) => tr.locale === 'ru');
     const kzTr = quiz.translations.find((tr) => tr.locale === 'kz');
 
     return (
         <div className='space-y-5 pt-4'>
-            {/* Side-by-side RU + KZ translations (CONTEXT D-05). */}
-            <div className='grid gap-4 md:grid-cols-2'>
-                <QuizTranslationForm
-                    locale='ru'
-                    initialTitle={ruTr?.title ?? ''}
-                    onSave={(v) => saveTranslation('ru', v)}
-                    disabled={isReadOnly}
-                />
-                <QuizTranslationForm
-                    locale='kz'
-                    initialTitle={kzTr?.title ?? ''}
-                    onSave={(v) => saveTranslation('kz', v)}
-                    disabled={isReadOnly}
-                />
-            </div>
+            {/* KZ translation (CONTEXT D-05). */}
+            <QuizTranslationForm
+                locale='kz'
+                initialTitle={kzTr?.title ?? ''}
+                onSave={(v) => saveTranslation('kz', v)}
+                disabled={isReadOnly}
+            />
 
             {/* Settings grid */}
             <div className='space-y-4 rounded-lg border p-4'>
@@ -147,7 +138,7 @@ export function OverviewTab({ quiz, role }: OverviewTabProps) {
                                 <SelectItem value='__none__'>{t('filter_all')}</SelectItem>
                                 {(categoriesQuery.data ?? []).map((c) => {
                                     const ru =
-                                        c.translations.find((tr) => tr.locale === 'ru')?.title ??
+                                        c.translations.find((tr) => tr.locale === 'kz')?.title ??
                                         `#${c.id}`;
                                     return (
                                         <SelectItem key={c.id} value={String(c.id)}>

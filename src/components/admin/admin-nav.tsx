@@ -27,6 +27,9 @@ const NAV_ITEMS: NavItem[] = [
     { href: '/quizzes', labelKey: 'quizzes' },
     { href: '/quizzes/badges', labelKey: 'badges' },
     { href: '/quizzes/results', labelKey: 'results' },
+    // File library — every staff role can browse what's been uploaded; admin/teacher
+    // can delete. Server enforces role split via @Roles on DELETE /uploads/:id.
+    { href: '/files', labelKey: 'files' },
     // Phase 7 — marketing surfaces (admin-only per D-20).
     { href: '/stories', labelKey: 'stories', adminOnly: true },
     { href: '/banners', labelKey: 'banners', adminOnly: true },

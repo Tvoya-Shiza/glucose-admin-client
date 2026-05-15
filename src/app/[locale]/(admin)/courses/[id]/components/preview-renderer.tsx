@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { sanitizeTiptapHtml } from '@/lib/sanitize/sanitize-html';
+import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import type { CoursePreview, Locale, PreviewChapterItem } from '@/lib/courses/types';
 
 /**
@@ -52,11 +53,11 @@ export function PreviewRenderer({
 
     const courseTitle =
         preview.translations.find((tr) => tr.locale === locale)?.title ??
-        preview.translations.find((tr) => tr.locale === 'ru')?.title ??
+        preview.translations.find((tr) => tr.locale === 'kz')?.title ??
         preview.slug;
     const courseDescription =
         preview.translations.find((tr) => tr.locale === locale)?.description ??
-        preview.translations.find((tr) => tr.locale === 'ru')?.description ??
+        preview.translations.find((tr) => tr.locale === 'kz')?.description ??
         '';
 
     return (
@@ -108,7 +109,7 @@ export function PreviewRenderer({
                 preview.chapters.map((ch) => {
                     const chTitle =
                         ch.translations.find((tr) => tr.locale === locale)?.title ??
-                        ch.translations.find((tr) => tr.locale === 'ru')?.title ??
+                        ch.translations.find((tr) => tr.locale === 'kz')?.title ??
                         `#${ch.id}`;
                     return (
                         <section key={ch.id} className='space-y-3 border-t pt-4'>
@@ -162,11 +163,11 @@ function PreviewItem({ item, locale }: { item: PreviewChapterItem; locale: Local
         const file = item.file;
         const itemTitle =
             file.translations.find((tr) => tr.locale === locale)?.title ??
-            file.translations.find((tr) => tr.locale === 'ru')?.title ??
+            file.translations.find((tr) => tr.locale === 'kz')?.title ??
             '';
         const itemDescription =
             file.translations.find((tr) => tr.locale === locale)?.description ??
-            file.translations.find((tr) => tr.locale === 'ru')?.description ??
+            file.translations.find((tr) => tr.locale === 'kz')?.description ??
             '';
 
         if (file.file_type.startsWith('text/')) {
@@ -191,7 +192,7 @@ function PreviewItem({ item, locale }: { item: PreviewChapterItem; locale: Local
                 <figure className='space-y-2 rounded-md border p-3'>
                     {itemTitle ? <h3 className='font-medium'>{itemTitle}</h3> : null}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={file.file} alt={itemTitle} className='max-w-full rounded' />
+                    <img src={resolveAssetUrl(file.file)} alt={itemTitle} className='max-w-full rounded' />
                 </figure>
             );
         }
@@ -199,7 +200,7 @@ function PreviewItem({ item, locale }: { item: PreviewChapterItem; locale: Local
             return (
                 <figure className='space-y-2 rounded-md border p-3'>
                     {itemTitle ? <h3 className='font-medium'>{itemTitle}</h3> : null}
-                    <video src={file.file} controls className='max-w-full rounded' />
+                    <video src={resolveAssetUrl(file.file)} controls className='max-w-full rounded' />
                 </figure>
             );
         }
@@ -208,7 +209,7 @@ function PreviewItem({ item, locale }: { item: PreviewChapterItem; locale: Local
             <div className='space-y-1 rounded-md border p-3'>
                 {itemTitle ? <h3 className='font-medium'>{itemTitle}</h3> : null}
                 <a
-                    href={file.file}
+                    href={resolveAssetUrl(file.file)}
                     target='_blank'
                     rel='noreferrer noopener'
                     className='text-primary text-sm underline'

@@ -222,7 +222,7 @@ function BadgeItemRow({ item, index, onDelete }: BadgeItemRowProps) {
         opacity: isDragging ? 0.5 : 1,
     };
 
-    const ruTitle = item.quiz?.translations.find((tr) => tr.locale === 'ru')?.title ?? '';
+    const ruTitle = item.quiz?.translations.find((tr) => tr.locale === 'kz')?.title ?? '';
     const kzTitle = item.quiz?.translations.find((tr) => tr.locale === 'kz')?.title ?? '';
     const headerLabel = ruTitle.trim().length > 0
         ? ruTitle

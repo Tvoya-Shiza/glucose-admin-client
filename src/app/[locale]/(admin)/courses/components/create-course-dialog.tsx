@@ -33,7 +33,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserPicker } from '@/components/users/user-picker';
 import { CategoryPicker } from '@/components/courses/category-picker';
 import { createCourse } from '@/lib/courses/api';
@@ -67,10 +66,8 @@ const createCourseSchema = z.object({
     status: z.enum(['active', 'pending', 'is_draft']),
     teacher_id: z.number().int().positive({ message: 'teacher_id_invalid' }),
     category_id: z.number().int().positive().nullable(),
-    ru_title: z.string().min(1).max(255),
-    ru_description: z.string().max(65535).optional(),
-    kz_title: z.string().min(1).max(255),
-    kz_description: z.string().max(65535).optional(),
+    title: z.string().min(1).max(255),
+    description: z.string().max(65535).optional(),
 });
 
 type CreateCourseValues = z.infer<typeof createCourseSchema>;
@@ -105,7 +102,7 @@ export function CreateCourseDialog({
     actorId,
 }: CreateCourseDialogProps) {
     const t = useTranslations('admin.courses');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
     const qc = useQueryClient();
 
@@ -118,10 +115,8 @@ export function CreateCourseDialog({
             status: 'is_draft',
             teacher_id: actorRole === 'teacher' && actorId ? actorId : 0,
             category_id: null,
-            ru_title: '',
-            ru_description: '',
-            kz_title: '',
-            kz_description: '',
+            title: '',
+            description: '',
         },
         mode: 'onSubmit',
     });
@@ -134,30 +129,27 @@ export function CreateCourseDialog({
                 status: 'is_draft',
                 teacher_id: actorRole === 'teacher' && actorId ? actorId : 0,
                 category_id: null,
-                ru_title: '',
-                ru_description: '',
-                kz_title: '',
-                kz_description: '',
+                title: '',
+                description: '',
             });
             setSlugTouched(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
-    // Auto-fill slug from RU title until the user touches the slug input.
-    const ruTitle = form.watch('ru_title');
+    // Auto-fill slug from title until the user touches the slug input.
+    const title = form.watch('title');
     useEffect(() => {
         if (!slugTouched) {
-            form.setValue('slug', slugify(ruTitle ?? ''), { shouldValidate: false });
+            form.setValue('slug', slugify(title ?? ''), { shouldValidate: false });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ruTitle, slugTouched]);
+    }, [title, slugTouched]);
 
     const mutation = useMutation({
         mutationFn: (values: CreateCourseValues) => {
             const translations: Translation[] = [
-                { locale: 'ru', title: values.ru_title, description: values.ru_description || null },
-                { locale: 'kz', title: values.kz_title, description: values.kz_description || null },
+                { locale: 'kz', title: values.title, description: values.description || null },
             ];
             return createCourse({
                 slug: values.slug,
@@ -288,82 +280,41 @@ export function CreateCourseDialog({
                             />
                         </div>
 
-                        <Tabs defaultValue='ru' className='w-full'>
-                            <TabsList className='grid w-full grid-cols-2'>
-                                <TabsTrigger value='ru'>{t('ru_translation')}</TabsTrigger>
-                                <TabsTrigger value='kz'>{t('kz_translation')}</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value='ru' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='ru_title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('title_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder={t('title_placeholder')}
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name='ru_description'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('description_label')}</FormLabel>
-                                            <FormControl>
-                                                <textarea
-                                                    className='border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[100px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2'
-                                                    placeholder={t('description_placeholder')}
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                            <TabsContent value='kz' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='kz_title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('title_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder={t('title_placeholder')}
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name='kz_description'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('description_label')}</FormLabel>
-                                            <FormControl>
-                                                <textarea
-                                                    className='border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[100px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2'
-                                                    placeholder={t('description_placeholder')}
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                        </Tabs>
+                        <div className='space-y-3'>
+                            <FormField
+                                control={form.control}
+                                name='title'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('title_label')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder={t('title_placeholder')}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='description'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('description_label')}</FormLabel>
+                                        <FormControl>
+                                            <textarea
+                                                className='border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[100px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2'
+                                                placeholder={t('description_placeholder')}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <DialogFooter>
                             <Button

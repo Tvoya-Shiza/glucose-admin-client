@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { statusBadgeVariant } from '@/lib/courses/format';
+import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import { updateCourse } from '@/lib/courses/api';
 import type { CourseDetail } from '@/lib/courses/types';
 import { CoverImageUploader } from '../components/cover-image-uploader';
@@ -75,7 +76,6 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
         );
     }
 
-    const ruTr = course.translations.find((tr) => tr.locale === 'ru');
     const kzTr = course.translations.find((tr) => tr.locale === 'kz');
 
     return (
@@ -93,7 +93,7 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
                     <div className='bg-muted text-muted-foreground flex h-24 w-40 items-center justify-center overflow-hidden rounded border text-xs'>
                         {course.image_cover && course.image_cover.length > 0 ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={course.image_cover} alt='' className='h-full w-full object-cover' />
+                            <img src={resolveAssetUrl(course.image_cover)} alt='' className='h-full w-full object-cover' />
                         ) : (
                             <span>{t('cover_label')}</span>
                         )}
@@ -101,25 +101,15 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
                 )}
             </div>
 
-            {/* Side-by-side RU + KZ translations (read-only preview) */}
-            <div className='grid gap-4 md:grid-cols-2'>
-                <TranslationForm
-                    locale='ru'
-                    title={ruTr?.title ?? ''}
-                    description={ruTr?.description ?? ''}
-                    onTitleChange={() => undefined}
-                    onDescriptionChange={() => undefined}
-                    disabled
-                />
-                <TranslationForm
-                    locale='kz'
-                    title={kzTr?.title ?? ''}
-                    description={kzTr?.description ?? ''}
-                    onTitleChange={() => undefined}
-                    onDescriptionChange={() => undefined}
-                    disabled
-                />
-            </div>
+            {/* KZ translation (read-only preview) */}
+            <TranslationForm
+                locale='kz'
+                title={kzTr?.title ?? ''}
+                description={kzTr?.description ?? ''}
+                onTitleChange={() => undefined}
+                onDescriptionChange={() => undefined}
+                disabled
+            />
 
             {/* Field grid */}
             <div className='space-y-2'>
@@ -139,7 +129,7 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
                     label={t('category_label')}
                     value={
                         course.category
-                            ? `${course.category.title_ru ?? course.category.slug} (id ${course.category.id})`
+                            ? `${course.category.title_kz ?? course.category.slug} (id ${course.category.id})`
                             : '—'
                     }
                 />

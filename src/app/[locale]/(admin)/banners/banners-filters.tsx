@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,13 +10,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { listBannerCategories } from '@/lib/banners/api';
 import type { BannerStatus } from '@/lib/banners/types';
 
 export interface BannersFiltersValue {
     q?: string;
     status?: BannerStatus;
-    category_id?: number;
 }
 
 export interface BannersFiltersProps {
@@ -28,22 +25,13 @@ export interface BannersFiltersProps {
 const ALL = '__all__';
 
 /**
- * BAN-01 — top filter bar (search + status + category select).
+ * BAN-01 — top filter bar (search + status).
  *
  * Mirrors StoriesFilters (Plan 02). Search debounces 300ms locally (D-03).
- * Category list pulls from BFF via TanStack Query so the dropdown stays in sync
- * with category mutations on the categories sub-page (cache key
- * 'admin.banners.categories').
  */
 export function BannersFilters({ value, onChange }: BannersFiltersProps) {
     const t = useTranslations('admin.banners');
     const [qLocal, setQLocal] = useState(value.q ?? '');
-
-    const cats = useQuery({
-        queryKey: ['admin.banners.categories'],
-        queryFn: () => listBannerCategories(),
-        staleTime: 60_000,
-    });
 
     useEffect(() => {
         const id = setTimeout(() => {
@@ -79,27 +67,6 @@ export function BannersFilters({ value, onChange }: BannersFiltersProps) {
                     <SelectItem value={ALL}>{t('filter_all')}</SelectItem>
                     <SelectItem value='pending'>{t('status_pending')}</SelectItem>
                     <SelectItem value='publish'>{t('status_publish')}</SelectItem>
-                </SelectContent>
-            </Select>
-            <Select
-                value={value.category_id ? String(value.category_id) : ALL}
-                onValueChange={(v) =>
-                    onChange({
-                        ...value,
-                        category_id: v === ALL ? undefined : Number(v),
-                    })
-                }
-            >
-                <SelectTrigger className='w-56'>
-                    <SelectValue placeholder={t('filter_category')} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value={ALL}>{t('filter_all')}</SelectItem>
-                    {(cats.data ?? []).map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                            {c.title_ru ?? c.slug}
-                        </SelectItem>
-                    ))}
                 </SelectContent>
             </Select>
         </div>

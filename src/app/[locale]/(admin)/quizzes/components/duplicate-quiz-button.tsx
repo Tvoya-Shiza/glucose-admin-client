@@ -30,7 +30,7 @@ export interface DuplicateQuizButtonProps {
  */
 export function DuplicateQuizButton({ quizId, asMenuItem = false }: DuplicateQuizButtonProps) {
     const t = useTranslations('admin.quizzes');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
     const qc = useQueryClient();
 

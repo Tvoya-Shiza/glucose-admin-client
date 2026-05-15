@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -32,7 +32,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { upsertChapter } from '@/lib/courses/api';
 import type { Chapter, ChapterStatus, Translation } from '@/lib/courses/types';
 
@@ -42,16 +41,10 @@ import type { Chapter, ChapterStatus, Translation } from '@/lib/courses/types';
  * Schema-truth note (Plan 01): WebinarChapterTranslation has TITLE only —
  * no description column. The form omits description; the API drops it server-side
  * for safety regardless.
- *
- * Form fields:
- *   - status: active | inactive
- *   - ru.title (required), kz.title (required) — at least RU is canonical (D-03);
- *     KZ required for parity per the milestone i18n posture.
  */
 const chapterSchema = z.object({
     status: z.enum(['active', 'inactive']),
-    ru: z.object({ title: z.string().min(1).max(255) }),
-    kz: z.object({ title: z.string().min(1).max(255) }),
+    title: z.string().min(1).max(255),
 });
 
 type ChapterFormValues = z.infer<typeof chapterSchema>;
@@ -63,7 +56,7 @@ export interface UpsertChapterDialogProps {
     chapter?: Chapter | null;
 }
 
-function pickTitle(translations: Translation[] | undefined, locale: 'ru' | 'kz'): string {
+function pickTitle(translations: Translation[] | undefined, locale: string): string {
     return translations?.find((t) => t.locale === locale)?.title ?? '';
 }
 
@@ -76,8 +69,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
         resolver: zodResolver(chapterSchema),
         defaultValues: {
             status: (chapter?.status as ChapterStatus) ?? 'active',
-            ru: { title: pickTitle(chapter?.translations, 'ru') },
-            kz: { title: pickTitle(chapter?.translations, 'kz') },
+            title: pickTitle(chapter?.translations, 'kz'),
         },
     });
 
@@ -86,8 +78,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
         if (open) {
             form.reset({
                 status: (chapter?.status as ChapterStatus) ?? 'active',
-                ru: { title: pickTitle(chapter?.translations, 'ru') },
-                kz: { title: pickTitle(chapter?.translations, 'kz') },
+                title: pickTitle(chapter?.translations, 'kz'),
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,10 +89,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
             return upsertChapter(courseId, {
                 id: chapter?.id,
                 status: values.status,
-                translations: [
-                    { locale: 'ru', title: values.ru.title },
-                    { locale: 'kz', title: values.kz.title },
-                ],
+                translations: [{ locale: 'kz', title: values.title }],
             });
         },
         onSuccess: () => {
@@ -151,42 +139,19 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                                 </FormItem>
                             )}
                         />
-                        <Tabs defaultValue='ru'>
-                            <TabsList>
-                                <TabsTrigger value='ru'>{t('ru_translation')}</TabsTrigger>
-                                <TabsTrigger value='kz'>{t('kz_translation')}</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value='ru' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='ru.title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('chapter_title_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder={t('chapter_title_placeholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                            <TabsContent value='kz' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='kz.title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('chapter_title_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder={t('chapter_title_placeholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                        </Tabs>
+                        <FormField
+                            control={form.control}
+                            name='title'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('chapter_title_label')}</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder={t('chapter_title_placeholder')} {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <DialogFooter>
                             <Button type='button' variant='outline' onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
                                 {t('cancel')}

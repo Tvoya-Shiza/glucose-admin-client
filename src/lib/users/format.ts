@@ -6,7 +6,7 @@
  * BCP-47 boundary per glucose-admin-client/CLAUDE.md ("If you need
  * Intl.PluralRules/Intl.DateTimeFormat, remap 'kz' -> 'kk-KZ' at the BCP-47 boundary.").
  */
-export function formatUnixDate(unix: number | null, locale: 'ru' | 'kz'): string {
+export function formatUnixDate(unix: number | null, locale: string): string {
     if (!unix) return '—';
     const d = new Date(unix * 1000);
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';

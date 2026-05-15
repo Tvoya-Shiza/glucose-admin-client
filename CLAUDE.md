@@ -89,7 +89,12 @@ Prettier config (`.prettierrc`):
 
 - Removing `src/i18n/routing.ts` or changing `localePrefix` without team review.
 - Storing JWTs in `localStorage` or any other browser-readable storage.
-- Bypassing the BFF proxy (Phase 2+) by calling admin-api directly from the browser. The browser must NEVER send a Bearer token to admin-api.
+- Bypassing the BFF proxy (Phase 2+) by calling admin-api directly from the browser. The browser must NEVER send a Bearer token to admin-api. EXCEPTION: the file-upload route uses an `X-Upload-Token` (a 5-min single-use JWT) as the credential per CONTEXT D-13 — Bearer is still never sent to admin-api.
+
+## Local dev env vars
+
+- `ADMIN_API_URL` (server-only, no `NEXT_PUBLIC_` prefix) — admin-api origin for BFF route handlers.
+- `NEXT_PUBLIC_ADMIN_API_URL` — admin-api origin for the **browser**, used ONLY by the BFF-bypass file upload (`src/lib/uploads/client.ts`). Required in dev when admin-client (4100) and admin-api (4101) run on different ports — otherwise `POST /admin-api/v1/admin/uploads/file` lands on the Next.js server and 404s. Prod behind nginx leaves this empty (same origin). admin-api's `CORS_ORIGINS` must include the admin-client origin and its `enableCors().allowedHeaders` must include `X-Upload-Token`.
 
 ## Shared types
 

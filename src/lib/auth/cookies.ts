@@ -14,24 +14,21 @@
 export const ACCESS_COOKIE = 'glc_admin_at';
 export const REFRESH_COOKIE = 'glc_admin_rt';
 
-export type AdminLocale = 'ru' | 'kz';
+export type AdminLocale = 'kz';
 
 /**
- * Extract the locale prefix from a path. Returns 'ru' for unprefixed paths
+ * Extract the locale prefix from a path. Returns 'kz' for unprefixed paths
  * (matching i18n/routing.ts defaultLocale + localePrefix: 'as-needed').
  */
 export function extractLocaleFromPath(pathname: string): AdminLocale {
-    const match = pathname.match(/^\/(ru|kz)(\/|$)/);
-    return (match?.[1] as AdminLocale | undefined) ?? 'ru';
+    const match = pathname.match(/^\/(kz)(\/|$)/);
+    return (match?.[1] as AdminLocale | undefined) ?? 'kz';
 }
 
 /**
- * Build a locale-prefixed login URL preserving the requested locale (so a
- * user hitting /kz/dashboard without a token is redirected to /kz/login,
- * not /ru/login).
+ * Build a locale-prefixed login URL.
  */
 export function buildLoginUrl(req: { url: string; nextUrl: { pathname: string } }): URL {
     const locale = extractLocaleFromPath(req.nextUrl.pathname);
-    // /ru/login OR /kz/login — explicit prefix, no reliance on next-intl rewriting at this layer.
     return new URL(`/${locale}/login`, req.url);
 }

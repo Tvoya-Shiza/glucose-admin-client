@@ -96,7 +96,7 @@ export function BlogsFilters({ value, onChange }: BlogsFiltersProps) {
                     <SelectItem value={ALL}>{t('filter_all')}</SelectItem>
                     {(cats.data ?? []).map((c) => (
                         <SelectItem key={c.id} value={String(c.id)}>
-                            {c.title_ru ?? `#${c.id}`}
+                            {c.title_kz ?? `#${c.id}`}
                         </SelectItem>
                     ))}
                 </SelectContent>

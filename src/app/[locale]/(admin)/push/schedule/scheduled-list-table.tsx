@@ -44,7 +44,7 @@ type StatusBadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
  * URL state via nuqs: page, page_size, status, creator_id, sort, order. Filter
  * changes reset page=1.
  *
- * Columns: id (truncated), title_ru, scheduled_at (formatted Asia/Almaty),
+ * Columns: id (truncated), title_kz, scheduled_at (formatted Asia/Almaty),
  * status (badge), audience_count, delivered_count, creator_full_name, actions.
  *
  * Cancel action: only enabled for status='pending'. Opens a confirm Dialog
@@ -54,7 +54,7 @@ type StatusBadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
  */
 export function ScheduledListTable() {
     const t = useTranslations('admin.push');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const qc = useQueryClient();
 
     const [{ page, page_size, status, creator_id, sort, order }, setQ] = useQueryStates({
@@ -213,7 +213,7 @@ export function ScheduledListTable() {
                         {rows.map((row) => (
                             <TableRow key={row.id}>
                                 <TableCell className='font-mono text-xs'>{row.id.slice(0, 8)}</TableCell>
-                                <TableCell className='max-w-xs truncate'>{row.title_ru}</TableCell>
+                                <TableCell className='max-w-xs truncate'>{row.title_kz}</TableCell>
                                 <TableCell>{dateFmt.format(new Date(row.scheduled_at * 1000))}</TableCell>
                                 <TableCell>
                                     <Badge variant={statusVariant(row.status)}>{statusLabel(row.status)}</Badge>
@@ -276,7 +276,7 @@ export function ScheduledListTable() {
                     </DialogHeader>
                     {cancelTarget ? (
                         <p className='text-muted-foreground text-sm'>
-                            {cancelTarget.title_ru}
+                            {cancelTarget.title_kz}
                             <br />
                             {dateFmt.format(new Date(cancelTarget.scheduled_at * 1000))}
                         </p>

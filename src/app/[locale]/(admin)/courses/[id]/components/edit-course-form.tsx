@@ -71,7 +71,6 @@ const schema = z.object({
             (v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number.isInteger(Number(v))),
             { message: 'category_id_invalid' },
         ),
-    ru: translationSchema,
     kz: translationSchema,
 });
 type Values = z.infer<typeof schema>;
@@ -86,7 +85,6 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
     const t = useTranslations('admin.courses');
     const qc = useQueryClient();
 
-    const initialRu = course.translations.find((tr) => tr.locale === 'ru');
     const initialKz = course.translations.find((tr) => tr.locale === 'kz');
 
     const form = useForm<Values>({
@@ -95,10 +93,6 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
             slug: course.slug,
             status: course.status,
             category_id: course.category ? String(course.category.id) : '',
-            ru: {
-                title: initialRu?.title ?? '',
-                description: initialRu?.description ?? '',
-            },
             kz: {
                 title: initialKz?.title ?? '',
                 description: initialKz?.description ?? '',
@@ -110,11 +104,6 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
     const mutation = useMutation({
         mutationFn: (values: Values) => {
             const translations: Translation[] = [
-                {
-                    locale: 'ru',
-                    title: values.ru.title,
-                    description: values.ru.description?.trim() ? values.ru.description : null,
-                },
                 {
                     locale: 'kz',
                     title: values.kz.title,
@@ -147,7 +136,6 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
     });
 
     const errors = form.formState.errors;
-    const ruValues = form.watch('ru');
     const kzValues = form.watch('kz');
 
     return (
@@ -167,51 +155,28 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                 />
             </div>
 
-            {/* Side-by-side RU + KZ translations */}
-            <div className='grid gap-4 md:grid-cols-2'>
-                <Controller
-                    control={form.control}
-                    name='ru'
-                    render={({ field }) => (
-                        <TranslationForm
-                            locale='ru'
-                            title={field.value.title}
-                            description={field.value.description ?? ''}
-                            onTitleChange={(v) => field.onChange({ ...ruValues, title: v })}
-                            onDescriptionChange={(v) =>
-                                field.onChange({ ...ruValues, description: v })
-                            }
-                            titleError={
-                                errors.ru?.title?.message
-                                    ? t('title_required')
-                                    : undefined
-                            }
-                            disabled={mutation.isPending}
-                        />
-                    )}
-                />
-                <Controller
-                    control={form.control}
-                    name='kz'
-                    render={({ field }) => (
-                        <TranslationForm
-                            locale='kz'
-                            title={field.value.title}
-                            description={field.value.description ?? ''}
-                            onTitleChange={(v) => field.onChange({ ...kzValues, title: v })}
-                            onDescriptionChange={(v) =>
-                                field.onChange({ ...kzValues, description: v })
-                            }
-                            titleError={
-                                errors.kz?.title?.message
-                                    ? t('title_required')
-                                    : undefined
-                            }
-                            disabled={mutation.isPending}
-                        />
-                    )}
-                />
-            </div>
+            {/* KZ translation */}
+            <Controller
+                control={form.control}
+                name='kz'
+                render={({ field }) => (
+                    <TranslationForm
+                        locale='kz'
+                        title={field.value.title}
+                        description={field.value.description ?? ''}
+                        onTitleChange={(v) => field.onChange({ ...kzValues, title: v })}
+                        onDescriptionChange={(v) =>
+                            field.onChange({ ...kzValues, description: v })
+                        }
+                        titleError={
+                            errors.kz?.title?.message
+                                ? t('title_required')
+                                : undefined
+                        }
+                        disabled={mutation.isPending}
+                    />
+                )}
+            />
 
             {/* Field grid: slug / status / category / teacher (read-only) */}
             <div className='grid gap-4 md:grid-cols-2'>

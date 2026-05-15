@@ -44,7 +44,7 @@ type SuccessFilter = 'true' | 'false';
  */
 export function MailingsHistoryTable() {
     const t = useTranslations('admin.mailings');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const [{ page, page_size, user_id, subject, success, category, date_from, date_to }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
@@ -301,7 +301,7 @@ function StatusBadge({
     );
 }
 
-function formatUnixSeconds(unix: number, locale: 'ru' | 'kz'): string {
+function formatUnixSeconds(unix: number, locale: string): string {
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
     return new Intl.DateTimeFormat(lang, {
         dateStyle: 'short',

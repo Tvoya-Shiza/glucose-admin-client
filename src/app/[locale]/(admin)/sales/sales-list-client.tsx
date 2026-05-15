@@ -50,7 +50,7 @@ const PAYMENT_METHOD_OPTIONS: PaymentMethodLit[] = ['credit', 'payment_channel',
  */
 export function SalesListClient() {
     const t = useTranslations('admin.sales');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
 
     const [

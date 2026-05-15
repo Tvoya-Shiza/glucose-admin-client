@@ -107,7 +107,7 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
 
     const safeTab: TabKey = (TABS as readonly string[]).includes(tab) ? (tab as TabKey) : 'overview';
 
-    const ruTitle = data.translations.find((tr) => tr.locale === 'ru')?.title?.trim() ?? '';
+    const ruTitle = data.translations.find((tr) => tr.locale === 'kz')?.title?.trim() ?? '';
     const headerTitle = ruTitle.length > 0 ? ruTitle : `#${data.id}`;
     const isAdmin = role === 'admin';
 
@@ -119,7 +119,7 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
         status: data.status,
         version: data.version,
         category: data.category
-            ? { id: data.category.id, title_ru: data.category.title_ru }
+            ? { id: data.category.id, title_kz: data.category.title_kz }
             : null,
         time: data.time,
         pass_mark: data.pass_mark,
@@ -128,7 +128,7 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
         question_count: data.counts.question_count,
         translation_completeness: data.translation_completeness,
         missing_locales: data.missing_locales,
-        badges: data.badges.map((b) => ({ id: b.id, title_ru: b.title_ru })),
+        badges: data.badges.map((b) => ({ id: b.id, title_kz: b.title_kz })),
         created_at: data.created_at,
         updated_at: data.updated_at,
     };

@@ -24,7 +24,7 @@ export interface CategoryPickerProps {
  */
 export function CategoryPicker({ value, onChange, placeholder, disabled }: CategoryPickerProps) {
     const t = useTranslations('admin.courses');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -43,8 +43,8 @@ export function CategoryPicker({ value, onChange, placeholder, disabled }: Categ
     });
 
     const labelOf = (c: CourseCategoryRow): string => {
-        if (locale === 'kz') return c.title_kz ?? c.title_ru ?? c.slug;
-        return c.title_ru ?? c.title_kz ?? c.slug;
+        if (locale === 'kz') return c.title_kz ?? c.title_kz ?? c.slug;
+        return c.title_kz ?? c.title_kz ?? c.slug;
     };
 
     const selected = useMemo(() => {

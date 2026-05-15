@@ -22,7 +22,7 @@
  */
 export type BlogStatus = 'pending' | 'publish';
 
-export type Locale = 'ru' | 'kz';
+export type Locale = 'kz';
 
 export interface BlogTranslationRow {
     locale: Locale;
@@ -42,9 +42,8 @@ export interface BlogRow {
     visit_count: number;
     created_at: number;
     updated_at: number;
-    title_ru: string | null;
     title_kz: string | null;
-    category_title_ru: string | null;
+    category_title_kz: string | null;
     author_full_name: string | null;
 }
 
@@ -57,11 +56,10 @@ export interface BlogDetail extends BlogRow {
     /**
      * Plan 04 lock — admin-api detail response embeds the resolved category +
      * author shapes. BlogCategory has no slug column (schema-truth), hence
-     * `id + title_ru + title_kz` only.
+     * `id + title_kz + title_kz` only.
      */
     category: {
         id: number;
-        title_ru: string | null;
         title_kz: string | null;
     } | null;
     /**
@@ -89,7 +87,6 @@ export interface BlogListResponse {
  */
 export interface BlogCategoryRow {
     id: number;
-    title_ru: string | null;
     title_kz: string | null;
 }
 

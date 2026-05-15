@@ -13,7 +13,7 @@ import type { UserDetail } from '@/lib/users/types';
  */
 export function PaymentsTab({ user }: { user: UserDetail }) {
     const t = useTranslations('admin.users');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     if (user.recent_payments.length === 0) {
         return <p className='text-muted-foreground pt-4 text-sm'>{t('empty')}</p>;

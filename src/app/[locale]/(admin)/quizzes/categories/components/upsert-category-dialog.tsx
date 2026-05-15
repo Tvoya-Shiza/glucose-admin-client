@@ -39,7 +39,6 @@ import type { UpsertCategory } from '@/lib/quizzes/types';
  * On submit invalidates ['admin.quiz-categories.list'] and closes the dialog.
  */
 const schema = z.object({
-    ru_title: z.string().min(1).max(255),
     kz_title: z.string().min(1).max(255),
 });
 
@@ -52,7 +51,6 @@ export interface UpsertCategoryDialogProps {
     initial?: {
         id: number;
         parent_id: number | null;
-        ru_title: string;
         kz_title: string;
     };
     /** Required in create mode; ignored in edit mode (stays from initial). */
@@ -72,7 +70,6 @@ export function UpsertCategoryDialog({
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
         defaultValues: {
-            ru_title: initial?.ru_title ?? '',
             kz_title: initial?.kz_title ?? '',
         },
         mode: 'onSubmit',
@@ -81,7 +78,6 @@ export function UpsertCategoryDialog({
     useEffect(() => {
         if (open) {
             form.reset({
-                ru_title: initial?.ru_title ?? '',
                 kz_title: initial?.kz_title ?? '',
             });
         }
@@ -93,10 +89,7 @@ export function UpsertCategoryDialog({
             const payload: UpsertCategory = {
                 ...(isEdit ? { id: initial!.id } : {}),
                 parent_id: isEdit ? (initial!.parent_id ?? null) : (parentIdForCreate ?? null),
-                translations: [
-                    { locale: 'ru', title: values.ru_title },
-                    { locale: 'kz', title: values.kz_title },
-                ],
+                translations: [{ locale: 'kz', title: values.kz_title }],
             };
             return upsertCategory(payload);
         },
@@ -129,34 +122,19 @@ export function UpsertCategoryDialog({
                         onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
                         className='space-y-4'
                     >
-                        <div className='grid grid-cols-2 gap-3'>
-                            <FormField
-                                control={form.control}
-                                name='ru_title'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t('categories.ru_title')}</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name='kz_title'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t('categories.kz_title')}</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
+                        <FormField
+                            control={form.control}
+                            name='kz_title'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('categories.kz_title')}</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <DialogFooter>
                             <Button

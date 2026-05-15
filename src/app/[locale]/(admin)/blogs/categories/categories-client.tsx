@@ -41,13 +41,12 @@ import type { BlogCategoryRow } from '@/lib/blogs/types';
  *
  * Schema-truth (Plan 01 lock): BlogCategory has NO `slug` column. The form here
  * therefore omits slug entirely, diverging from Story/Banner categories. Shape:
- * title_ru + title_kz only.
+ * title_kz + title_kz only.
  *
  * No bulk actions; small flat surface (D-15). Delete attempts hard delete; on
  * 400 'blogs.category_in_use' the Error.message is surfaced via toast.
  */
 const categorySchema = z.object({
-    title_ru: z.string().min(1).max(255),
     title_kz: z.string().min(1).max(255),
 });
 
@@ -69,7 +68,6 @@ function CategoryDialog({
     const form = useForm<CategoryValues>({
         resolver: zodResolver(categorySchema),
         defaultValues: {
-            title_ru: category?.title_ru ?? '',
             title_kz: category?.title_kz ?? '',
         },
         mode: 'onSubmit',
@@ -95,7 +93,6 @@ function CategoryDialog({
             onOpenChange={(o) => {
                 if (o) {
                     form.reset({
-                        title_ru: category?.title_ru ?? '',
                         title_kz: category?.title_kz ?? '',
                     });
                 }
@@ -116,10 +113,10 @@ function CategoryDialog({
                     >
                         <FormField
                             control={form.control}
-                            name='title_ru'
+                            name='title_kz'
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('title_ru_label')}</FormLabel>
+                                    <FormLabel>{t('title_kz_label')}</FormLabel>
                                     <FormControl>
                                         <Input {...field} />
                                     </FormControl>
@@ -162,7 +159,7 @@ function CategoryDialog({
 
 export function CategoriesClient() {
     const t = useTranslations('admin.blogs');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const qc = useQueryClient();
 
     const [editing, setEditing] = useState<BlogCategoryRow | null>(null);
@@ -210,7 +207,7 @@ export function CategoriesClient() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>{t('col_id')}</TableHead>
-                            <TableHead>{t('title_ru_label')}</TableHead>
+                            <TableHead>{t('title_kz_label')}</TableHead>
                             <TableHead>{t('title_kz_label')}</TableHead>
                             <TableHead className='w-32 text-right'>{t('actions')}</TableHead>
                         </TableRow>
@@ -234,7 +231,7 @@ export function CategoriesClient() {
                             (cats.data ?? []).map((c) => (
                                 <TableRow key={c.id}>
                                     <TableCell className='font-mono text-xs'>{c.id}</TableCell>
-                                    <TableCell>{c.title_ru ?? '—'}</TableCell>
+                                    <TableCell>{c.title_kz ?? '—'}</TableCell>
                                     <TableCell>{c.title_kz ?? '—'}</TableCell>
                                     <TableCell className='text-right'>
                                         <div className='flex justify-end gap-2'>
@@ -254,7 +251,7 @@ export function CategoriesClient() {
                                                 onClick={() => {
                                                     if (
                                                         confirm(
-                                                            `${t('categories_delete')}: ${c.title_ru ?? `#${c.id}`}?`,
+                                                            `${t('categories_delete')}: ${c.title_kz ?? `#${c.id}`}?`,
                                                         )
                                                     ) {
                                                         del.mutate(c.id);

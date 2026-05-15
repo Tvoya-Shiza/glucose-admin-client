@@ -52,9 +52,7 @@ import { SchedulePushDialog } from '../schedule/schedule-push-dialog';
  */
 
 const PAYLOAD_SCHEMA = z.object({
-    title_ru: z.string().min(1).max(64),
     title_kz: z.string().min(1).max(64),
-    body_ru: z.string().min(1).max(240),
     body_kz: z.string().min(1).max(240),
     category: z.enum(['info', 'promo', 'reminder', 'system']),
     deep_link: z.string().max(512).optional(),
@@ -77,9 +75,7 @@ const CATEGORIES: NotificationCategory[] = ['info', 'promo', 'reminder', 'system
 
 const DEFAULT_VALUES: FormValues = {
     payload: {
-        title_ru: '',
         title_kz: '',
-        body_ru: '',
         body_kz: '',
         category: 'info',
         deep_link: '',
@@ -183,17 +179,8 @@ export function PushComposeForm() {
         >
             <h2 className='text-lg font-medium'>{t('compose_title')}</h2>
 
-            {/* RU + KZ titles + bodies */}
+            {/* KZ title + body */}
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                <div className='flex flex-col gap-1'>
-                    <Label htmlFor='title_ru'>{t('title_ru_label')}</Label>
-                    <Input
-                        id='title_ru'
-                        maxLength={64}
-                        {...form.register('payload.title_ru')}
-                    />
-                    <span className='text-muted-foreground text-xs'>{t('title_max_chars')}</span>
-                </div>
                 <div className='flex flex-col gap-1'>
                     <Label htmlFor='title_kz'>{t('title_kz_label')}</Label>
                     <Input
@@ -202,16 +189,6 @@ export function PushComposeForm() {
                         {...form.register('payload.title_kz')}
                     />
                     <span className='text-muted-foreground text-xs'>{t('title_max_chars')}</span>
-                </div>
-                <div className='flex flex-col gap-1'>
-                    <Label htmlFor='body_ru'>{t('body_ru_label')}</Label>
-                    <Textarea
-                        id='body_ru'
-                        rows={3}
-                        maxLength={240}
-                        {...form.register('payload.body_ru')}
-                    />
-                    <span className='text-muted-foreground text-xs'>{t('body_max_chars')}</span>
                 </div>
                 <div className='flex flex-col gap-1'>
                     <Label htmlFor='body_kz'>{t('body_kz_label')}</Label>

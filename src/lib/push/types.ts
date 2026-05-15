@@ -15,9 +15,7 @@ import type { AudienceShape } from '../audience/types';
 export type NotificationCategory = 'info' | 'promo' | 'reminder' | 'system';
 
 export interface PushPayload {
-    title_ru: string;
     title_kz: string;
-    body_ru: string;
     body_kz: string;
     category: NotificationCategory;
     deep_link?: string | null;
@@ -58,7 +56,6 @@ export interface PushTestToMeInput {
 export interface ScheduledPushRow {
     /** BigInt-as-string */
     id: string;
-    title_ru: string;
     title_kz: string;
     category: NotificationCategory;
     scheduled_at: number;
@@ -74,7 +71,6 @@ export interface ScheduledPushRow {
 }
 
 export interface ScheduledPushDetail extends ScheduledPushRow {
-    body_ru: string;
     body_kz: string;
     deep_link: string | null;
     audience: AudienceShape;

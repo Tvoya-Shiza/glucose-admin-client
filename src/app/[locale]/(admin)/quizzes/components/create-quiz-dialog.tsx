@@ -34,7 +34,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createQuiz } from '@/lib/quizzes/api';
 import type { CreateQuiz, QuizStatus } from '@/lib/quizzes/types';
 
@@ -59,8 +58,7 @@ const createQuizSchema = z.object({
     time: z.string().optional(),
     attempt: z.string().optional(),
     certificate: z.boolean(),
-    ru_title: z.string().min(1).max(255),
-    kz_title: z.string().min(1).max(255),
+    title: z.string().min(1).max(255),
 });
 
 type CreateQuizValues = z.infer<typeof createQuizSchema>;
@@ -72,7 +70,7 @@ export interface CreateQuizDialogProps {
 
 export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) {
     const t = useTranslations('admin.quizzes');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
     const qc = useQueryClient();
 
@@ -84,8 +82,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
             time: '',
             attempt: '',
             certificate: false,
-            ru_title: '',
-            kz_title: '',
+            title: '',
         },
         mode: 'onSubmit',
     });
@@ -98,8 +95,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                 time: '',
                 attempt: '',
                 certificate: false,
-                ru_title: '',
-                kz_title: '',
+                title: '',
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,10 +115,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                     values.attempt && values.attempt.trim() !== ''
                         ? Number(values.attempt.trim())
                         : null,
-                translations: [
-                    { locale: 'ru', title: values.ru_title },
-                    { locale: 'kz', title: values.kz_title },
-                ],
+                translations: [{ locale: 'kz', title: values.title }],
             };
             return createQuiz(payload);
         },
@@ -271,42 +264,19 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                             )}
                         />
 
-                        <Tabs defaultValue='ru' className='w-full'>
-                            <TabsList className='grid w-full grid-cols-2'>
-                                <TabsTrigger value='ru'>{t('ru_translation')}</TabsTrigger>
-                                <TabsTrigger value='kz'>{t('kz_translation')}</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value='ru' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='ru_title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('title_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                            <TabsContent value='kz' className='space-y-3'>
-                                <FormField
-                                    control={form.control}
-                                    name='kz_title'
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('title_label')}</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TabsContent>
-                        </Tabs>
+                        <FormField
+                            control={form.control}
+                            name='title'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('title_label')}</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <DialogFooter>
                             <Button

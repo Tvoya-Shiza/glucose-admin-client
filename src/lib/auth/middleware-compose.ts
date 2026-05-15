@@ -15,8 +15,8 @@ const intlMiddleware = createIntlMiddleware(routing);
  * this predicate handles per-locale paths under [locale]/login + bare /login.
  */
 function isPublicPath(pathname: string): boolean {
-    // Match /login, /ru/login, /kz/login (with or without trailing slash or sub-path).
-    if (/^\/(ru\/|kz\/)?login(\/|$)/.test(pathname)) return true;
+    // Match /login, /kz/login (with or without trailing slash or sub-path).
+    if (/^\/(kz\/)?login(\/|$)/.test(pathname)) return true;
     // Match /favicon.ico (Next 16 may surface it through middleware in some setups)
     if (pathname === '/favicon.ico') return true;
     return false;
@@ -24,6 +24,12 @@ function isPublicPath(pathname: string): boolean {
 
 export async function adminMiddleware(req: NextRequest): Promise<NextResponse> {
     const pathname = req.nextUrl.pathname;
+
+    // Legacy locale redirect: /ru/* → /kz/* (Russian was removed; preserve link-stability).
+    if (pathname === '/ru' || pathname.startsWith('/ru/')) {
+        const next = pathname.replace(/^\/ru/, '/kz') + req.nextUrl.search;
+        return NextResponse.redirect(new URL(next, req.url), 307);
+    }
 
     // Public paths skip auth check; still pass through next-intl for locale rewriting.
     if (isPublicPath(pathname)) {

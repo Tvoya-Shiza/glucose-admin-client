@@ -1,15 +1,13 @@
 /**
  * Phase 7 Plan 01 — shared banners types.
  *
- * Schema reference (glucose-admin-api/prisma/schema.prisma lines 1219-1273):
- *   - Advertisement: id, category_id, author_id, slug, image, video,
+ * Schema reference (glucose-admin-api/prisma/schema.prisma):
+ *   - Advertisement: id, author_id, slug, image, video,
  *     visit_count, enable_comment, status (BlogStatus enum: 'pending'|'publish'),
  *     link_type, page_type, link, created_at (unix), updated_at (unix).
  *     NOTE: Advertisement has NO `icon` column (unlike Story).
  *   - AdvertisementTranslation: id, advertisement_id, locale, title,
  *     description (Text), content (LongText). NO @@unique([advertisement_id, locale]).
- *   - AdvertisementCategory: id, slug; flat (no parent_id).
- *   - AdvertisementCategoryTranslation: advertisement_category_id, locale, title.
  *
  * SCHEMA-TRUTH LOCK:
  *   - NO `deleted_at`, NO `is_active`, NO `sort_order` columns.
@@ -19,7 +17,7 @@
  */
 export type BannerStatus = 'pending' | 'publish';
 
-export type Locale = 'ru' | 'kz';
+export type Locale = 'kz';
 
 export interface BannerTranslationRow {
     locale: Locale;
@@ -34,14 +32,11 @@ export interface BannerRow {
     image: string | null;
     video: string | null;
     status: BannerStatus;
-    category_id: number;
     author_id: number;
     visit_count: number;
     created_at: number;
     updated_at: number;
-    title_ru: string | null;
     title_kz: string | null;
-    category_title_ru: string | null;
     author_full_name: string | null;
 }
 
@@ -59,16 +54,8 @@ export interface BannerListResponse {
     pageCount: number;
 }
 
-export interface BannerCategoryRow {
-    id: number;
-    slug: string;
-    title_ru: string | null;
-    title_kz: string | null;
-}
-
 export interface BannerUpsertInput {
     slug: string;
-    category_id: number;
     image?: string | null;
     video?: string | null;
     status?: BannerStatus;

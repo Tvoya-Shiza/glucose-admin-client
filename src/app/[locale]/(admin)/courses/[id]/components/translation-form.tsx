@@ -48,7 +48,7 @@ export function TranslationForm({
     disabled,
 }: TranslationFormProps) {
     const t = useTranslations('admin.courses');
-    const heading = locale === 'ru' ? t('ru_translation') : t('kz_translation');
+    const heading = t('kz_translation');
 
     return (
         <div className='space-y-3 rounded-lg border p-4'>

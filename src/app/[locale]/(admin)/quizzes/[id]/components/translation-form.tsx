@@ -85,7 +85,7 @@ export function QuizTranslationForm({
         })();
     }
 
-    const heading = locale === 'ru' ? t('ru_translation') : t('kz_translation');
+    const heading = t('kz_translation');
     const showSaved = savedAt != null && !saving && Date.now() - savedAt < 2500;
 
     return (

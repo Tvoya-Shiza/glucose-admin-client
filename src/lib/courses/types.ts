@@ -31,7 +31,7 @@
 export type CourseStatus = 'active' | 'pending' | 'is_draft' | 'inactive';
 export type CreateCourseStatus = 'active' | 'pending' | 'is_draft';
 export type CourseType = 'webinar' | 'course' | 'text_lesson';
-export type Locale = 'ru' | 'kz';
+export type Locale = 'kz';
 export type TranslationCompleteness = 'complete' | 'incomplete';
 export type CourseSortField = 'created_at' | 'updated_at' | 'teacher' | 'slug';
 export type SortOrder = 'asc' | 'desc';
@@ -72,6 +72,8 @@ export interface CategoryRef {
 export interface CourseRow {
     id: number;
     slug: string;
+    /** KZ title from WebinarTranslations join. null when missing. */
+    title_kz: string | null;
     status: CourseStatus;
     teacher: TeacherRef | null;
     category: CategoryRef | null;
@@ -120,7 +122,6 @@ export interface CourseDetailTeacherRef {
 export interface CourseDetailCategoryRef {
     id: number;
     slug: string;
-    title_ru: string | null;
     title_kz: string | null;
 }
 

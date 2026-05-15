@@ -12,21 +12,18 @@ import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
     BannerDetail,
     BannerListResponse,
-    BannerCategoryRow,
     BannerUpsertInput,
     BannerStatus,
     BulkStatusToggleResult,
 } from './types';
 
 export const BANNERS_API_BASE = '/api/proxy/v1/admin/banners';
-export const BANNER_CATEGORIES_API_BASE = '/api/proxy/v1/admin/banners/categories';
 
 export interface ListBannersQuery {
     page?: number;
     page_size?: number;
     q?: string;
     status?: BannerStatus;
-    category_id?: number;
     sort?: 'created_at' | 'updated_at' | 'visit_count';
     order?: 'asc' | 'desc';
 }
@@ -117,63 +114,4 @@ export async function bulkUpdateBannerStatus(input: {
     });
     if (!res.ok) throw new Error(await readErrorMessage(res, `bulkUpdateBannerStatus failed: ${res.status}`));
     return res.json();
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Banner categories
-// ──────────────────────────────────────────────────────────────────────────────
-
-export async function listBannerCategories(): Promise<BannerCategoryRow[]> {
-    const res = await fetchWithRefresh(BANNER_CATEGORIES_API_BASE);
-    if (!res.ok) throw new Error(`listBannerCategories failed: ${res.status}`);
-    const json = await res.json();
-    if (json && typeof json === 'object' && 'rows' in (json as Record<string, unknown>)) {
-        return (json as { rows: BannerCategoryRow[] }).rows;
-    }
-    return Array.isArray(json) ? (json as BannerCategoryRow[]) : [];
-}
-
-export async function getBannerCategory(id: number): Promise<BannerCategoryRow & { banner_count: number }> {
-    const res = await fetchWithRefresh(`${BANNER_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`);
-    if (!res.ok) throw new Error(await readErrorMessage(res, `getBannerCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<BannerCategoryRow & { banner_count: number }>(json);
-}
-
-export async function createBannerCategory(input: {
-    slug: string;
-    title_ru: string;
-    title_kz: string;
-}): Promise<BannerCategoryRow> {
-    const res = await fetchWithRefresh(BANNER_CATEGORIES_API_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `createBannerCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<BannerCategoryRow>(json);
-}
-
-export async function updateBannerCategory(
-    id: number,
-    input: Partial<{ slug: string; title_ru: string; title_kz: string }>,
-): Promise<BannerCategoryRow> {
-    const res = await fetchWithRefresh(`${BANNER_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `updateBannerCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<BannerCategoryRow>(json);
-}
-
-export async function deleteBannerCategory(id: number): Promise<{ id: number; deleted: true }> {
-    const res = await fetchWithRefresh(`${BANNER_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
-        method: 'DELETE',
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBannerCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<{ id: number; deleted: true }>(json);
 }

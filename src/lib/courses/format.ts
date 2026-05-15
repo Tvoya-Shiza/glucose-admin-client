@@ -13,7 +13,7 @@ import type { CourseStatus } from './types';
  * Locale 'kz' is the URL convention; remap to 'kk-KZ' at the BCP-47 boundary
  * (per glucose-admin-client/CLAUDE.md).
  */
-export function formatUnixSecondsOrDash(value: number | null | undefined, locale: 'ru' | 'kz'): string {
+export function formatUnixSecondsOrDash(value: number | null | undefined, locale: string): string {
     if (value == null) return '—';
     const d = new Date(value * 1000);
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';

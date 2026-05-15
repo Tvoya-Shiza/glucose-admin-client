@@ -34,7 +34,7 @@ import { PreviewRenderer } from '../components/preview-renderer';
  */
 export function PreviewTab({ courseId }: { courseId: number }) {
     const params = useParams<{ locale: Locale }>();
-    const locale: Locale = params?.locale === 'kz' ? 'kz' : 'ru';
+    const locale: Locale = params?.locale === 'kz' ? 'kz' : 'kz';
     const [groupId, setGroupId] = useQueryState('preview_group', parseAsString);
     const t = useTranslations('admin.courses');
 

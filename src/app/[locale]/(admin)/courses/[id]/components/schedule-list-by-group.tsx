@@ -50,7 +50,7 @@ function groupByChapter(rows: ScheduleRow[]): ChapterGroup[] {
     for (const r of rows) {
         const cid = r.chapter ? r.chapter.id : null;
         if (!map.has(cid)) {
-            const ru = r.chapter?.translations.find((tr) => tr.locale === 'ru')?.title;
+            const ru = r.chapter?.translations.find((tr) => tr.locale === 'kz')?.title;
             const label = ru && ru.length > 0 ? ru : cid != null ? `#${cid}` : '—';
             map.set(cid, { chapterId: cid, label, rows: [] });
         }

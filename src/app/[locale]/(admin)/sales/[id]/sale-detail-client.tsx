@@ -38,7 +38,7 @@ interface MeResponse {
  */
 export function SaleDetailClient({ saleId }: { saleId: string }) {
     const t = useTranslations('admin.sales');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const [refundOpen, setRefundOpen] = useState(false);
 
     const { data, isLoading, error } = useQuery({

@@ -221,7 +221,7 @@ export function CategoriesTreeClient() {
         setUpsertInitial({
             id: node.id,
             parent_id: node.parent_id,
-            ru_title: node.translations.find((tr) => tr.locale === 'ru')?.title ?? '',
+            ru_title: node.translations.find((tr) => tr.locale === 'kz')?.title ?? '',
             kz_title: node.translations.find((tr) => tr.locale === 'kz')?.title ?? '',
         });
         setUpsertParentId(node.parent_id);

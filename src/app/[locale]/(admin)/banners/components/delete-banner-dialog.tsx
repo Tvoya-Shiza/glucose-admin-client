@@ -73,7 +73,7 @@ export function DeleteBannerDialog({ open, onOpenChange, banner, onDeleted }: De
 
                 {banner ? (
                     <div className='space-y-3 text-sm'>
-                        <p className='font-medium'>{banner.title_ru ?? banner.slug}</p>
+                        <p className='font-medium'>{banner.title_kz ?? banner.slug}</p>
                         <p className='text-xs text-muted-foreground'>#{banner.id}</p>
                     </div>
                 ) : null}

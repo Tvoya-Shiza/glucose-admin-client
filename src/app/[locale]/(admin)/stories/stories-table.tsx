@@ -32,7 +32,7 @@ export interface StoriesTableProps {
     skeletonRowCount?: number;
 }
 
-function formatUnixSecondsOrDash(value: number | null | undefined, locale: 'ru' | 'kz'): string {
+function formatUnixSecondsOrDash(value: number | null | undefined, locale: string): string {
     if (value == null) return '—';
     const d = new Date(value * 1000);
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
@@ -47,7 +47,7 @@ function statusVariant(status: StoryStatus): 'default' | 'secondary' {
  * STY-01 — stories table.
  *
  * Columns: checkbox (page-scoped via useBulkSelection.togglePageScoped), image
- * thumbnail, id, title_ru, title_kz, status (badge), category (RU title), author,
+ * thumbnail, id, title_kz, title_kz, status (badge), author,
  * visit_count, created_at, Actions dropdown (Edit + Delete).
  *
  * Image thumbnail: 64x36 cover from `r.image` when present, placeholder div otherwise.
@@ -61,7 +61,7 @@ export function StoriesTable({
     skeletonRowCount = 10,
 }: StoriesTableProps) {
     const t = useTranslations('admin.stories');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const allChecked = selection.isPageAllSelected(rows);
 
@@ -79,10 +79,9 @@ export function StoriesTable({
                     </TableHead>
                     <TableHead className='w-20'>{t('image_label')}</TableHead>
                     <TableHead>{t('col_id')}</TableHead>
-                    <TableHead>{t('col_title_ru')}</TableHead>
+                    <TableHead>{t('col_title_kz')}</TableHead>
                     <TableHead>{t('col_title_kz')}</TableHead>
                     <TableHead>{t('col_status')}</TableHead>
-                    <TableHead>{t('col_category')}</TableHead>
                     <TableHead>{t('col_author')}</TableHead>
                     <TableHead className='text-right'>{t('col_visit_count')}</TableHead>
                     <TableHead>{t('col_created_at')}</TableHead>
@@ -93,7 +92,7 @@ export function StoriesTable({
                 {loading
                     ? Array.from({ length: skeletonRowCount }).map((_, i) => (
                           <TableRow key={`sk-${i}`}>
-                              <TableCell colSpan={11}>
+                              <TableCell colSpan={10}>
                                   <Skeleton className='h-6 w-full' />
                               </TableCell>
                           </TableRow>
@@ -120,8 +119,8 @@ export function StoriesTable({
                                   )}
                               </TableCell>
                               <TableCell className='font-mono text-xs'>{r.id}</TableCell>
-                              <TableCell className='max-w-[260px] truncate' title={r.title_ru ?? ''}>
-                                  {r.title_ru ?? '—'}
+                              <TableCell className='max-w-[260px] truncate' title={r.title_kz ?? ''}>
+                                  {r.title_kz ?? '—'}
                               </TableCell>
                               <TableCell className='max-w-[260px] truncate' title={r.title_kz ?? ''}>
                                   {r.title_kz ?? '—'}
@@ -130,9 +129,6 @@ export function StoriesTable({
                                   <Badge variant={statusVariant(r.status)}>
                                       {t(`status_badge_${r.status}`)}
                                   </Badge>
-                              </TableCell>
-                              <TableCell className='text-muted-foreground text-sm'>
-                                  {r.category_title_ru ?? `#${r.category_id}`}
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
                                   {r.author_full_name ?? '—'}

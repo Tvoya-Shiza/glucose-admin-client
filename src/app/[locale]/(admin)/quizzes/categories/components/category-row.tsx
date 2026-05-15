@@ -59,7 +59,7 @@ export function CategoryRow({
         opacity: isDragging ? 0.5 : 1,
     };
 
-    const ruTitle = node.translations?.find((tr) => tr.locale === 'ru')?.title ?? '';
+    const ruTitle = node.translations?.find((tr) => tr.locale === 'kz')?.title ?? '';
     const kzTitle = node.translations?.find((tr) => tr.locale === 'kz')?.title ?? '';
     const headerLabel = ruTitle.trim().length > 0 ? ruTitle : `#${node.id}`;
     const hasChildren = node.children.length > 0;

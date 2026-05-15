@@ -41,7 +41,7 @@ export interface GroupsTableProps {
  */
 export function GroupsTable({ rows, loading, isAdmin, onDelete, skeletonRowCount = 10 }: GroupsTableProps) {
     const t = useTranslations('admin.groups');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const columnCount = isAdmin ? 6 : 5;
 

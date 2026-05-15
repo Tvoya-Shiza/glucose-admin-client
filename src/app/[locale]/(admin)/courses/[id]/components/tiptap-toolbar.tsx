@@ -21,8 +21,8 @@ import {
 import { toast } from 'sonner';
 import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
-import { requestUploadToken, uploadFileDirect } from '@/lib/courses/upload-client';
-import type { UploadContentType } from '@/lib/courses/types';
+import { acceptForKind } from '@/lib/uploads/constants';
+import { useFileUpload } from '@/lib/uploads/use-file-upload';
 
 /**
  * TiptapToolbar — custom toolbar for Tiptap 3.
@@ -35,16 +35,13 @@ import type { UploadContentType } from '@/lib/courses/types';
  * its onPressedChange runs `editor.chain().focus().toggleX().run()`.
  *
  * Image flow: opens a hidden file input, runs the Plan 04 upload-token round-trip
- * (BFF → admin-api token, then BFF-bypass binary upload via XHR), then inserts
- * the resulting URL into the document via `setImage({src})`.
+ * via the shared `useFileUpload` hook (Phase 5+ unification), then inserts the
+ * resulting URL into the document via `setImage({src})`.
  *
  * Link flow: window.prompt for URL (replace with a dialog in a future polish);
  * Tiptap's link extension carries openOnClick=false (configured at editor init)
  * to prevent a click in the editor from navigating away.
  */
-
-const ALLOWED_IMAGE_MIMES: readonly UploadContentType[] = ['image/jpeg', 'image/png', 'image/webp'];
-const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 export interface TiptapToolbarProps {
     editor: Editor;
@@ -52,47 +49,32 @@ export interface TiptapToolbarProps {
 
 export function TiptapToolbar({ editor }: TiptapToolbarProps) {
     const t = useTranslations('admin.courses');
+    const tUpload = useTranslations('upload');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    // Hook owns: client-side MIME/size pre-flight, token round-trip, abort.
+    // We provide success/error callbacks to insert into the editor + toast.
+    const { upload, state } = useFileUpload({
+        kind: 'image',
+        onSuccess: (url, meta) => {
+            const alt = meta.original_name ?? '';
+            editor.chain().focus().setImage({ src: url, alt }).run();
+            toast.success(tUpload('succeeded'));
+        },
+        onError: (i18nKey) => {
+            toast.error(tUpload(i18nKey.replace(/^upload\./, '')));
+        },
+    });
+
     const handleImageClick = () => {
+        if (state === 'requesting' || state === 'uploading') return;
         fileInputRef.current?.click();
     };
 
-    const handleImagePicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImagePicked = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (fileInputRef.current) fileInputRef.current.value = '';
-        if (!file) return;
-
-        if (file.size > IMAGE_MAX_BYTES) {
-            toast.error(t('upload_file_too_large'));
-            return;
-        }
-        if (!ALLOWED_IMAGE_MIMES.includes(file.type as UploadContentType)) {
-            toast.error(t('upload_mime_not_allowed'));
-            return;
-        }
-
-        try {
-            const tokenRes = await requestUploadToken({
-                kind: 'image',
-                size: file.size,
-                content_type: file.type as UploadContentType,
-            });
-            const result = await uploadFileDirect(tokenRes.upload_url, tokenRes.token, file);
-            editor.chain().focus().setImage({ src: result.file_url, alt: file.name }).run();
-            toast.success(t('upload_succeeded'));
-        } catch (err) {
-            const msg = (err as Error)?.message ?? '';
-            if (msg.includes('upload.token_already_used')) {
-                toast.error(t('upload_already_used'));
-            } else if (msg.includes('upload.token_invalid') || msg.includes('upload.token_missing')) {
-                toast.error(t('upload_token_expired'));
-            } else if (msg.includes('upload.size_exceeds') || msg.includes('upload.content_type')) {
-                toast.error(t('upload_file_too_large'));
-            } else {
-                toast.error(t('upload_failed'));
-            }
-        }
+        if (file) upload(file);
     };
 
     const handleLinkClick = () => {
@@ -239,7 +221,7 @@ export function TiptapToolbar({ editor }: TiptapToolbarProps) {
             <input
                 ref={fileInputRef}
                 type='file'
-                accept={ALLOWED_IMAGE_MIMES.join(',')}
+                accept={acceptForKind('image')}
                 className='hidden'
                 onChange={handleImagePicked}
                 aria-hidden

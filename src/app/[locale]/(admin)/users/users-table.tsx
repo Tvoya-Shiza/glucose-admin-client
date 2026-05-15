@@ -27,7 +27,7 @@ export interface UsersTableProps {
  */
 export function UsersTable({ rows, loading, selection, skeletonRowCount = 10 }: UsersTableProps) {
     const t = useTranslations('admin.users');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const isPageAllSelected = selection.isPageAllSelected(rows);
 
     return (

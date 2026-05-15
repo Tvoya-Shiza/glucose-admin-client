@@ -118,7 +118,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
     const safeTab: TabKey = (TABS as readonly string[]).includes(tab) ? (tab as TabKey) : 'overview';
 
     // Header title: prefer RU translation, fallback to slug.
-    const ruTitle = data.translations.find((tr) => tr.locale === 'ru')?.title;
+    const ruTitle = data.translations.find((tr) => tr.locale === 'kz')?.title;
     const headerTitle = ruTitle && ruTitle.trim().length > 0 ? ruTitle : data.slug;
 
     const isAdmin = role === 'admin';

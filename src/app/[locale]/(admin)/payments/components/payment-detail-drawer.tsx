@@ -35,7 +35,7 @@ export interface PaymentDetailDrawerProps {
  */
 export function PaymentDetailDrawer({ paymentId, open, onOpenChange }: PaymentDetailDrawerProps) {
     const t = useTranslations('admin.payments');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['admin.payments.detail', paymentId] as const,

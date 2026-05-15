@@ -70,10 +70,7 @@ export function AnswersEditor({
                 parent_id: null,
                 correct: false,
                 image: null,
-                translations: [
-                    { locale: 'ru', title: ' ' },
-                    { locale: 'kz', title: ' ' },
-                ],
+                translations: [{ locale: 'kz', title: ' ' }],
             });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
@@ -131,9 +128,6 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
     const qc = useQueryClient();
 
     // Local state mirrors the server snapshot until a save round-trip lands.
-    const [ruTitle, setRuTitle] = useState(
-        answer.translations.find((tr) => tr.locale === 'ru')?.title ?? '',
-    );
     const [kzTitle, setKzTitle] = useState(
         answer.translations.find((tr) => tr.locale === 'kz')?.title ?? '',
     );
@@ -153,7 +147,6 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
     // skip if we're mid-save to avoid clobbering local edits.
     useEffect(() => {
         if (pending) return;
-        setRuTitle(answer.translations.find((tr) => tr.locale === 'ru')?.title ?? '');
         setKzTitle(answer.translations.find((tr) => tr.locale === 'kz')?.title ?? '');
         setCorrect(answer.correct);
         setImageUrl(answer.image);
@@ -167,7 +160,6 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
         correct,
         image: imageUrl ?? null,
         translations: [
-            { locale: 'ru', title: ruTitle.length > 0 ? ruTitle : ' ' },
             { locale: 'kz', title: kzTitle.length > 0 ? kzTitle : ' ' },
         ],
         ...overrides,
@@ -270,10 +262,9 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
     };
 
     const handleBlurTitle = () => {
-        const ruDirty = ruTitle !== (answer.translations.find((x) => x.locale === 'ru')?.title ?? '');
         const kzDirty = kzTitle !== (answer.translations.find((x) => x.locale === 'kz')?.title ?? '');
-        if (!ruDirty && !kzDirty) return;
-        if (!ruTitle.trim() || !kzTitle.trim()) {
+        if (!kzDirty) return;
+        if (!kzTitle.trim()) {
             toast.error(t('validation_failed'));
             return;
         }
@@ -325,19 +316,7 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
                     </Button>
                 </div>
             </div>
-            <div className='grid gap-2 md:grid-cols-2'>
-                <div className='space-y-1'>
-                    <Label className='text-muted-foreground text-xs'>
-                        {t('ru_translation')}
-                    </Label>
-                    <Input
-                        value={ruTitle}
-                        onChange={(e) => setRuTitle(e.target.value)}
-                        onBlur={handleBlurTitle}
-                        placeholder={t('answer_title_placeholder')}
-                        disabled={pending}
-                    />
-                </div>
+            <div className='grid gap-2'>
                 <div className='space-y-1'>
                     <Label className='text-muted-foreground text-xs'>
                         {t('kz_translation')}

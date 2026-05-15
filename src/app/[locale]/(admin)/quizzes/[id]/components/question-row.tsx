@@ -106,7 +106,7 @@ export function QuestionRow({ quizId, question, index }: QuestionRowProps) {
         }
     };
 
-    const ruTitle = question.translations.find((tr) => tr.locale === 'ru')?.title ?? '';
+    const ruTitle = question.translations.find((tr) => tr.locale === 'kz')?.title ?? '';
     const truncatedTitle =
         ruTitle.length > 80 ? `${ruTitle.slice(0, 80)}…` : ruTitle.length > 0 ? ruTitle : `#${question.id}`;
     const hasKz = (question.translations.find((tr) => tr.locale === 'kz')?.title ?? '').length > 0;

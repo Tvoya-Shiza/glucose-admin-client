@@ -82,7 +82,6 @@ export interface CourseCategoryRow {
     parent_id: number | null;
     slug: string;
     icon: string | null;
-    title_ru: string | null;
     title_kz: string | null;
 }
 
@@ -336,6 +335,6 @@ export async function uploadFile(
     file: File,
     onProgress?: (p: number) => void,
 ): Promise<UploadFileResult> {
-    const { uploadFileDirect } = await import('./upload-client');
-    return uploadFileDirect(uploadUrl, token, file, onProgress);
+    const { uploadFileDirect } = await import('@/lib/uploads/client');
+    return uploadFileDirect(uploadUrl, token, file, onProgress).promise;
 }

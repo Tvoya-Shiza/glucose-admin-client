@@ -33,7 +33,7 @@ export function TranslationCompletenessBadge({
         );
     }
 
-    const labels = missingLocales.map((l) => (l === 'ru' ? t('missing_ru') : t('missing_kz')));
+    const labels = missingLocales.map(() => t('missing_kz'));
     return (
         <Badge variant='secondary' className='gap-1'>
             <span aria-hidden>⚠</span>

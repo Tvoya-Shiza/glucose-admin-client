@@ -39,7 +39,7 @@ interface MeResponse {
  */
 export function BlogsListClient() {
     const t = useTranslations('admin.blogs');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const router = useRouter();
 
     const [{ page, page_size, status, category_id, q, sort, order }, setQ] = useQueryStates({

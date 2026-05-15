@@ -64,7 +64,7 @@ function statusBadgeVariant(status: QuizResultStatus): 'default' | 'secondary' |
  */
 export function ResultsList({ scopedQuizId, hideQuizColumn }: ResultsListProps) {
     const t = useTranslations('admin.quizzes');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const [
         { page, page_size, status, date_from, date_to, q, quiz_id, badge_id },
@@ -186,8 +186,8 @@ export function ResultsList({ scopedQuizId, hideQuizColumn }: ResultsListProps) 
                                 : rows.map((r) => {
                                       const quizTitle =
                                           locale === 'kz'
-                                              ? (r.quiz?.kz_title?.trim() || r.quiz?.title_ru?.trim() || '')
-                                              : (r.quiz?.title_ru?.trim() || '');
+                                              ? (r.quiz?.kz_title?.trim() || r.quiz?.title_kz?.trim() || '')
+                                              : (r.quiz?.title_kz?.trim() || '');
                                       const quizLabel =
                                           quizTitle.length > 0 ? quizTitle : r.quiz ? `#${r.quiz.id}` : '—';
                                       const userLabel =

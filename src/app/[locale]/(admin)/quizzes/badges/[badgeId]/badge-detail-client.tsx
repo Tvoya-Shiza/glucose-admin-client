@@ -133,7 +133,6 @@ export function BadgeDetailClient({ badgeId }: BadgeDetailClientProps) {
                     id: data.id,
                     is_active: data.is_active,
                     quiz_category_id: data.quiz_category_id,
-                    ru_title: data.translations.ru ?? '',
                     kz_title: data.translations.kz ?? '',
                 }}
             />

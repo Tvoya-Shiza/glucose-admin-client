@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TiptapEditor } from '../../courses/[id]/components/tiptap-editor';
+import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import { getBlog, updateBlog } from '@/lib/blogs/api';
 import type { BlogDetail } from '@/lib/blogs/types';
 import { AuthorChangeDialog } from '../components/author-change-dialog';
@@ -34,7 +35,7 @@ export interface BlogDetailClientProps {
  */
 export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
     const t = useTranslations('admin.blogs');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
     const qc = useQueryClient();
 
     const detail = useQuery({
@@ -45,21 +46,16 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
 
     const blog: BlogDetail | undefined = detail.data;
 
-    const ruInitial = blog?.translations?.find((tr) => tr.locale === 'ru')?.content ?? '';
     const kzInitial = blog?.translations?.find((tr) => tr.locale === 'kz')?.content ?? '';
-    const ruTitle = blog?.translations?.find((tr) => tr.locale === 'ru')?.title ?? '';
     const kzTitle = blog?.translations?.find((tr) => tr.locale === 'kz')?.title ?? '';
-    const ruDescription = blog?.translations?.find((tr) => tr.locale === 'ru')?.description ?? '';
     const kzDescription = blog?.translations?.find((tr) => tr.locale === 'kz')?.description ?? '';
 
-    const [ruContent, setRuContent] = useState(ruInitial);
     const [kzContent, setKzContent] = useState(kzInitial);
     const [authorOpen, setAuthorOpen] = useState(false);
 
     // Sync local content when initial detail loads / changes.
     useEffect(() => {
         if (blog) {
-            setRuContent(ruInitial);
             setKzContent(kzInitial);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +66,6 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
             updateBlog(blogId, {
                 // Title + description preserved from current state; content is what we're editing.
                 translations: [
-                    { locale: 'ru', title: ruTitle, description: ruDescription, content: ruContent },
                     { locale: 'kz', title: kzTitle, description: kzDescription, content: kzContent },
                 ],
             }),
@@ -102,7 +97,7 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
         <div className='flex h-full flex-col'>
             <header className='flex items-center justify-between p-6'>
                 <div>
-                    <h1 className='text-2xl font-semibold'>{ruTitle || blog.slug}</h1>
+                    <h1 className='text-2xl font-semibold'>{kzTitle || blog.slug}</h1>
                     <p className='text-muted-foreground text-sm'>
                         <Link href={`/${locale}/blogs`} className='hover:underline'>
                             ← {t('list_title')}
@@ -132,7 +127,7 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
                         <div>
                             <dt className='text-muted-foreground'>{t('category_label')}</dt>
                             <dd>
-                                {blog.category?.title_ru ?? `#${blog.category_id}`}
+                                {blog.category?.title_kz ?? `#${blog.category_id}`}
                             </dd>
                         </div>
                         <div>
@@ -140,7 +135,7 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
                             <dd>
                                 {blog.image ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={blog.image} alt='' className='mt-1 h-20 w-32 rounded object-cover' />
+                                    <img src={resolveAssetUrl(blog.image)} alt='' className='mt-1 h-20 w-32 rounded object-cover' />
                                 ) : (
                                     '—'
                                 )}
@@ -159,10 +154,6 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
                             </dd>
                         </div>
                         <div>
-                            <dt className='text-muted-foreground'>{t('title_ru_label')}</dt>
-                            <dd>{ruTitle || '—'}</dd>
-                        </div>
-                        <div>
                             <dt className='text-muted-foreground'>{t('title_kz_label')}</dt>
                             <dd>{kzTitle || '—'}</dd>
                         </div>
@@ -170,20 +161,10 @@ export function BlogDetailClient({ blogId }: BlogDetailClientProps) {
                 </TabsContent>
 
                 <TabsContent value='content' className='space-y-4 pt-4'>
-                    <Tabs defaultValue='ru' className='w-full'>
-                        <TabsList>
-                            <TabsTrigger value='ru'>{t('ru_translation')}</TabsTrigger>
-                            <TabsTrigger value='kz'>{t('kz_translation')}</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value='ru' className='space-y-2 pt-3'>
-                            <p className='text-xs text-muted-foreground'>{t('content_editor_label')}</p>
-                            <TiptapEditor initialHtml={ruInitial} onChange={setRuContent} />
-                        </TabsContent>
-                        <TabsContent value='kz' className='space-y-2 pt-3'>
-                            <p className='text-xs text-muted-foreground'>{t('content_editor_label')}</p>
-                            <TiptapEditor initialHtml={kzInitial} onChange={setKzContent} />
-                        </TabsContent>
-                    </Tabs>
+                    <div className='space-y-2 pt-3'>
+                        <p className='text-xs text-muted-foreground'>{t('content_editor_label')}</p>
+                        <TiptapEditor initialHtml={kzInitial} onChange={setKzContent} />
+                    </div>
 
                     <div className='flex justify-end'>
                         <Button onClick={() => saveContent.mutate()} disabled={saveContent.isPending}>

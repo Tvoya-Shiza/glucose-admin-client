@@ -9,21 +9,18 @@ import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
     StoryDetail,
     StoryListResponse,
-    StoryCategoryRow,
     StoryUpsertInput,
     StoryStatus,
     BulkStatusToggleResult,
 } from './types';
 
 export const STORIES_API_BASE = '/api/proxy/v1/admin/stories';
-export const STORY_CATEGORIES_API_BASE = '/api/proxy/v1/admin/stories/categories';
 
 export interface ListStoriesQuery {
     page?: number;
     page_size?: number;
     q?: string;
     status?: StoryStatus;
-    category_id?: number;
     sort?: 'created_at' | 'updated_at' | 'visit_count';
     order?: 'asc' | 'desc';
 }
@@ -114,63 +111,4 @@ export async function bulkUpdateStoryStatus(input: {
     });
     if (!res.ok) throw new Error(await readErrorMessage(res, `bulkUpdateStoryStatus failed: ${res.status}`));
     return res.json();
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Story categories
-// ──────────────────────────────────────────────────────────────────────────────
-
-export async function listStoryCategories(): Promise<StoryCategoryRow[]> {
-    const res = await fetchWithRefresh(STORY_CATEGORIES_API_BASE);
-    if (!res.ok) throw new Error(`listStoryCategories failed: ${res.status}`);
-    const json = await res.json();
-    if (json && typeof json === 'object' && 'rows' in (json as Record<string, unknown>)) {
-        return (json as { rows: StoryCategoryRow[] }).rows;
-    }
-    return Array.isArray(json) ? (json as StoryCategoryRow[]) : [];
-}
-
-export async function getStoryCategory(id: number): Promise<StoryCategoryRow & { story_count: number }> {
-    const res = await fetchWithRefresh(`${STORY_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`);
-    if (!res.ok) throw new Error(await readErrorMessage(res, `getStoryCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<StoryCategoryRow & { story_count: number }>(json);
-}
-
-export async function createStoryCategory(input: {
-    slug: string;
-    title_ru: string;
-    title_kz: string;
-}): Promise<StoryCategoryRow> {
-    const res = await fetchWithRefresh(STORY_CATEGORIES_API_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `createStoryCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<StoryCategoryRow>(json);
-}
-
-export async function updateStoryCategory(
-    id: number,
-    input: Partial<{ slug: string; title_ru: string; title_kz: string }>,
-): Promise<StoryCategoryRow> {
-    const res = await fetchWithRefresh(`${STORY_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `updateStoryCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<StoryCategoryRow>(json);
-}
-
-export async function deleteStoryCategory(id: number): Promise<{ id: number; deleted: true }> {
-    const res = await fetchWithRefresh(`${STORY_CATEGORIES_API_BASE}/${encodeURIComponent(String(id))}`, {
-        method: 'DELETE',
-    });
-    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteStoryCategory failed: ${res.status}`));
-    const json = await res.json();
-    return unwrapData<{ id: number; deleted: true }>(json);
 }

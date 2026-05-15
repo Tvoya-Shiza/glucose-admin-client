@@ -76,7 +76,7 @@ export function ItemRow({ courseId, chapterId, item }: ItemRowProps) {
     })();
 
     const label = (() => {
-        const ru = item.translations?.find((tr) => tr.locale === 'ru')?.title;
+        const ru = item.translations?.find((tr) => tr.locale === 'kz')?.title;
         if (ru && ru.length > 0) return ru;
         if (item.type === 'quiz' && item.quiz?.slug) return item.quiz.slug;
         if (item.type === 'assignment') return `#${item.item_id}`;

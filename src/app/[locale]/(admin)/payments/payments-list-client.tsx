@@ -36,7 +36,7 @@ import { PaymentsExportButton } from './components/payments-export-button';
  */
 export function PaymentsListClient() {
     const t = useTranslations('admin.payments');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const [{ page, page_size, status, date_from, date_to, amount_min, amount_max, q, sort, order }, setQ] =
         useQueryStates({

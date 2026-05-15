@@ -47,7 +47,7 @@ export function MembersTable({
 }: MembersTableProps) {
     const t = useTranslations('admin.groups');
     const tUsers = useTranslations('admin.users');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     // Adapter: useBulkSelection's API expects `{ id: TId }[]`. MemberRow uses `user_id`.
     const idRows = rows.map((r) => ({ id: r.user_id }));

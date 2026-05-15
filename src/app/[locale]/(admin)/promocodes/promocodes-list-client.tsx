@@ -34,7 +34,7 @@ interface MeResponse {
  */
 export function PromocodesListClient() {
     const t = useTranslations('admin.promocodes');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const [{ page, page_size, q, discount_type, status_window, is_active, sort, order }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),

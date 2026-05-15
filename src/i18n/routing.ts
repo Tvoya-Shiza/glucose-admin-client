@@ -1,11 +1,11 @@
 import { defineRouting } from 'next-intl/routing';
 
 export const routing = defineRouting({
-    locales: ['ru', 'kz'],
-    defaultLocale: 'ru',
+    locales: ['kz'],
+    defaultLocale: 'kz',
     // Cookie-aware negotiation; falls back to Accept-Language; last fallback to defaultLocale.
     localeDetection: true,
-    // 'as-needed' so /ru/* is the canonical URL set; /'' redirects to /ru/.
+    // 'as-needed' so /kz/* is the canonical URL set; /'' redirects to /kz/.
     localePrefix: 'as-needed',
 });
 

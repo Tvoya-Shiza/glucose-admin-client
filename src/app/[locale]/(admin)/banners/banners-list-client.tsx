@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { BulkActionToolbar } from '@/components/users/bulk-action-toolbar';
 import { EmptyState } from '@/components/users/empty-state';
@@ -27,7 +26,7 @@ interface MeResponse {
  * BAN-01 — TanStack-Query-driven banners list page with nuqs URL state.
  *
  * Mirrors StoriesListClient (Plan 02). URL state: page, page_size, q, status,
- * category_id, sort, order. Filter changes reset page=1; sort changes do not.
+ * sort, order. Filter changes reset page=1; sort changes do not.
  *
  * Bulk selection (D-02): page-scoped useBulkSelection<number>(). BulkActionToolbar
  * mounted above the table; clicking publish/unpublish opens BulkStatusSheet.
@@ -38,13 +37,11 @@ interface MeResponse {
  */
 export function BannersListClient() {
     const t = useTranslations('admin.banners');
-    const locale = useLocale() as 'ru' | 'kz';
 
-    const [{ page, page_size, status, category_id, q, sort, order }, setQ] = useQueryStates({
+    const [{ page, page_size, status, q, sort, order }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
         page_size: parseAsInteger.withDefault(50),
         status: parseAsString,
-        category_id: parseAsInteger,
         q: parseAsString,
         sort: parseAsString.withDefault('created_at'),
         order: parseAsString.withDefault('desc'),
@@ -62,8 +59,8 @@ export function BannersListClient() {
     const isAdmin = role === 'admin';
 
     const queryKey = useMemo(
-        () => ['admin.banners.list', { page, page_size, status, category_id, q, sort, order }] as const,
-        [page, page_size, status, category_id, q, sort, order],
+        () => ['admin.banners.list', { page, page_size, status, q, sort, order }] as const,
+        [page, page_size, status, q, sort, order],
     );
 
     const { data, isLoading, isFetching, error } = useQuery({
@@ -73,7 +70,6 @@ export function BannersListClient() {
                 page,
                 page_size,
                 status: (status as BannerStatus | null) ?? undefined,
-                category_id: category_id ?? undefined,
                 q: q ?? undefined,
                 sort: (sort as 'created_at' | 'updated_at' | 'visit_count') ?? undefined,
                 order: (order as 'asc' | 'desc') ?? undefined,
@@ -85,7 +81,7 @@ export function BannersListClient() {
     const rows: BannerRow[] = data?.rows ?? [];
     const total = data?.total ?? 0;
 
-    const anyFilterActive = Boolean(status || category_id || (q && q.trim().length > 0));
+    const anyFilterActive = Boolean(status || (q && q.trim().length > 0));
 
     const selection = useBulkSelection<number>();
 
@@ -121,9 +117,6 @@ export function BannersListClient() {
                     <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
                 </div>
                 <div className='flex items-center gap-2'>
-                    <Button asChild variant='outline'>
-                        <Link href={`/${locale}/banners/categories`}>{t('categories_title')}</Link>
-                    </Button>
                     {isAdmin ? (
                         <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button>
                     ) : null}
@@ -134,14 +127,12 @@ export function BannersListClient() {
                 value={{
                     q: q ?? undefined,
                     status: (status as BannerStatus | null) ?? undefined,
-                    category_id: category_id ?? undefined,
                 }}
                 onChange={(next) =>
                     setQ({
                         page: 1,
                         q: next.q ?? null,
                         status: next.status ?? null,
-                        category_id: next.category_id ?? null,
                     })
                 }
             />

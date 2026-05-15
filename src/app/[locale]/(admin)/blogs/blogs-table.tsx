@@ -32,7 +32,7 @@ export interface BlogsTableProps {
     skeletonRowCount?: number;
 }
 
-function formatUnixSecondsOrDash(value: number | null | undefined, locale: 'ru' | 'kz'): string {
+function formatUnixSecondsOrDash(value: number | null | undefined, locale: string): string {
     if (value == null) return '—';
     const d = new Date(value * 1000);
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
@@ -46,7 +46,7 @@ function statusVariant(status: BlogStatus): 'default' | 'secondary' {
 /**
  * BLG-01 — blogs table.
  *
- * Columns: checkbox, image thumbnail, id, title_ru, title_kz, status, category,
+ * Columns: checkbox, image thumbnail, id, title_kz, title_kz, status, category,
  * author, visit_count, created_at, Actions dropdown (Edit -> nav to detail; Delete).
  *
  * No icon/video columns (Blog has only image — schema-truth lock).
@@ -60,7 +60,7 @@ export function BlogsTable({
     skeletonRowCount = 10,
 }: BlogsTableProps) {
     const t = useTranslations('admin.blogs');
-    const locale = useLocale() as 'ru' | 'kz';
+    const locale = useLocale();
 
     const allChecked = selection.isPageAllSelected(rows);
 
@@ -78,7 +78,7 @@ export function BlogsTable({
                     </TableHead>
                     <TableHead className='w-20'>{t('image_label')}</TableHead>
                     <TableHead>{t('col_id')}</TableHead>
-                    <TableHead>{t('col_title_ru')}</TableHead>
+                    <TableHead>{t('col_title_kz')}</TableHead>
                     <TableHead>{t('col_title_kz')}</TableHead>
                     <TableHead>{t('col_status')}</TableHead>
                     <TableHead>{t('col_category')}</TableHead>
@@ -119,8 +119,8 @@ export function BlogsTable({
                                   )}
                               </TableCell>
                               <TableCell className='font-mono text-xs'>{r.id}</TableCell>
-                              <TableCell className='max-w-[260px] truncate' title={r.title_ru ?? ''}>
-                                  {r.title_ru ?? '—'}
+                              <TableCell className='max-w-[260px] truncate' title={r.title_kz ?? ''}>
+                                  {r.title_kz ?? '—'}
                               </TableCell>
                               <TableCell className='max-w-[260px] truncate' title={r.title_kz ?? ''}>
                                   {r.title_kz ?? '—'}
@@ -131,7 +131,7 @@ export function BlogsTable({
                                   </Badge>
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
-                                  {r.category_title_ru ?? `#${r.category_id}`}
+                                  {r.category_title_kz ?? `#${r.category_id}`}
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
                                   {r.author_full_name ?? '—'}

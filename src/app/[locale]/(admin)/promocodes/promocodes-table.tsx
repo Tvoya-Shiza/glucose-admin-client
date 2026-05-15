@@ -25,13 +25,13 @@ import type { DiscountType, PromocodeRow } from '@/lib/promocodes/types';
 export interface PromocodesTableProps {
     rows: PromocodeRow[];
     loading: boolean;
-    locale: 'ru' | 'kz';
+    locale: string;
     onEdit: (row: PromocodeRow) => void;
     onDelete: (row: PromocodeRow) => void;
     skeletonRowCount?: number;
 }
 
-function formatUnixSecondsOrDash(value: number | null | undefined, locale: 'ru' | 'kz'): string {
+function formatUnixSecondsOrDash(value: number | null | undefined, locale: string): string {
     if (value == null) return '—';
     const d = new Date(value * 1000);
     const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
