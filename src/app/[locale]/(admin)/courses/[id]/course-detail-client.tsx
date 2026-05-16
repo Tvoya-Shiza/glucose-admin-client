@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { parseAsString, useQueryState } from 'nuqs';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,6 +66,7 @@ interface MeResponse {
  */
 export function CourseDetailClient({ courseId }: { courseId: number }) {
     const t = useTranslations('admin.courses');
+    const locale = useLocale();
     const [tab, setTab] = useQueryState('tab', parseAsString.withDefault('overview'));
 
     // Role detection — drives admin-only buttons.
@@ -144,47 +147,55 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
         updated_at: data.updated_at,
     };
 
+    const statusLabel =
+        data.status === 'active'
+            ? t('status_active')
+            : data.status === 'pending'
+              ? t('status_pending')
+              : data.status === 'is_draft'
+                ? t('status_is_draft')
+                : t('status_inactive');
+
     return (
         <TooltipProvider>
-            <div className='flex flex-col gap-4 p-6'>
-                <header className='flex items-start justify-between gap-4'>
-                    <div className='space-y-1'>
-                        <h1 className='text-2xl font-semibold'>{headerTitle}</h1>
-                        <div className='flex flex-wrap items-center gap-2'>
-                            <Badge variant={statusBadgeVariant(data.status)}>
-                                {data.status === 'active'
-                                    ? t('status_active')
-                                    : data.status === 'pending'
-                                      ? t('status_pending')
-                                      : data.status === 'is_draft'
-                                        ? t('status_is_draft')
-                                        : t('status_inactive')}
-                            </Badge>
-                            <TranslationCompletenessBadge
-                                completeness={data.translation_completeness}
-                                missingLocales={data.missing_locales}
-                            />
-                            <span className='text-muted-foreground text-sm'>
-                                {t('col_slug')}: {data.slug}
-                            </span>
-                        </div>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        {isAdmin ? (
-                            <Button variant='outline' onClick={() => setTeacherOpen(true)}>
-                                {t('change_teacher')}
-                            </Button>
-                        ) : null}
-                        {canDelete ? (
-                            <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
-                                {t('delete')}
-                            </Button>
-                        ) : null}
-                    </div>
-                </header>
-
+            <PageShell
+                header={
+                    <PageHeader
+                        title={headerTitle}
+                        subtitle={`${t('col_slug')}: ${data.slug}`}
+                        breadcrumbs={[
+                            { label: t('list_title'), href: `/${locale}/courses` },
+                            { label: headerTitle },
+                        ]}
+                        badge={
+                            <div className='flex flex-wrap items-center gap-2'>
+                                <Badge variant={statusBadgeVariant(data.status)}>{statusLabel}</Badge>
+                                <TranslationCompletenessBadge
+                                    completeness={data.translation_completeness}
+                                    missingLocales={data.missing_locales}
+                                />
+                            </div>
+                        }
+                        actions={
+                            <>
+                                {isAdmin ? (
+                                    <Button variant='outline' onClick={() => setTeacherOpen(true)}>
+                                        {t('change_teacher')}
+                                    </Button>
+                                ) : null}
+                                {canDelete ? (
+                                    <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
+                                        {t('delete')}
+                                    </Button>
+                                ) : null}
+                            </>
+                        }
+                    />
+                }
+                contentClassName='space-y-4'
+            >
                 <Tabs value={safeTab} onValueChange={(v) => setTab(v)}>
-                    <TabsList>
+                    <TabsList variant='line' className='w-full justify-start'>
                         <TabsTrigger value='overview'>{t('overview_tab')}</TabsTrigger>
                         <TabsTrigger value='content'>{t('content_tab')}</TabsTrigger>
                         <TabsTrigger value='schedule'>{t('schedule_tab')}</TabsTrigger>
@@ -194,9 +205,6 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         <OverviewTab course={data} role={role} />
                     </TabsContent>
                     <TabsContent value='content'>
-                        {/* Lazy-mount: Plan 05 swaps this body for the dnd-kit chapter/item
-                            tree + Tiptap rich-text editor. Gated by active-tab so the editor
-                            never mounts on first paint when the user only wants Overview. */}
                         {safeTab === 'content' ? <ContentTab courseId={courseId} /> : null}
                     </TabsContent>
                     <TabsContent value='schedule'>
@@ -216,13 +224,9 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                 ) : null}
 
                 {isAdmin ? (
-                    <TeacherChangeDialog
-                        open={teacherOpen}
-                        onOpenChange={setTeacherOpen}
-                        course={data}
-                    />
+                    <TeacherChangeDialog open={teacherOpen} onOpenChange={setTeacherOpen} course={data} />
                 ) : null}
-            </div>
+            </PageShell>
         </TooltipProvider>
     );
 }

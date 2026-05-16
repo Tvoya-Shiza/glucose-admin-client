@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { MoreHorizontal, Pencil, Plus, Trash } from 'lucide-react';
+import { Award, MoreHorizontal, Pencil, Plus, Trash } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,24 +76,25 @@ export function BadgesListClient() {
     });
 
     return (
-        <div className='space-y-4 p-4'>
-            <div className='flex items-center justify-between'>
-                <div>
-                    <h1 className='text-2xl font-bold'>{t('badges_page_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('badges_page_subtitle')}</p>
-                </div>
-                <Button type='button' onClick={() => setCreateOpen(true)}>
-                    <Plus className='mr-2 h-4 w-4' />
-                    {t('create_badge')}
-                </Button>
-            </div>
-
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('badges_page_title')}
+                    subtitle={t('badges_page_subtitle')}
+                    actions={
+                        <Button type='button' onClick={() => setCreateOpen(true)}>
+                            <Plus className='mr-2 h-4 w-4' />
+                            {t('create_badge')}
+                        </Button>
+                    }
+                />
+            }
+            contentClassName='space-y-4'
+        >
             {isLoading ? (
                 <div className='text-muted-foreground p-6'>{t('loading')}</div>
             ) : rows.length === 0 ? (
-                <div className='text-muted-foreground rounded border border-dashed p-10 text-center'>
-                    {t('badges_empty')}
-                </div>
+                <EmptyState icon={Award} title={t('badges_empty')} />
             ) : (
                 <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
                     {rows.map((row) => {
@@ -138,7 +142,7 @@ export function BadgesListClient() {
                                 </CardHeader>
                                 <CardContent className='mt-auto space-y-3'>
                                     <div className='flex flex-wrap items-center gap-2'>
-                                        <Badge variant={row.is_active ? 'default' : 'secondary'}>
+                                        <Badge variant={row.is_active ? 'success' : 'muted'}>
                                             {row.is_active ? t('badge_active') : t('badge_inactive')}
                                         </Badge>
                                         <span className='text-muted-foreground text-xs'>
@@ -219,6 +223,6 @@ export function BadgesListClient() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </PageShell>
     );
 }

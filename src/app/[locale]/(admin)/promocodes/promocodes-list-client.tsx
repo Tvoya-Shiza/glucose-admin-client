@@ -4,7 +4,12 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs';
-import { EmptyState } from '@/components/users/empty-state';
+import { Ticket } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { getPromocode, listPromocodes } from '@/lib/promocodes/api';
@@ -112,41 +117,55 @@ export function PromocodesListClient() {
     const emptyTitle = anyFilterActive ? t('empty_filtered') : t('empty_state');
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
-                </div>
-                <div className='flex items-center gap-2'>
-                    {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
-                </div>
-            </header>
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
+                    />
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <PromocodesFilters
+                    value={{
+                        q: q ?? undefined,
+                        discount_type: (discount_type as DiscountType | null) ?? undefined,
+                        status_window: (status_window as StatusWindow | null) ?? undefined,
+                        is_active: isActiveBool,
+                    }}
+                    onChange={(next) =>
+                        setQ({
+                            page: 1,
+                            q: next.q ?? null,
+                            discount_type: next.discount_type ?? null,
+                            status_window: next.status_window ?? null,
+                            is_active:
+                                next.is_active === undefined ? null : next.is_active ? 'true' : 'false',
+                        })
+                    }
+                />
+            </Card>
 
-            <PromocodesFilters
-                value={{
-                    q: q ?? undefined,
-                    discount_type: (discount_type as DiscountType | null) ?? undefined,
-                    status_window: (status_window as StatusWindow | null) ?? undefined,
-                    is_active: isActiveBool,
-                }}
-                onChange={(next) =>
-                    setQ({
-                        page: 1,
-                        q: next.q ?? null,
-                        discount_type: next.discount_type ?? null,
-                        status_window: next.status_window ?? null,
-                        is_active:
-                            next.is_active === undefined ? null : next.is_active ? 'true' : 'false',
-                    })
-                }
-            />
-
-            <div className='flex-1 overflow-auto'>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <EmptyState title={t('error_generic')} subtitle={(error as Error).message} />
+                    <EmptyState icon={Ticket} title={t('error_generic')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <EmptyState title={emptyTitle} />
+                    <EmptyState icon={Ticket} title={emptyTitle} />
                 ) : (
                     <PromocodesTable
                         rows={rows}
@@ -156,36 +175,9 @@ export function PromocodesListClient() {
                         onDelete={(r) => setDeleteRow(r)}
                     />
                 )}
-            </div>
+            </Card>
 
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>{isFetching ? t('loading') : `${total}`}</span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
-
-            <UpsertPromocodeDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
-                promocode={null}
-            />
+            <UpsertPromocodeDialog open={createOpen} onOpenChange={setCreateOpen} promocode={null} />
             <UpsertPromocodeDialog
                 open={editOpen}
                 onOpenChange={(o) => {
@@ -201,6 +193,6 @@ export function PromocodesListClient() {
                 }}
                 promocode={deleteRow}
             />
-        </div>
+        </PageShell>
     );
 }

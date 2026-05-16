@@ -26,11 +26,12 @@ export interface FilesGridProps {
  */
 export function FilesGrid({ rows, loading, onPick, onDelete, hideDelete }: FilesGridProps) {
     const t = useTranslations('files');
+    const tUpload = useTranslations('upload');
 
     if (loading) {
         return (
             <div className='text-muted-foreground p-6 text-sm'>
-                {useTranslations('upload')('uploading')}
+                {tUpload('uploading')}
             </div>
         );
     }

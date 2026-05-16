@@ -4,8 +4,12 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { EmptyState } from '@/components/users/empty-state';
-import { Button } from '@/components/ui/button';
+import { FolderOpen } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { listUploads } from '@/lib/uploads/client';
 import type { UploadAsset, UploadKind } from '@/lib/uploads/types';
 import { DeleteFileDialog } from './components/delete-file-dialog';
@@ -60,63 +64,45 @@ export function FilesListClient() {
     const [deleteAsset, setDeleteAsset] = useState<UploadAsset | null>(null);
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('title')}</h1>
-                </div>
-            </header>
-
-            <FilesFilters
-                value={{ kind: (kind as UploadKind | null) ?? null, q, mine }}
-                onChange={(next) =>
-                    setQ({
-                        page: 1,
-                        kind: next.kind ?? null,
-                        q: next.q ?? null,
-                        mine: next.mine ?? null,
-                    })
-                }
-            />
-
-            <div className='flex-1 overflow-auto'>
-                {error ? (
-                    <EmptyState title={tUpload('failed')} subtitle={(error as Error).message} />
-                ) : !isLoading && rows.length === 0 ? (
-                    <EmptyState title={t('empty_state')} />
-                ) : (
-                    <FilesGrid
-                        rows={rows}
-                        loading={isLoading}
-                        onDelete={(asset) => setDeleteAsset(asset)}
+        <PageShell
+            header={<PageHeader title={t('title')} />}
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={per_page}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        pageSizeOptions={[12, 24, 48, 96]}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, per_page: size })}
                     />
-                )}
-            </div>
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <FilesFilters
+                    value={{ kind: (kind as UploadKind | null) ?? null, q, mine }}
+                    onChange={(next) =>
+                        setQ({
+                            page: 1,
+                            kind: next.kind ?? null,
+                            q: next.q ?? null,
+                            mine: next.mine ?? null,
+                        })
+                    }
+                />
+            </Card>
 
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>
-                    {isFetching ? tUpload('uploading') : total}
-                </span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < per_page}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
+            {error ? (
+                <EmptyState icon={FolderOpen} title={tUpload('failed')} subtitle={(error as Error).message} />
+            ) : !isLoading && rows.length === 0 ? (
+                <EmptyState icon={FolderOpen} title={t('empty_state')} />
+            ) : (
+                <FilesGrid rows={rows} loading={isLoading} onDelete={(asset) => setDeleteAsset(asset)} />
+            )}
 
             <DeleteFileDialog
                 asset={deleteAsset}
@@ -125,6 +111,6 @@ export function FilesListClient() {
                     if (!o) setDeleteAsset(null);
                 }}
             />
-        </div>
+        </PageShell>
     );
 }

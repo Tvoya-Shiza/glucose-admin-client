@@ -5,7 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { Button } from '@/components/ui/button';
+import { TrendingUp } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
@@ -126,16 +131,31 @@ export function SalesListClient() {
     const goDetail = (id: number) => router.push(`/${locale}/sales/${id}`);
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
-                </div>
-                <SalesExportButton filters={filterSnapshot} />
-            </header>
-
-            <div className='flex flex-wrap items-center gap-3 border-b p-4'>
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={<SalesExportButton filters={filterSnapshot} />}
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
+                    />
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <div className='flex flex-wrap items-center gap-3'>
                 <Input
                     className='max-w-sm'
                     placeholder={t('search_placeholder')}
@@ -216,13 +236,14 @@ export function SalesListClient() {
                     />
                     {t('filter_only_manual')}
                 </label>
-            </div>
+                </div>
+            </Card>
 
-            <div className='flex-1 overflow-auto'>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <div className='text-destructive p-6 text-sm'>{(error as Error).message}</div>
+                    <EmptyState icon={TrendingUp} title={t('list_title')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <div className='text-muted-foreground p-6 text-sm'>{t('no_results')}</div>
+                    <EmptyState icon={TrendingUp} title={t('no_results')} />
                 ) : (
                     <Table>
                         <TableHeader>
@@ -250,7 +271,7 @@ export function SalesListClient() {
                                 : rows.map((r) => (
                                       <TableRow
                                           key={r.id}
-                                          className='hover:bg-muted/50 cursor-pointer'
+                                          className='cursor-pointer hover:bg-brand-50/50'
                                           onClick={() => goDetail(r.id)}
                                       >
                                           <TableCell className='font-mono text-xs'>{r.id}</TableCell>
@@ -288,30 +309,7 @@ export function SalesListClient() {
                         </TableBody>
                     </Table>
                 )}
-            </div>
-
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>{isFetching ? '…' : `${total}`}</span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
-        </div>
+            </Card>
+        </PageShell>
     );
 }

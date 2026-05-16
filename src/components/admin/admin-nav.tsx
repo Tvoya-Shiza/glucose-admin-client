@@ -4,49 +4,89 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
+import {
+    LayoutDashboard,
+    Users,
+    UsersRound,
+    GraduationCap,
+    ClipboardList,
+    Award,
+    FolderOpen,
+    Sparkles,
+    Image as ImageIcon,
+    BookOpen,
+    Ticket,
+    Bell,
+    Mail,
+    CreditCard,
+    TrendingUp,
+    type LucideIcon,
+} from 'lucide-react';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NavItem {
-    href: string; // path under [locale], e.g. '/users'
-    labelKey: string; // i18n key under 'admin.nav'
+    href: string;
+    labelKey: string;
+    icon: LucideIcon;
     /**
-     * If true, the entry is hidden for any role !== 'admin' on the client side.
-     * NOTE: this is UX polish only — the actual gates are (a) edge middleware auth
-     * check, (b) @Roles('admin') on every controller method in Plans 02-05. A
-     * non-admin who guesses the URL is rejected by admin-api, not by this filter.
+     * UX-only filter; hard RBAC enforced by middleware + admin-api @Roles.
      * See Phase 7 Plan 01 threat register T-07-01-01.
      */
     adminOnly?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-    { href: '/dashboard', labelKey: 'dashboard' },
-    { href: '/users', labelKey: 'users' },
-    { href: '/groups', labelKey: 'groups' },
-    { href: '/courses', labelKey: 'courses' },
-    { href: '/quizzes', labelKey: 'quizzes' },
-    { href: '/quizzes/badges', labelKey: 'badges' },
-    { href: '/quizzes/results', labelKey: 'results' },
-    // File library — every staff role can browse what's been uploaded; admin/teacher
-    // can delete. Server enforces role split via @Roles on DELETE /uploads/:id.
-    { href: '/files', labelKey: 'files' },
-    // Phase 7 — marketing surfaces (admin-only per D-20).
-    { href: '/stories', labelKey: 'stories', adminOnly: true },
-    { href: '/banners', labelKey: 'banners', adminOnly: true },
-    { href: '/blogs', labelKey: 'blogs', adminOnly: true },
-    { href: '/promocodes', labelKey: 'promocodes', adminOnly: true },
-    // Phase 8 — push + mailings (admin-only per D-19).
-    { href: '/push', labelKey: 'push', adminOnly: true },
-    { href: '/mailings', labelKey: 'mailings', adminOnly: true },
-    // Phase 9 — payments + sales (admin-only per D-18 + D-20). Dashboard entry
-    // already exists at the top of NAV_ITEMS (visible to all staff per D-19).
-    { href: '/payments', labelKey: 'payments', adminOnly: true },
-    { href: '/sales', labelKey: 'sales', adminOnly: true },
-    // Phase 10 — audit log surface (visible to all staff; server narrows
-    // curator/teacher to own actions per D-02/D-24, see AUDIT_READ_SCOPE_RULES).
-    // Page lands in Plan 02; link 404s until then by design (same convention as
-    // Phase 5 Plan 01 Courses entry pre-page).
-    // { href: '/audit', labelKey: 'audit' },
+interface NavSection {
+    titleKey: string;
+    items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
+    {
+        titleKey: 'sections.main',
+        items: [{ href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard }],
+    },
+    {
+        titleKey: 'sections.content',
+        items: [
+            { href: '/courses', labelKey: 'courses', icon: GraduationCap },
+            { href: '/quizzes', labelKey: 'quizzes', icon: ClipboardList },
+            { href: '/quizzes/badges', labelKey: 'badges', icon: Award },
+            { href: '/quizzes/results', labelKey: 'results', icon: Award },
+            { href: '/files', labelKey: 'files', icon: FolderOpen },
+        ],
+    },
+    {
+        titleKey: 'sections.people',
+        items: [
+            { href: '/users', labelKey: 'users', icon: Users },
+            { href: '/groups', labelKey: 'groups', icon: UsersRound },
+        ],
+    },
+    {
+        titleKey: 'sections.marketing',
+        items: [
+            { href: '/stories', labelKey: 'stories', icon: Sparkles, adminOnly: true },
+            { href: '/banners', labelKey: 'banners', icon: ImageIcon, adminOnly: true },
+            { href: '/blogs', labelKey: 'blogs', icon: BookOpen, adminOnly: true },
+            { href: '/promocodes', labelKey: 'promocodes', icon: Ticket, adminOnly: true },
+        ],
+    },
+    {
+        titleKey: 'sections.comms',
+        items: [
+            { href: '/push', labelKey: 'push', icon: Bell, adminOnly: true },
+            { href: '/mailings', labelKey: 'mailings', icon: Mail, adminOnly: true },
+        ],
+    },
+    {
+        titleKey: 'sections.finance',
+        items: [
+            { href: '/payments', labelKey: 'payments', icon: CreditCard, adminOnly: true },
+            { href: '/sales', labelKey: 'sales', icon: TrendingUp, adminOnly: true },
+        ],
+    },
 ];
 
 interface MeResponse {
@@ -54,28 +94,16 @@ interface MeResponse {
     data?: { user_id: number; email: string | null; role_name: string };
 }
 
-/**
- * Sidebar navigation for the admin shell. Active link highlighting matches when the
- * current pathname equals or starts with `/[locale]/<href>`.
- *
- * Per-item visibility:
- *   - Items WITHOUT `adminOnly` are visible to every authenticated staff user.
- *   - Items WITH `adminOnly: true` are hidden client-side for non-admin roles
- *     (curator / teacher). This is UX polish — the hard RBAC gates live in
- *     edge middleware + admin-api `@Roles('admin')` (Phase 7 D-20).
- *
- * Phase 7 introduces the four marketing surfaces (stories, banners, blogs,
- * promocodes) under the admin-only flag. Plans 08+ extend NAV_ITEMS as new
- * sections land — keep them ordered top-to-bottom in the same order users
- * encounter the features in the docs.
- */
-export function AdminNav() {
+interface AdminNavProps {
+    collapsed?: boolean;
+    onNavigate?: () => void;
+}
+
+export function AdminNav({ collapsed = false, onNavigate }: AdminNavProps) {
     const pathname = usePathname() ?? '';
     const locale = useLocale();
     const t = useTranslations('admin.nav');
 
-    // Reuse the same `auth.me` query key the dashboard already uses so the
-    // payload is shared across the shell and we don't double-fetch.
     const { data: me } = useQuery<MeResponse>({
         queryKey: ['auth.me'],
         queryFn: async () => {
@@ -86,23 +114,68 @@ export function AdminNav() {
     });
 
     const isAdmin = me?.data?.role_name === 'admin';
-    const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
 
     return (
-        <nav className='flex flex-col gap-1 p-3'>
-            {visibleItems.map((item) => {
-                const fullHref = `/${locale}${item.href}`;
-                const isActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
+        <nav className='flex flex-col gap-5 px-2 py-4'>
+            {NAV_SECTIONS.map((section) => {
+                const visibleItems = section.items.filter((item) => !item.adminOnly || isAdmin);
+                if (visibleItems.length === 0) return null;
+
                 return (
-                    <Link
-                        key={item.href}
-                        href={fullHref}
-                        className={`rounded-md px-3 py-2 text-sm transition-colors ${
-                            isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
-                        }`}
-                    >
-                        {t(item.labelKey)}
-                    </Link>
+                    <div key={section.titleKey} className='flex flex-col gap-0.5'>
+                        {!collapsed && (
+                            <div className='px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70'>
+                                {t(section.titleKey)}
+                            </div>
+                        )}
+                        {visibleItems.map((item) => {
+                            const fullHref = `/${locale}${item.href}`;
+                            const isActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
+                            const Icon = item.icon;
+
+                            const link = (
+                                <Link
+                                    key={item.href}
+                                    href={fullHref}
+                                    onClick={onNavigate}
+                                    className={cn(
+                                        'group relative flex items-center gap-3 rounded-md text-sm font-medium transition-colors',
+                                        collapsed ? 'mx-auto h-10 w-10 justify-center' : 'px-3 py-2',
+                                        isActive
+                                            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+                                    )}
+                                >
+                                    {isActive && !collapsed && (
+                                        <span
+                                            aria-hidden
+                                            className='absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-primary'
+                                        />
+                                    )}
+                                    <Icon
+                                        size={18}
+                                        className={cn(
+                                            'shrink-0 transition-colors',
+                                            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
+                                        )}
+                                    />
+                                    {!collapsed && <span className='truncate'>{t(item.labelKey)}</span>}
+                                </Link>
+                            );
+
+                            if (collapsed) {
+                                return (
+                                    <Tooltip key={item.href} delayDuration={200}>
+                                        <TooltipTrigger asChild>{link}</TooltipTrigger>
+                                        <TooltipContent side='right' className='font-medium'>
+                                            {t(item.labelKey)}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                );
+                            }
+                            return link;
+                        })}
+                    </div>
                 );
             })}
         </nav>

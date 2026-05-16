@@ -4,7 +4,12 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { EmptyState } from '@/components/users/empty-state';
+import { GraduationCap } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { listCourses } from '@/lib/courses/api';
@@ -136,44 +141,58 @@ export function CoursesListClient() {
         : t('empty_admin'); /* curator fallback — never displayed in practice */
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
-                </div>
-                {canMutate ? (
-                    <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button>
-                ) : null}
-            </header>
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={canMutate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
+                    />
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <CoursesFilters
+                    value={{
+                        q: q ?? undefined,
+                        status: (status as CourseStatus | null) ?? undefined,
+                        teacher_id: teacher_id ?? undefined,
+                        category_id: category_id ?? undefined,
+                        translation_completeness:
+                            (translation_completeness as TranslationCompleteness | null) ?? undefined,
+                    }}
+                    onChange={(next) =>
+                        setQ({
+                            page: 1,
+                            q: next.q ?? null,
+                            status: next.status ?? null,
+                            teacher_id: next.teacher_id ?? null,
+                            category_id: next.category_id ?? null,
+                            translation_completeness: next.translation_completeness ?? null,
+                        })
+                    }
+                    showTeacherFilter={isAdmin}
+                />
+            </Card>
 
-            <CoursesFilters
-                value={{
-                    q: q ?? undefined,
-                    status: (status as CourseStatus | null) ?? undefined,
-                    teacher_id: teacher_id ?? undefined,
-                    category_id: category_id ?? undefined,
-                    translation_completeness:
-                        (translation_completeness as TranslationCompleteness | null) ?? undefined,
-                }}
-                onChange={(next) =>
-                    setQ({
-                        page: 1,
-                        q: next.q ?? null,
-                        status: next.status ?? null,
-                        teacher_id: next.teacher_id ?? null,
-                        category_id: next.category_id ?? null,
-                        translation_completeness: next.translation_completeness ?? null,
-                    })
-                }
-                showTeacherFilter={isAdmin}
-            />
-
-            <div className='flex-1 overflow-auto'>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <EmptyState title={t('generic_error')} subtitle={(error as Error).message} />
+                    <EmptyState icon={GraduationCap} title={t('generic_error')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <EmptyState title={emptyTitle} />
+                    <EmptyState icon={GraduationCap} title={emptyTitle} />
                 ) : (
                     <CoursesTable
                         rows={rows}
@@ -182,32 +201,7 @@ export function CoursesListClient() {
                         onDelete={(row) => setDeleteRow(row)}
                     />
                 )}
-            </div>
-
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>
-                    {isFetching ? t('loading') : `${total}`}
-                </span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
+            </Card>
 
             {canMutate ? (
                 <>
@@ -227,6 +221,6 @@ export function CoursesListClient() {
                 </>
             ) : null}
             <span hidden aria-hidden data-curator={isCurator ? '1' : '0'} />
-        </div>
+        </PageShell>
     );
 }

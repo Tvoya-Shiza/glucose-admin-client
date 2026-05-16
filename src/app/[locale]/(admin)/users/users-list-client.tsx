@@ -5,8 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { BulkActionToolbar } from '@/components/users/bulk-action-toolbar';
-import { EmptyState } from '@/components/users/empty-state';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Users as UsersIcon } from 'lucide-react';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { listUsers } from '@/lib/users/api';
@@ -100,42 +105,61 @@ export function UsersListClient() {
     const selectedUserIds = useMemo(() => Array.from(selection.selected), [selection.selected]);
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
-                </div>
-                <div className='flex items-center gap-2'>
-                    {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
-                    <ExportButton
-                        filters={{
-                            role_name: role_name ?? undefined,
-                            status: (status as 'active' | 'inactive' | 'pending' | null) ?? undefined,
-                            region_id: region_id ?? undefined,
-                            q: q ?? undefined,
-                            sort: sort as 'created_at' | 'full_name' | 'last_activity',
-                            order: order as 'asc' | 'desc',
-                        }}
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={
+                        <>
+                            {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                            <ExportButton
+                                filters={{
+                                    role_name: role_name ?? undefined,
+                                    status: (status as 'active' | 'inactive' | 'pending' | null) ?? undefined,
+                                    region_id: region_id ?? undefined,
+                                    q: q ?? undefined,
+                                    sort: sort as 'created_at' | 'full_name' | 'last_activity',
+                                    order: order as 'asc' | 'desc',
+                                }}
+                            />
+                        </>
+                    }
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
                     />
-                </div>
-            </header>
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
             <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
-            <UsersFilters
-                value={{
-                    q: q ?? undefined,
-                    role_name: role_name ?? undefined,
-                    status: (status as UserStatus | null) ?? undefined,
-                }}
-                onChange={(next) =>
-                    setQ({
-                        page: 1,
-                        q: next.q ?? null,
-                        role_name: next.role_name ?? null,
-                        status: next.status ?? null,
-                    })
-                }
-            />
+            <Card className='p-4'>
+                <UsersFilters
+                    value={{
+                        q: q ?? undefined,
+                        role_name: role_name ?? undefined,
+                        status: (status as UserStatus | null) ?? undefined,
+                    }}
+                    onChange={(next) =>
+                        setQ({
+                            page: 1,
+                            q: next.q ?? null,
+                            role_name: next.role_name ?? null,
+                            status: next.status ?? null,
+                        })
+                    }
+                />
+            </Card>
             <BulkActionToolbar selectedCount={selection.selectedCount} onClear={selection.clear}>
                 <Button size='sm' onClick={() => setBulkOpen(true)} disabled={selection.selectedCount === 0}>
                     {t('bulk_grant_access')}
@@ -147,39 +171,15 @@ export function UsersListClient() {
                 selectedUserIds={selectedUserIds}
                 onCommitted={() => selection.clear()}
             />
-            <div className='flex-1 overflow-auto'>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <EmptyState title={t('error_generic')} subtitle={(error as Error).message} />
+                    <EmptyState icon={UsersIcon} title={t('error_generic')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <EmptyState title={t(anyFilterActive ? 'empty' : 'empty_no_filters')} />
+                    <EmptyState icon={UsersIcon} title={t(anyFilterActive ? 'empty' : 'empty_no_filters')} />
                 ) : (
                     <UsersTable rows={rows} loading={isLoading} selection={selection} />
                 )}
-            </div>
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>
-                    {isFetching ? t('loading') : `${total}`}
-                </span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
-        </div>
+            </Card>
+        </PageShell>
     );
 }

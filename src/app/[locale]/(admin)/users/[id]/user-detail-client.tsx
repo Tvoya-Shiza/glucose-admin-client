@@ -1,8 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { parseAsString, useQueryState } from 'nuqs';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getUser } from '@/lib/users/api';
@@ -31,6 +33,7 @@ type TabKey = (typeof TABS)[number];
  */
 export function UserDetailClient({ userId }: { userId: string }) {
     const t = useTranslations('admin.users');
+    const locale = useLocale();
     const [tab, setTab] = useQueryState('tab', parseAsString.withDefault('profile'));
 
     const { data, isLoading, error } = useQuery({
@@ -53,15 +56,21 @@ export function UserDetailClient({ userId }: { userId: string }) {
     const safeTab: TabKey = (TABS as readonly string[]).includes(tab) ? (tab as TabKey) : 'profile';
 
     return (
-        <div className='flex flex-col gap-4 p-6'>
-            <header>
-                <h1 className='text-2xl font-semibold'>{data.full_name ?? '—'}</h1>
-                <p className='text-muted-foreground text-sm'>
-                    {data.email ?? '—'} · {data.mobile ?? '—'}
-                </p>
-            </header>
+        <PageShell
+            header={
+                <PageHeader
+                    title={data.full_name ?? '—'}
+                    subtitle={[data.email, data.mobile].filter(Boolean).join(' · ') || '—'}
+                    breadcrumbs={[
+                        { label: t('list_title'), href: `/${locale}/users` },
+                        { label: data.full_name ?? `#${data.id}` },
+                    ]}
+                />
+            }
+            contentClassName='space-y-4'
+        >
             <Tabs value={safeTab} onValueChange={(v) => setTab(v)}>
-                <TabsList>
+                <TabsList variant='line' className='w-full justify-start'>
                     <TabsTrigger value='profile'>{t('tabs_profile')}</TabsTrigger>
                     <TabsTrigger value='memberships'>{t('tabs_memberships')}</TabsTrigger>
                     <TabsTrigger value='courses'>{t('tabs_courses')}</TabsTrigger>
@@ -78,13 +87,12 @@ export function UserDetailClient({ userId }: { userId: string }) {
                     <CoursesTab user={data} />
                 </TabsContent>
                 <TabsContent value='activity'>
-                    {/* Lazy-mount: only run audit-log query when the activity tab is active. */}
                     {safeTab === 'activity' ? <ActivityTab userId={data.id} /> : null}
                 </TabsContent>
                 <TabsContent value='payments'>
                     <PaymentsTab user={data} />
                 </TabsContent>
             </Tabs>
-        </div>
+        </PageShell>
     );
 }

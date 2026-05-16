@@ -4,8 +4,13 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import { Sparkles } from 'lucide-react';
 import { BulkActionToolbar } from '@/components/users/bulk-action-toolbar';
-import { EmptyState } from '@/components/users/empty-state';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
@@ -110,61 +115,59 @@ export function StoriesListClient() {
     const emptyTitle = anyFilterActive ? t('empty_filtered') : t('empty_state');
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
-                </div>
-                <div className='flex items-center gap-2'>
-                    {isAdmin ? (
-                        <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button>
-                    ) : null}
-                </div>
-            </header>
-
-            <StoriesFilters
-                value={{
-                    q: q ?? undefined,
-                    status: (status as StoryStatus | null) ?? undefined,
-                }}
-                onChange={(next) =>
-                    setQ({
-                        page: 1,
-                        q: next.q ?? null,
-                        status: next.status ?? null,
-                    })
-                }
-            />
-
-            <BulkActionToolbar
-                selectedCount={selection.selectedCount}
-                onClear={() => selection.clear()}
-            >
-                <Button
-                    size='sm'
-                    onClick={() =>
-                        setBulkSheet({ open: true, target: 'publish' })
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
+                    />
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <StoriesFilters
+                    value={{
+                        q: q ?? undefined,
+                        status: (status as StoryStatus | null) ?? undefined,
+                    }}
+                    onChange={(next) =>
+                        setQ({
+                            page: 1,
+                            q: next.q ?? null,
+                            status: next.status ?? null,
+                        })
                     }
-                >
+                />
+            </Card>
+
+            <BulkActionToolbar selectedCount={selection.selectedCount} onClear={() => selection.clear()}>
+                <Button size='sm' onClick={() => setBulkSheet({ open: true, target: 'publish' })}>
                     {t('publish_action_short')}
                 </Button>
-                <Button
-                    size='sm'
-                    variant='outline'
-                    onClick={() =>
-                        setBulkSheet({ open: true, target: 'pending' })
-                    }
-                >
+                <Button size='sm' variant='outline' onClick={() => setBulkSheet({ open: true, target: 'pending' })}>
                     {t('unpublish_action_short')}
                 </Button>
             </BulkActionToolbar>
 
-            <div className='flex-1 overflow-auto'>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <EmptyState title={t('error_generic')} subtitle={(error as Error).message} />
+                    <EmptyState icon={Sparkles} title={t('error_generic')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <EmptyState title={emptyTitle} />
+                    <EmptyState icon={Sparkles} title={emptyTitle} />
                 ) : (
                     <StoriesTable
                         rows={rows}
@@ -174,38 +177,9 @@ export function StoriesListClient() {
                         onDelete={(r) => setDeleteRow(r)}
                     />
                 )}
-            </div>
+            </Card>
 
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>
-                    {isFetching ? t('loading') : `${total}`}
-                </span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
-
-            <UpsertStoryDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
-                story={null}
-            />
+            <UpsertStoryDialog open={createOpen} onOpenChange={setCreateOpen} story={null} />
             <UpsertStoryDialog
                 open={editOpen}
                 onOpenChange={(o) => {
@@ -228,6 +202,6 @@ export function StoriesListClient() {
                 targetStatus={bulkSheet.target}
                 onCommitted={() => selection.clear()}
             />
-        </div>
+        </PageShell>
     );
 }

@@ -4,7 +4,12 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { EmptyState } from '@/components/users/empty-state';
+import { UsersRound } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { listGroups } from '@/lib/groups/api';
@@ -118,37 +123,54 @@ export function GroupsListClient() {
         : t('empty_curator');
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
-                </div>
-                {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
-            </header>
-            <GroupsFilters
-                value={{
-                    q: q ?? undefined,
-                    status: (status as GroupStatus | null) ?? undefined,
-                    supervisor_id: supervisor_id ?? undefined,
-                    member_count_bucket:
-                        (member_count_bucket as MemberCountBucket | null) ?? undefined,
-                }}
-                onChange={(next) =>
-                    setQ({
-                        page: 1,
-                        q: next.q ?? null,
-                        status: next.status ?? null,
-                        supervisor_id: next.supervisor_id ?? null,
-                        member_count_bucket: next.member_count_bucket ?? null,
-                    })
-                }
-            />
-            <div className='flex-1 overflow-auto'>
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
+                    />
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <GroupsFilters
+                    value={{
+                        q: q ?? undefined,
+                        status: (status as GroupStatus | null) ?? undefined,
+                        supervisor_id: supervisor_id ?? undefined,
+                        member_count_bucket:
+                            (member_count_bucket as MemberCountBucket | null) ?? undefined,
+                    }}
+                    onChange={(next) =>
+                        setQ({
+                            page: 1,
+                            q: next.q ?? null,
+                            status: next.status ?? null,
+                            supervisor_id: next.supervisor_id ?? null,
+                            member_count_bucket: next.member_count_bucket ?? null,
+                        })
+                    }
+                />
+            </Card>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <EmptyState title={t('error_generic')} subtitle={(error as Error).message} />
+                    <EmptyState icon={UsersRound} title={t('error_generic')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <EmptyState title={emptyTitle} />
+                    <EmptyState icon={UsersRound} title={emptyTitle} />
                 ) : (
                     <GroupsTable
                         rows={rows}
@@ -157,33 +179,8 @@ export function GroupsListClient() {
                         onDelete={(id) => setDeleteId(id)}
                     />
                 )}
-            </div>
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>
-                    {isFetching ? t('loading') : `${total}`}
-                </span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
+            </Card>
 
-            {/* Dialogs — admin only; isCurator referenced for future curator-side affordances. */}
             {isAdmin ? (
                 <>
                     <CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
@@ -196,8 +193,7 @@ export function GroupsListClient() {
                     />
                 </>
             ) : null}
-            {/* `isCurator` reserved for Plan 03 (curator-only affordances on detail page). */}
             <span hidden aria-hidden data-curator={isCurator ? '1' : '0'} />
-        </div>
+        </PageShell>
     );
 }

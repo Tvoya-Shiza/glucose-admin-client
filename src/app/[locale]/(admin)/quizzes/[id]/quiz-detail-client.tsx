@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { parseAsString, useQueryState } from 'nuqs';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -136,44 +137,39 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
 
     return (
         <TooltipProvider>
-            <div className='flex flex-col gap-4 p-6'>
-                <header className='flex flex-wrap items-start justify-between gap-4'>
-                    <div className='space-y-1'>
-                        <Link
-                            href={`/${locale}/quizzes`}
-                            className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline'
-                        >
-                            ← {t('list_title')}
-                        </Link>
-                        <h1 className='text-2xl font-semibold'>{headerTitle}</h1>
-                        <div className='flex flex-wrap items-center gap-2'>
-                            <Badge variant={data.status === 'active' ? 'default' : 'secondary'}>
-                                {data.status === 'active'
-                                    ? t('status_active')
-                                    : t('status_inactive')}
-                            </Badge>
-                            <Badge variant='outline'>
-                                {t('version_label', { n: data.version })}
-                            </Badge>
-                            <span className='text-muted-foreground text-sm'>
-                                {t('col_questions')}: {data.counts.question_count}
-                            </span>
-                        </div>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        {(isAdmin || role === 'teacher') ? (
-                            <DuplicateQuizButton quizId={data.id} />
-                        ) : null}
-                        {isAdmin ? (
-                            <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
-                                {t('delete')}
-                            </Button>
-                        ) : null}
-                    </div>
-                </header>
-
+            <PageShell
+                header={
+                    <PageHeader
+                        title={headerTitle}
+                        subtitle={`${t('col_questions')}: ${data.counts.question_count}`}
+                        breadcrumbs={[
+                            { label: t('list_title'), href: `/${locale}/quizzes` },
+                            { label: headerTitle },
+                        ]}
+                        badge={
+                            <div className='flex flex-wrap items-center gap-2'>
+                                <Badge variant={data.status === 'active' ? 'success' : 'muted'}>
+                                    {data.status === 'active' ? t('status_active') : t('status_inactive')}
+                                </Badge>
+                                <Badge variant='outline'>{t('version_label', { n: data.version })}</Badge>
+                            </div>
+                        }
+                        actions={
+                            <>
+                                {isAdmin || role === 'teacher' ? <DuplicateQuizButton quizId={data.id} /> : null}
+                                {isAdmin ? (
+                                    <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
+                                        {t('delete')}
+                                    </Button>
+                                ) : null}
+                            </>
+                        }
+                    />
+                }
+                contentClassName='space-y-4'
+            >
                 <Tabs value={safeTab} onValueChange={(v) => setTab(v)}>
-                    <TabsList>
+                    <TabsList variant='line' className='w-full justify-start'>
                         <TabsTrigger value='overview'>{t('overview_tab')}</TabsTrigger>
                         <TabsTrigger value='questions'>{t('questions_tab')}</TabsTrigger>
                         <TabsTrigger value='results'>{t('results_tab')}</TabsTrigger>
@@ -182,9 +178,6 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
                         <OverviewTab quiz={data} role={role} />
                     </TabsContent>
                     <TabsContent value='questions'>
-                        {/* Lazy-mount: Plan 05 swaps this body for the dnd-kit question editor.
-                            Gated by active-tab so the editor never mounts on first paint when
-                            the user only wants Overview. */}
                         {safeTab === 'questions' ? <QuestionsTab quizId={quizId} /> : null}
                     </TabsContent>
                     <TabsContent value='results'>
@@ -193,13 +186,9 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
                 </Tabs>
 
                 {isAdmin ? (
-                    <DeleteQuizDialog
-                        open={deleteOpen}
-                        onOpenChange={setDeleteOpen}
-                        quiz={synthesizedRow}
-                    />
+                    <DeleteQuizDialog open={deleteOpen} onOpenChange={setDeleteOpen} quiz={synthesizedRow} />
                 ) : null}
-            </div>
+            </PageShell>
         </TooltipProvider>
     );
 }

@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { parseAsString, useQueryState } from 'nuqs';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,6 +49,7 @@ interface MeResponse {
  */
 export function GroupDetailClient({ groupId }: { groupId: number }) {
     const t = useTranslations('admin.groups');
+    const locale = useLocale();
     const [tab, setTab] = useQueryState('tab', parseAsString.withDefault('overview'));
 
     // Role detection — drives admin-only buttons in OverviewTab.
@@ -93,27 +96,33 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
     const safeTab: TabKey = (TABS as readonly string[]).includes(tab) ? (tab as TabKey) : 'overview';
 
     return (
-        <div className='flex flex-col gap-4 p-6'>
-            <header className='flex items-start justify-between gap-4'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{data.name}</h1>
-                    <div className='mt-1 flex items-center gap-2'>
+        <PageShell
+            header={
+                <PageHeader
+                    title={data.name}
+                    subtitle={`${t('col_members')}: ${data.member_count}`}
+                    breadcrumbs={[
+                        { label: t('list_title'), href: `/${locale}/groups` },
+                        { label: data.name },
+                    ]}
+                    badge={
                         <Badge variant={statusBadgeVariant(data.status)}>
                             {data.status === 'active' ? t('status_active') : t('status_inactive')}
                         </Badge>
-                        <span className='text-muted-foreground text-sm'>
-                            {t('col_members')}: {data.member_count}
-                        </span>
-                    </div>
-                </div>
-                {role === 'admin' ? (
-                    <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
-                        {t('delete')}
-                    </Button>
-                ) : null}
-            </header>
+                    }
+                    actions={
+                        role === 'admin' ? (
+                            <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
+                                {t('delete')}
+                            </Button>
+                        ) : null
+                    }
+                />
+            }
+            contentClassName='space-y-4'
+        >
             <Tabs value={safeTab} onValueChange={(v) => setTab(v)}>
-                <TabsList>
+                <TabsList variant='line' className='w-full justify-start'>
                     <TabsTrigger value='overview'>{t('overview_tab')}</TabsTrigger>
                     <TabsTrigger value='members'>{t('members_tab')}</TabsTrigger>
                     <TabsTrigger value='schedule'>{t('schedule_tab')}</TabsTrigger>
@@ -122,8 +131,6 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
                     <OverviewTab group={data} role={role} />
                 </TabsContent>
                 <TabsContent value='members'>
-                    {/* Lazy-mount: Plan 04 will swap this body for a paginated member-list query;
-                        keep it gated by active-tab so the query never fires on first paint. */}
                     {safeTab === 'members' ? <MembersTab groupId={data.id} /> : null}
                 </TabsContent>
                 <TabsContent value='schedule'>
@@ -132,12 +139,8 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
             </Tabs>
 
             {role === 'admin' ? (
-                <DeleteGroupDialog
-                    open={deleteOpen}
-                    onOpenChange={setDeleteOpen}
-                    groupId={data.id}
-                />
+                <DeleteGroupDialog open={deleteOpen} onOpenChange={setDeleteOpen} groupId={data.id} />
             ) : null}
-        </div>
+        </PageShell>
     );
 }

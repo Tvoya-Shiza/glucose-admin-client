@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { Button } from '@/components/ui/button';
+import { CreditCard } from 'lucide-react';
+import { EmptyState } from '@/components/admin/empty-state';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
+import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -99,77 +104,93 @@ export function PaymentsListClient() {
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
     return (
-        <div className='flex h-full flex-col'>
-            <header className='flex items-center justify-between p-6'>
-                <div>
-                    <h1 className='text-2xl font-semibold'>{t('list_title')}</h1>
-                    <p className='text-muted-foreground text-sm'>{t('list_subtitle')}</p>
+        <PageShell
+            header={
+                <PageHeader
+                    title={t('list_title')}
+                    subtitle={t('list_subtitle')}
+                    actions={<PaymentsExportButton filters={filterSnapshot} />}
+                />
+            }
+            footer={
+                rows.length > 0 || page > 1 ? (
+                    <DataTablePagination
+                        page={page}
+                        pageSize={page_size}
+                        total={total}
+                        rowCount={rows.length}
+                        isFetching={isFetching}
+                        onPageChange={(p) => setQ({ page: p })}
+                        onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
+                    />
+                ) : null
+            }
+            contentClassName='space-y-4'
+        >
+            <Card className='p-4'>
+                <div className='flex flex-wrap items-center gap-3'>
+                    <Input
+                        className='max-w-sm'
+                        placeholder={t('search_placeholder')}
+                        value={qLocal}
+                        onChange={(e) => setQLocal(e.target.value)}
+                    />
+                    <Input
+                        className='w-32'
+                        placeholder={t('filter_status')}
+                        type='number'
+                        value={status ?? ''}
+                        onChange={(e) => {
+                            const v = e.target.value.trim();
+                            setQ({ page: 1, status: v === '' ? null : Number(v) });
+                        }}
+                    />
+                    <Input
+                        className='w-44'
+                        placeholder={t('filter_date_from')}
+                        type='number'
+                        value={date_from ?? ''}
+                        onChange={(e) => {
+                            const v = e.target.value.trim();
+                            setQ({ page: 1, date_from: v === '' ? null : Number(v) });
+                        }}
+                    />
+                    <Input
+                        className='w-44'
+                        placeholder={t('filter_date_to')}
+                        type='number'
+                        value={date_to ?? ''}
+                        onChange={(e) => {
+                            const v = e.target.value.trim();
+                            setQ({ page: 1, date_to: v === '' ? null : Number(v) });
+                        }}
+                    />
+                    <Input
+                        className='w-32'
+                        placeholder={t('filter_amount_min')}
+                        value={amount_min ?? ''}
+                        onChange={(e) => {
+                            const v = e.target.value.trim();
+                            setQ({ page: 1, amount_min: v === '' ? null : v });
+                        }}
+                    />
+                    <Input
+                        className='w-32'
+                        placeholder={t('filter_amount_max')}
+                        value={amount_max ?? ''}
+                        onChange={(e) => {
+                            const v = e.target.value.trim();
+                            setQ({ page: 1, amount_max: v === '' ? null : v });
+                        }}
+                    />
                 </div>
-                <PaymentsExportButton filters={filterSnapshot} />
-            </header>
+            </Card>
 
-            <div className='flex flex-wrap items-center gap-3 border-b p-4'>
-                <Input
-                    className='max-w-sm'
-                    placeholder={t('search_placeholder')}
-                    value={qLocal}
-                    onChange={(e) => setQLocal(e.target.value)}
-                />
-                <Input
-                    className='w-32'
-                    placeholder={t('filter_status')}
-                    type='number'
-                    value={status ?? ''}
-                    onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setQ({ page: 1, status: v === '' ? null : Number(v) });
-                    }}
-                />
-                <Input
-                    className='w-44'
-                    placeholder={t('filter_date_from')}
-                    type='number'
-                    value={date_from ?? ''}
-                    onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setQ({ page: 1, date_from: v === '' ? null : Number(v) });
-                    }}
-                />
-                <Input
-                    className='w-44'
-                    placeholder={t('filter_date_to')}
-                    type='number'
-                    value={date_to ?? ''}
-                    onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setQ({ page: 1, date_to: v === '' ? null : Number(v) });
-                    }}
-                />
-                <Input
-                    className='w-32'
-                    placeholder={t('filter_amount_min')}
-                    value={amount_min ?? ''}
-                    onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setQ({ page: 1, amount_min: v === '' ? null : v });
-                    }}
-                />
-                <Input
-                    className='w-32'
-                    placeholder={t('filter_amount_max')}
-                    value={amount_max ?? ''}
-                    onChange={(e) => {
-                        const v = e.target.value.trim();
-                        setQ({ page: 1, amount_max: v === '' ? null : v });
-                    }}
-                />
-            </div>
-
-            <div className='flex-1 overflow-auto'>
+            <Card className='overflow-hidden p-0'>
                 {error ? (
-                    <div className='text-destructive p-6 text-sm'>{(error as Error).message}</div>
+                    <EmptyState icon={CreditCard} title={t('list_title')} subtitle={(error as Error).message} />
                 ) : !isLoading && rows.length === 0 ? (
-                    <div className='text-muted-foreground p-6 text-sm'>{t('no_results')}</div>
+                    <EmptyState icon={CreditCard} title={t('no_results')} />
                 ) : (
                     <Table>
                         <TableHeader>
@@ -194,15 +215,13 @@ export function PaymentsListClient() {
                                 : rows.map((r) => (
                                       <TableRow
                                           key={r.id}
-                                          className='hover:bg-muted/50 cursor-pointer'
+                                          className='cursor-pointer hover:bg-brand-50/50'
                                           onClick={() => setSelectedId(r.id)}
                                       >
                                           <TableCell className='font-mono text-xs'>{r.id}</TableCell>
                                           <TableCell className='font-mono text-xs'>{r.txn_id}</TableCell>
                                           <TableCell className='font-mono text-xs'>{r.account}</TableCell>
-                                          <TableCell className='text-right font-mono text-xs'>
-                                              {r.sum}
-                                          </TableCell>
+                                          <TableCell className='text-right font-mono text-xs'>{r.sum}</TableCell>
                                           <TableCell className='text-xs'>
                                               {r.status === null ? '—' : r.status}
                                           </TableCell>
@@ -214,32 +233,7 @@ export function PaymentsListClient() {
                         </TableBody>
                     </Table>
                 )}
-            </div>
-
-            <footer className='flex items-center justify-between border-t p-4 text-sm'>
-                <span className='text-muted-foreground'>
-                    {isFetching ? '…' : `${total}`}
-                </span>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={page <= 1}
-                        onClick={() => setQ({ page: page - 1 })}
-                    >
-                        ‹
-                    </Button>
-                    <span className='tabular-nums'>{page}</span>
-                    <Button
-                        variant='outline'
-                        size='sm'
-                        disabled={rows.length < page_size}
-                        onClick={() => setQ({ page: page + 1 })}
-                    >
-                        ›
-                    </Button>
-                </div>
-            </footer>
+            </Card>
 
             <PaymentDetailDrawer
                 paymentId={selectedId}
@@ -248,6 +242,6 @@ export function PaymentsListClient() {
                     if (!open) setSelectedId(null);
                 }}
             />
-        </div>
+        </PageShell>
     );
 }

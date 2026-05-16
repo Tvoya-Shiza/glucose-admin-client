@@ -1,4 +1,6 @@
 import { getTranslations } from 'next-intl/server';
+import { PageHeader } from '@/components/admin/page-header';
+import { PageShell } from '@/components/admin/page-shell';
 import { DashboardRouter } from './dashboard-router';
 
 /**
@@ -8,19 +10,12 @@ import { DashboardRouter } from './dashboard-router';
  * endpoint (cached client-side via TanStack Query) and delegates rendering to
  * `<DashboardRouter />`, which selects the matching view (admin / curator /
  * teacher) and exposes the admin-only `?as_role=` pivot.
- *
- * Title still uses the existing `dashboard.title` namespace (untouched from
- * Phase 2). View-specific copy lives under `admin.dashboard.*` (seeded in
- * Plan 01).
  */
 export default async function DashboardPage() {
     const t = await getTranslations('dashboard');
     return (
-        <div className='mx-auto w-full max-w-7xl space-y-6 px-4 py-8'>
-            <header>
-                <h1 className='text-2xl font-semibold'>{t('title')}</h1>
-            </header>
+        <PageShell header={<PageHeader title={t('title')} subtitle={t('welcome')} />}>
             <DashboardRouter />
-        </div>
+        </PageShell>
     );
 }
