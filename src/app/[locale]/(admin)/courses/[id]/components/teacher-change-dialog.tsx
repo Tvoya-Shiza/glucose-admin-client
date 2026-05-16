@@ -16,8 +16,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { UserPicker } from '@/components/users/user-picker';
 import { changeCourseTeacher } from '@/lib/courses/api';
 import type { CourseDetail } from '@/lib/courses/types';
 
@@ -44,9 +45,6 @@ import type { CourseDetail } from '@/lib/courses/types';
  *   - setQueryData on ['admin.courses.detail', courseId] — page updates without round-trip.
  *   - invalidateQueries(['admin.courses.list']) — list row refreshes if user navigates back.
  *   - invalidateQueries(['admin.courses.preview', courseId]) — preview tab is teacher-aware.
- *
- * Future enhancement (deferred): replace numeric input with a teacher-picker autocomplete.
- * For Plan 07, raw int input matches Phase 4 SupervisorChangeDialog precedent.
  */
 const schema = z.object({
     teacher_id: z
@@ -166,19 +164,23 @@ export function TeacherChangeDialog({ open, onOpenChange, course, onChanged }: T
                                 <FormItem>
                                     <FormLabel>{t('teacher_label')}</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            inputMode='numeric'
-                                            placeholder={t('teacher_placeholder')}
-                                            value={field.value ?? ''}
-                                            onChange={(e) =>
-                                                field.onChange(e.target.value.replace(/[^\d]/g, ''))
+                                        <UserPicker
+                                            roles={['teacher']}
+                                            value={
+                                                field.value && Number(field.value) >= 1
+                                                    ? Number(field.value)
+                                                    : null
                                             }
-                                            ref={field.ref}
-                                            onBlur={field.onBlur}
-                                            name={field.name}
+                                            onChange={(id) => field.onChange(id ? String(id) : '')}
+                                            placeholder={t('teacher_placeholder')}
+                                            disabled={mutation.isPending}
+                                            initialLabel={
+                                                course.teacher
+                                                    ? (course.teacher.full_name ?? `#${course.teacher.id}`)
+                                                    : null
+                                            }
                                         />
                                     </FormControl>
-                                    <FormDescription>{t('teacher_id_invalid')}</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
