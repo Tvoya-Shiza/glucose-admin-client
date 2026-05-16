@@ -235,6 +235,7 @@
             "translation_incomplete": "Аударма аяқталмаған",
             "missing_ru": "RU жоқ",
             "missing_kz": "KZ жоқ",
+            "col_id": "ID",
             "col_title": "Атауы",
             "col_slug": "Slug",
             "col_teacher": "Оқытушы",

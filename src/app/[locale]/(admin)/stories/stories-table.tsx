@@ -12,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import {
     Table,
     TableBody,
@@ -110,7 +111,7 @@ export function StoriesTable({
                                   {r.image ? (
                                       // eslint-disable-next-line @next/next/no-img-element
                                       <img
-                                          src={r.image}
+                                          src={resolveAssetUrl(r.image)}
                                           alt=''
                                           className='h-9 w-16 rounded object-cover'
                                       />

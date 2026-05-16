@@ -88,7 +88,7 @@ export function PreviewRenderer({
                 {preview.image_cover && preview.image_cover.length > 0 ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={preview.image_cover}
+                        src={resolveAssetUrl(preview.image_cover)}
                         alt={courseTitle}
                         className='max-w-full rounded-md'
                     />

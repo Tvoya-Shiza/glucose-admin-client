@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/table';
 import { formatUnixSecondsOrDash, statusBadgeVariant } from '@/lib/courses/format';
 import type { CourseRow } from '@/lib/courses/types';
-import { TranslationCompletenessBadge } from './components/translation-completeness-badge';
 
 export interface CoursesTableProps {
     rows: CourseRow[];
@@ -58,9 +57,9 @@ export function CoursesTable({
         <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead>{t('col_title')}</TableHead>
+                    <TableHead>{t('col_id')}</TableHead>
                     <TableHead>{t('col_slug')}</TableHead>
-                    <TableHead>{t('col_translations')}</TableHead>
+                    <TableHead>{t('col_title')}</TableHead>
                     <TableHead>{t('col_teacher')}</TableHead>
                     <TableHead>{t('col_category')}</TableHead>
                     <TableHead>{t('col_status')}</TableHead>
@@ -79,6 +78,10 @@ export function CoursesTable({
                       ))
                     : rows.map((r) => (
                           <TableRow key={r.id}>
+                              <TableCell className='font-mono text-xs'>{r.id}</TableCell>
+                              <TableCell className='text-muted-foreground text-sm'>
+                                  {r.slug}
+                              </TableCell>
                               <TableCell>
                                   <Link
                                       href={`/${locale}/courses/${r.id}`}
@@ -86,15 +89,6 @@ export function CoursesTable({
                                   >
                                       {r.title_kz ?? '—'}
                                   </Link>
-                              </TableCell>
-                              <TableCell className='text-muted-foreground text-sm'>
-                                  {r.slug}
-                              </TableCell>
-                              <TableCell>
-                                  <TranslationCompletenessBadge
-                                      completeness={r.translation_completeness}
-                                      missingLocales={r.missing_locales}
-                                  />
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
                                   {r.teacher?.full_name ?? '—'}
