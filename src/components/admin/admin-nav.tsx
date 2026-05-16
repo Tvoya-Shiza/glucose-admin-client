@@ -46,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
     // curator/teacher to own actions per D-02/D-24, see AUDIT_READ_SCOPE_RULES).
     // Page lands in Plan 02; link 404s until then by design (same convention as
     // Phase 5 Plan 01 Courses entry pre-page).
-    { href: '/audit', labelKey: 'audit' },
+    // { href: '/audit', labelKey: 'audit' },
 ];
 
 interface MeResponse {
