@@ -263,6 +263,7 @@ export function UpsertBannerDialog({ open, onOpenChange, banner }: UpsertBannerD
                                             value={field.value ?? ''}
                                             onChange={(url) => field.onChange(url)}
                                             onClear={() => field.onChange('')}
+                                            pickFromLibrary
                                         />
                                         <FormMessage />
                                     </FormItem>
@@ -281,6 +282,7 @@ export function UpsertBannerDialog({ open, onOpenChange, banner }: UpsertBannerD
                                             value={field.value ?? ''}
                                             onChange={(url) => field.onChange(url)}
                                             onClear={() => field.onChange('')}
+                                            pickFromLibrary
                                         />
                                         <FormMessage />
                                     </FormItem>

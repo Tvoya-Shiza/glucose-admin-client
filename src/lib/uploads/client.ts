@@ -22,6 +22,8 @@ import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
     ListUploadsQuery,
     ListUploadsResponse,
+    MoveFileRequest,
+    UploadAsset,
     UploadFileResult,
     UploadTokenRequest,
     UploadTokenResponse,
@@ -147,6 +149,9 @@ export async function listUploads(query: ListUploadsQuery = {}): Promise<ListUpl
     if (query.mine) qs.set('mine', 'true');
     if (query.page) qs.set('page', String(query.page));
     if (query.per_page) qs.set('per_page', String(query.per_page));
+    if (query.folder_id !== undefined) {
+        qs.set('folder_id', String(query.folder_id));
+    }
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
     const res = await fetchWithRefresh(`/api/proxy/v1/admin/uploads${suffix}`);
     if (!res.ok) {
@@ -173,4 +178,25 @@ export async function deleteUpload(id: string): Promise<void> {
         const msg = (json as { message?: string })?.message ?? `uploads_delete_failed_${res.status}`;
         throw new Error(msg);
     }
+}
+
+/**
+ * Phase 10 — move an upload between folders (or to root with `folder_id: null`).
+ * Server performs DB update + fs.rename inside one transaction.
+ */
+export async function moveUpload(id: string, body: MoveFileRequest): Promise<UploadAsset> {
+    const res = await fetchWithRefresh(`/api/proxy/v1/admin/uploads/${encodeURIComponent(id)}/move`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `uploads_move_failed_${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)
+        ? (json as { data: UploadAsset }).data
+        : (json as UploadAsset));
 }

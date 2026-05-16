@@ -24,6 +24,7 @@ export function CoverImageUploader({ currentCoverUrl, onUploaded }: CoverImageUp
             previewSize='md'
             value={currentCoverUrl}
             onChange={(url) => onUploaded(url)}
+            pickFromLibrary
         />
     );
 }

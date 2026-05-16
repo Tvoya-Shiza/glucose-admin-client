@@ -48,6 +48,9 @@ export interface FileUploaderProps {
     triggerLabel?: string;
     /** Show a "pick from library" button alongside the upload trigger. */
     pickFromLibrary?: boolean;
+    /** Phase 10 — destination folder for new uploads and starting folder for the picker.
+     *  null/undefined = root. */
+    defaultFolderId?: number | null;
 }
 
 const PREVIEW_SIZE_CLASSES: Record<FileUploaderPreviewSize, string> = {
@@ -76,6 +79,7 @@ export function FileUploader({
     className,
     triggerLabel,
     pickFromLibrary = false,
+    defaultFolderId,
 }: FileUploaderProps) {
     const t = useTranslations('upload');
     const tFiles = useTranslations('files');
@@ -86,6 +90,7 @@ export function FileUploader({
         kind,
         maxSize,
         accept,
+        folderId: defaultFolderId ?? null,
         onSuccess: (url, meta) => {
             onChange(url, meta);
             toast.success(t('succeeded'));
@@ -112,6 +117,7 @@ export function FileUploader({
             open={pickerOpen}
             onOpenChange={setPickerOpen}
             kind={kind}
+            defaultFolderId={defaultFolderId ?? null}
             onPick={(url, meta) => onChange(url, meta)}
         />
     ) : null;

@@ -1,48 +1,77 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { FolderOpen } from 'lucide-react';
+import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { FolderOpen, FolderPlus, MoreHorizontal, Trash2, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
+import type { FileFolder } from '@shared/folders';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
 import { DataTablePagination } from '@/components/admin/data-table-pagination';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { listUploads } from '@/lib/uploads/client';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { FolderBreadcrumb } from '@/components/files/folder-breadcrumb';
+import { FolderTree } from '@/components/files/folder-tree';
+import { CreateFolderDialog } from '@/components/files/create-folder-dialog';
+import { RenameFolderDialog } from '@/components/files/rename-folder-dialog';
+import { DeleteFolderDialog } from '@/components/files/delete-folder-dialog';
+import {
+    buildFolderTree,
+    findFolderById,
+    getBreadcrumbs,
+    useFolderTree,
+} from '@/lib/folders/use-folder-tree';
+import { listUploads, moveUpload } from '@/lib/uploads/client';
+import { mapUploadErrorToI18nKey } from '@/lib/uploads/errors';
 import type { UploadAsset, UploadKind } from '@/lib/uploads/types';
 import { DeleteFileDialog } from './components/delete-file-dialog';
 import { FilesFilters } from './files-filters';
 import { FilesGrid } from './files-grid';
 
 /**
- * File library list page. Lists every row in `upload_assets` (Phase 5+ Upload
- * registry). Soft-deleted rows are hidden by the server.
+ * File library page (Phase 10 — folder-aware).
  *
- * URL state via nuqs: page, kind, q, mine. Filter changes reset page=1.
+ * Layout: 2-column grid (260px sidebar + flex content). Sidebar holds the
+ * folder tree + management buttons; content holds breadcrumbs, filters,
+ * and the grid of files in the current folder.
  *
- * Role gates:
- *   - GET endpoint is open to admin/teacher/curator.
- *   - DELETE is admin/teacher only (server enforces; the delete button shows
- *     for everyone and only fails late for curator, but curators rarely
- *     reach this page).
+ * URL state via nuqs: page, kind, q, mine, folder. Filter changes reset page=1.
+ *
+ * DnD: each card is a draggable, each tree row is a droppable. Dropping a file
+ * on a folder calls PATCH /uploads/:id/move which performs DB+disk rename in one
+ * transaction.
  */
 export function FilesListClient() {
     const t = useTranslations('files');
+    const tFolders = useTranslations('files.folders');
     const tUpload = useTranslations('upload');
+    const qc = useQueryClient();
 
-    const [{ page, per_page, kind, q, mine }, setQ] = useQueryStates({
+    const [{ page, per_page, kind, q, mine, folder }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
         per_page: parseAsInteger.withDefault(24),
         kind: parseAsString,
         q: parseAsString,
         mine: parseAsBoolean,
+        folder: parseAsInteger,
     });
 
+    const folderId: number | null = folder;
+    const folderFilter: number | 'root' = folderId === null ? 'root' : folderId;
+
     const queryKey = useMemo(
-        () => ['admin.uploads.list', { page, per_page, kind, q, mine }] as const,
-        [page, per_page, kind, q, mine],
+        () => ['admin.uploads.list', { page, per_page, kind, q, mine, folder_id: folderFilter }] as const,
+        [page, per_page, kind, q, mine, folderFilter],
     );
 
     const { data, isLoading, isFetching, error } = useQuery({
@@ -54,63 +83,172 @@ export function FilesListClient() {
                 kind: (kind as UploadKind | null) ?? undefined,
                 q: q ?? undefined,
                 mine: mine ?? undefined,
+                folder_id: folderFilter,
             }),
         placeholderData: (prev) => prev,
     });
+
+    const foldersQuery = useFolderTree();
+    const folders: FileFolder[] = foldersQuery.data ?? [];
+    const tree = useMemo(() => buildFolderTree(folders), [folders]);
+    const currentFolder = useMemo(() => findFolderById(folders, folderId), [folders, folderId]);
+    const breadcrumbs = useMemo(() => getBreadcrumbs(folders, folderId), [folders, folderId]);
 
     const rows: UploadAsset[] = data?.data ?? [];
     const total = data?.meta.total ?? 0;
 
     const [deleteAsset, setDeleteAsset] = useState<UploadAsset | null>(null);
+    const [createFolderOpen, setCreateFolderOpen] = useState(false);
+    const [renameOpen, setRenameOpen] = useState(false);
+    const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
+    const [activeDrag, setActiveDrag] = useState(false);
+
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+    const moveMutation = useMutation({
+        mutationFn: ({ id, target }: { id: string; target: number | null }) =>
+            moveUpload(id, { folder_id: target }),
+        onSuccess: () => {
+            toast.success(tFolders('moved'));
+            qc.invalidateQueries({ queryKey: ['admin.uploads.list'] });
+        },
+        onError: (err: Error) => {
+            const key = mapUploadErrorToI18nKey(err.message).replace(/^upload\./, '');
+            toast.error(tUpload(key));
+        },
+    });
+
+    const onDragEnd = (event: DragEndEvent) => {
+        setActiveDrag(false);
+        const { active, over } = event;
+        if (!over || !active.data.current || !over.data.current) return;
+        if (active.data.current.type !== 'file' || over.data.current.type !== 'folder') return;
+        const uploadId = String(active.data.current.uploadId);
+        const targetFolderId = over.data.current.folderId as number | null;
+        moveMutation.mutate({ id: uploadId, target: targetFolderId });
+    };
 
     return (
-        <PageShell
-            header={<PageHeader title={t('title')} />}
-            footer={
-                rows.length > 0 || page > 1 ? (
-                    <DataTablePagination
-                        page={page}
-                        pageSize={per_page}
-                        total={total}
-                        rowCount={rows.length}
-                        isFetching={isFetching}
-                        pageSizeOptions={[12, 24, 48, 96]}
-                        onPageChange={(p) => setQ({ page: p })}
-                        onPageSizeChange={(size) => setQ({ page: 1, per_page: size })}
-                    />
-                ) : null
-            }
-            contentClassName='space-y-4'
+        <DndContext
+            sensors={sensors}
+            onDragStart={() => setActiveDrag(true)}
+            onDragCancel={() => setActiveDrag(false)}
+            onDragEnd={onDragEnd}
         >
-            <Card className='p-4'>
-                <FilesFilters
-                    value={{ kind: (kind as UploadKind | null) ?? null, q, mine }}
-                    onChange={(next) =>
-                        setQ({
-                            page: 1,
-                            kind: next.kind ?? null,
-                            q: next.q ?? null,
-                            mine: next.mine ?? null,
-                        })
-                    }
+            <PageShell
+                header={
+                    <PageHeader
+                        title={t('title')}
+                        actions={
+                            <Button type='button' variant='outline' onClick={() => setCreateFolderOpen(true)}>
+                                <FolderPlus className='mr-1 h-4 w-4' />
+                                {tFolders('new_folder')}
+                            </Button>
+                        }
+                    />
+                }
+                footer={
+                    rows.length > 0 || page > 1 ? (
+                        <DataTablePagination
+                            page={page}
+                            pageSize={per_page}
+                            total={total}
+                            rowCount={rows.length}
+                            isFetching={isFetching}
+                            pageSizeOptions={[12, 24, 48, 96]}
+                            onPageChange={(p) => setQ({ page: p })}
+                            onPageSizeChange={(size) => setQ({ page: 1, per_page: size })}
+                        />
+                    ) : null
+                }
+                contentClassName='space-y-4'
+            >
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]'>
+                    <Card className='h-fit p-3'>
+                        <FolderTree
+                            nodes={tree}
+                            selectedId={folderId}
+                            onSelect={(id) => setQ({ folder: id, page: 1 })}
+                            dropEnabled={activeDrag}
+                        />
+                    </Card>
+
+                    <div className='space-y-3'>
+                        <Card className='p-3'>
+                            <div className='flex flex-wrap items-center justify-between gap-2'>
+                                <FolderBreadcrumb crumbs={breadcrumbs} onNavigate={(id) => setQ({ folder: id, page: 1 })} />
+                                {currentFolder ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type='button' variant='ghost' size='sm'>
+                                                <MoreHorizontal className='h-4 w-4' />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align='end'>
+                                            <DropdownMenuItem onClick={() => setRenameOpen(true)}>
+                                                <Pencil className='mr-2 h-4 w-4' />
+                                                {tFolders('rename')}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setDeleteFolderOpen(true)}>
+                                                <Trash2 className='mr-2 h-4 w-4' />
+                                                {tFolders('delete')}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : null}
+                            </div>
+                        </Card>
+
+                        <Card className='p-2'>
+                            <FilesFilters
+                                value={{ kind: (kind as UploadKind | null) ?? null, q, mine }}
+                                onChange={(next) =>
+                                    setQ({
+                                        page: 1,
+                                        kind: next.kind ?? null,
+                                        q: next.q ?? null,
+                                        mine: next.mine ?? null,
+                                    })
+                                }
+                            />
+                        </Card>
+
+                        {error ? (
+                            <EmptyState icon={FolderOpen} title={tUpload('failed')} subtitle={(error as Error).message} />
+                        ) : !isLoading && rows.length === 0 ? (
+                            <EmptyState icon={FolderOpen} title={t('empty_state')} />
+                        ) : (
+                            <FilesGrid
+                                rows={rows}
+                                loading={isLoading}
+                                draggable
+                                onDelete={(asset) => setDeleteAsset(asset)}
+                            />
+                        )}
+                    </div>
+                </div>
+
+                <DeleteFileDialog
+                    asset={deleteAsset}
+                    open={deleteAsset !== null}
+                    onOpenChange={(o) => {
+                        if (!o) setDeleteAsset(null);
+                    }}
                 />
-            </Card>
-
-            {error ? (
-                <EmptyState icon={FolderOpen} title={tUpload('failed')} subtitle={(error as Error).message} />
-            ) : !isLoading && rows.length === 0 ? (
-                <EmptyState icon={FolderOpen} title={t('empty_state')} />
-            ) : (
-                <FilesGrid rows={rows} loading={isLoading} onDelete={(asset) => setDeleteAsset(asset)} />
-            )}
-
-            <DeleteFileDialog
-                asset={deleteAsset}
-                open={deleteAsset !== null}
-                onOpenChange={(o) => {
-                    if (!o) setDeleteAsset(null);
-                }}
-            />
-        </PageShell>
+                <CreateFolderDialog
+                    open={createFolderOpen}
+                    onOpenChange={setCreateFolderOpen}
+                    parentId={folderId}
+                    onCreated={(id) => setQ({ folder: id, page: 1 })}
+                />
+                <RenameFolderDialog open={renameOpen} onOpenChange={setRenameOpen} folder={currentFolder} />
+                <DeleteFolderDialog
+                    open={deleteFolderOpen}
+                    onOpenChange={setDeleteFolderOpen}
+                    folder={currentFolder}
+                    onDeleted={() => setQ({ folder: currentFolder?.parent_id ?? null, page: 1 })}
+                />
+            </PageShell>
+        </DndContext>
     );
 }

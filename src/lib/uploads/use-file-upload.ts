@@ -12,6 +12,8 @@ export interface UseFileUploadOptions {
     maxSize?: number;
     /** Optional override of the MIME whitelist — must be a subset of MIME_BY_KIND[kind]. */
     accept?: ReadonlyArray<UploadContentType>;
+    /** Phase 10 — destination folder. null/undefined = root. */
+    folderId?: number | null;
     /** Called on the terminal success state with the uploaded URL + metadata. */
     onSuccess?: (url: string, meta: UploaderMeta) => void;
     /** Called whenever the hook moves to the `error` state. */
@@ -41,7 +43,7 @@ export interface UseFileUploadReturn {
  * <FileUploader> UI component is the only intended caller; tests and Tiptap
  * call it directly too.
  */
-export function useFileUpload({ kind, maxSize, accept, onSuccess, onError }: UseFileUploadOptions): UseFileUploadReturn {
+export function useFileUpload({ kind, maxSize, accept, folderId, onSuccess, onError }: UseFileUploadOptions): UseFileUploadReturn {
     const [state, setState] = useState<UploaderState>('idle');
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<{ i18nKey: string; raw: Error } | null>(null);
@@ -127,6 +129,7 @@ export function useFileUpload({ kind, maxSize, accept, onSuccess, onError }: Use
                 kind,
                 size: file.size,
                 content_type: file.type as UploadContentType,
+                folder_id: folderId ?? null,
             })
                 .then((token) => {
                     if (generationRef.current !== generation) return; // aborted before token came back
@@ -140,7 +143,7 @@ export function useFileUpload({ kind, maxSize, accept, onSuccess, onError }: Use
                 })
                 .catch(finishError);
         },
-        [kind, maxSize, accept, onSuccess, onError],
+        [kind, maxSize, accept, folderId, onSuccess, onError],
     );
 
     return { state, progress, error, upload, reset, cancel };

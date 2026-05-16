@@ -261,6 +261,7 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                                             value={field.value ?? ''}
                                             onChange={(url) => field.onChange(url)}
                                             onClear={() => field.onChange('')}
+                                            pickFromLibrary
                                         />
                                         <FormMessage />
                                     </FormItem>
@@ -279,6 +280,7 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                                             value={field.value ?? ''}
                                             onChange={(url) => field.onChange(url)}
                                             onClear={() => field.onChange('')}
+                                            pickFromLibrary
                                         />
                                         <FormMessage />
                                     </FormItem>
@@ -297,6 +299,7 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                                             value={field.value ?? ''}
                                             onChange={(url) => field.onChange(url)}
                                             onClear={() => field.onChange('')}
+                                            pickFromLibrary
                                         />
                                         <FormMessage />
                                     </FormItem>
