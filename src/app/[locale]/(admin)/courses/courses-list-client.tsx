@@ -12,6 +12,7 @@ import { DataTablePagination } from '@/components/admin/data-table-pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { listCourses } from '@/lib/courses/api';
 import type {
     CourseRow,
@@ -77,7 +78,10 @@ export function CoursesListClient() {
     const isAdmin = role === 'admin';
     const isTeacher = role === 'teacher';
     const isCurator = role === 'curator';
-    const canMutate = isAdmin || isTeacher;
+    const canCreate = usePermission('courses.create');
+    const canEdit = usePermission('courses.edit');
+    const canDelete = usePermission('courses.delete');
+    const canMutate = canEdit || canDelete; // surfaces row dropdown
 
     const queryKey = useMemo(
         () =>
@@ -146,7 +150,7 @@ export function CoursesListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={canMutate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                 />
             }
             footer={
@@ -197,28 +201,28 @@ export function CoursesListClient() {
                     <CoursesTable
                         rows={rows}
                         loading={isLoading}
-                        canMutate={canMutate}
+                        canMutate={canDelete}
                         onDelete={(row) => setDeleteRow(row)}
                     />
                 )}
             </Card>
 
-            {canMutate ? (
-                <>
-                    <CreateCourseDialog
-                        open={createOpen}
-                        onOpenChange={setCreateOpen}
-                        actorRole={(role as 'admin' | 'teacher') ?? 'admin'}
-                        actorId={me.data?.data?.user_id ?? null}
-                    />
-                    <DeleteCourseDialog
-                        open={deleteRow !== null}
-                        onOpenChange={(o) => {
-                            if (!o) setDeleteRow(null);
-                        }}
-                        course={deleteRow}
-                    />
-                </>
+            {canCreate ? (
+                <CreateCourseDialog
+                    open={createOpen}
+                    onOpenChange={setCreateOpen}
+                    actorRole={(role as 'admin' | 'teacher') ?? 'admin'}
+                    actorId={me.data?.data?.user_id ?? null}
+                />
+            ) : null}
+            {canDelete ? (
+                <DeleteCourseDialog
+                    open={deleteRow !== null}
+                    onOpenChange={(o) => {
+                        if (!o) setDeleteRow(null);
+                    }}
+                    course={deleteRow}
+                />
             ) : null}
             <span hidden aria-hidden data-curator={isCurator ? '1' : '0'} />
         </PageShell>

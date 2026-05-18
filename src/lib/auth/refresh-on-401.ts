@@ -54,9 +54,28 @@ function redirectToLogin(): never {
     throw new Error('redirected_to_login');
 }
 
+// Dedupe sonner toasts for bursts of 403s (5 parallel queries denying at once
+// shouldn't spam 5 toasts). 2-second window — matches our typical UX
+// expectation that one "no access" message represents one user action.
+let lastForbiddenToastAt = 0;
+
+async function notifyForbidden(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    if (Date.now() - lastForbiddenToastAt < 2000) return;
+    lastForbiddenToastAt = Date.now();
+    // Dynamic import avoids pulling sonner into SSR bundles for code paths that
+    // never see a 403 from the server.
+    const { toast } = await import('sonner');
+    toast.error('Бұл әрекетке рұқсат жоқ');
+}
+
 export async function fetchWithRefresh(input: string, init: RequestInit = {}): Promise<Response> {
     const merged: RequestInit = { ...init, credentials: 'same-origin' };
     const first = await fetch(input, merged);
+    if (first.status === 403) {
+        void notifyForbidden();
+        return first;
+    }
     if (first.status !== 401) return first;
 
     const refreshed = await refreshTokens();
@@ -67,6 +86,9 @@ export async function fetchWithRefresh(input: string, init: RequestInit = {}): P
     const second = await fetch(input, merged);
     if (second.status === 401) {
         redirectToLogin();
+    }
+    if (second.status === 403) {
+        void notifyForbidden();
     }
     return second;
 }

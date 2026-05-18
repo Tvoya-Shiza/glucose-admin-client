@@ -12,6 +12,7 @@ import { DataTablePagination } from '@/components/admin/data-table-pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { listQuizzes } from '@/lib/quizzes/api';
 import type {
     QuestionCountBucket,
@@ -73,11 +74,10 @@ export function QuizzesListClient() {
         },
         staleTime: 5 * 60 * 1000,
     });
-    const role = me.data?.data?.role_name;
-    const isAdmin = role === 'admin';
-    const isTeacher = role === 'teacher';
-    const canMutate = isAdmin || isTeacher;
-    const canDelete = isAdmin;
+    const canCreate = usePermission('quizzes.create');
+    const canEdit = usePermission('quizzes.edit');
+    const canDelete = usePermission('quizzes.delete');
+    const canMutate = canEdit || canDelete;
 
     const queryKey = useMemo(
         () =>
@@ -138,7 +138,7 @@ export function QuizzesListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={canMutate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                 />
             }
             footer={
@@ -195,7 +195,7 @@ export function QuizzesListClient() {
                 )}
             </Card>
 
-            {canMutate ? <CreateQuizDialog open={createOpen} onOpenChange={setCreateOpen} /> : null}
+            {canCreate ? <CreateQuizDialog open={createOpen} onOpenChange={setCreateOpen} /> : null}
             {canDelete ? (
                 <DeleteQuizDialog
                     open={deleteRow !== null}

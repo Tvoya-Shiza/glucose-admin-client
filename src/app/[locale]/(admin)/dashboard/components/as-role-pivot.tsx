@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useIsSuper } from '@/lib/access/use-permission';
 
 /**
  * Phase 9 (D-19, T-09-05-01) — admin-only "view as role" pivot.
@@ -26,11 +27,12 @@ interface Props {
 
 export function AsRolePivot({ actorRole }: Props) {
     const t = useTranslations('admin.dashboard');
+    const isSuper = useIsSuper();
     const fallback: PivotRole =
         actorRole === 'curator' || actorRole === 'teacher' ? actorRole : 'admin';
     const [pivot, setPivot] = useQueryState('as_role', parseAsStringLiteral(PIVOT_ROLES).withDefault(fallback));
 
-    if (actorRole !== 'admin') return null;
+    if (!isSuper) return null;
 
     return (
         <div className='flex items-center gap-2'>

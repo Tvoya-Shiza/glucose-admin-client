@@ -15,7 +15,8 @@ import { DataTablePagination } from '@/components/admin/data-table-pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
-import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
+import { useMe } from '@/lib/access/use-me';
 import { listBlogs } from '@/lib/blogs/api';
 import type { BlogRow, BlogStatus } from '@/lib/blogs/types';
 import { BulkStatusSheet } from './components/bulk-status-sheet';
@@ -23,11 +24,6 @@ import { DeleteBlogDialog } from './components/delete-blog-dialog';
 import { UpsertBlogDialog } from './components/upsert-blog-dialog';
 import { BlogsFilters } from './blogs-filters';
 import { BlogsTable } from './blogs-table';
-
-interface MeResponse {
-    success: boolean;
-    data?: { user_id: number; email: string | null; role_name: 'admin' | 'curator' | 'teacher' };
-}
 
 /**
  * BLG-01 — TanStack-Query-driven blogs list page with nuqs URL state.
@@ -57,16 +53,12 @@ export function BlogsListClient() {
         order: parseAsString.withDefault('desc'),
     });
 
-    const me = useQuery<MeResponse>({
-        queryKey: ['auth.me'],
-        queryFn: async () => {
-            const res = await fetchWithRefresh('/api/auth/me');
-            return res.json();
-        },
-        staleTime: 5 * 60 * 1000,
-    });
-    const role = me.data?.data?.role_name;
-    const isAdmin = role === 'admin';
+    const me = useMe();
+    const canView = usePermission('blogs.view');
+    const canCreate = usePermission('blogs.create');
+    const canEdit = usePermission('blogs.edit');
+    const canDelete = usePermission('blogs.delete');
+    const canPublish = usePermission('blogs.publish');
 
     const queryKey = useMemo(
         () => ['admin.blogs.list', { page, page_size, status, category_id, q, sort, order }] as const,
@@ -86,7 +78,7 @@ export function BlogsListClient() {
                 order: (order as 'asc' | 'desc') ?? undefined,
             }),
         placeholderData: (prev) => prev,
-        enabled: !me.isLoading && isAdmin,
+        enabled: !me.isLoading && canView,
     });
 
     const rows: BlogRow[] = data?.rows ?? [];
@@ -123,7 +115,7 @@ export function BlogsListClient() {
                             <Button asChild variant='outline'>
                                 <Link href={`/${locale}/blogs/categories`}>{t('categories_title')}</Link>
                             </Button>
-                            {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                            {canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                         </>
                     }
                 />
@@ -161,14 +153,16 @@ export function BlogsListClient() {
                 />
             </Card>
 
-            <BulkActionToolbar selectedCount={selection.selectedCount} onClear={() => selection.clear()}>
-                <Button size='sm' onClick={() => setBulkSheet({ open: true, target: 'publish' })}>
-                    {t('publish_action_short')}
-                </Button>
-                <Button size='sm' variant='outline' onClick={() => setBulkSheet({ open: true, target: 'pending' })}>
-                    {t('unpublish_action_short')}
-                </Button>
-            </BulkActionToolbar>
+            {canPublish ? (
+                <BulkActionToolbar selectedCount={selection.selectedCount} onClear={() => selection.clear()}>
+                    <Button size='sm' onClick={() => setBulkSheet({ open: true, target: 'publish' })}>
+                        {t('publish_action_short')}
+                    </Button>
+                    <Button size='sm' variant='outline' onClick={() => setBulkSheet({ open: true, target: 'pending' })}>
+                        {t('unpublish_action_short')}
+                    </Button>
+                </BulkActionToolbar>
+            ) : null}
 
             <Card className='overflow-hidden p-0'>
                 {error ? (
@@ -182,6 +176,8 @@ export function BlogsListClient() {
                         selection={selection}
                         onEdit={onEdit}
                         onDelete={(r) => setDeleteRow(r)}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
                     />
                 )}
             </Card>

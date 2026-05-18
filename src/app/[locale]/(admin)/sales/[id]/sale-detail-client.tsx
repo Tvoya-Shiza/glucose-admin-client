@@ -8,15 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { getSale } from '@/lib/sales/api';
 import { formatUnixDate } from '@/lib/users/format';
 import { RefundDialog } from '../components/refund-dialog';
-
-interface MeResponse {
-    success: boolean;
-    data?: { user_id: number; email: string | null; role_name: string };
-}
 
 /**
  * PAY-02 / D-06 — sales detail page.
@@ -46,16 +41,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         queryFn: () => getSale(saleId),
     });
 
-    const { data: me } = useQuery<MeResponse>({
-        queryKey: ['auth.me'],
-        queryFn: async () => {
-            const res = await fetchWithRefresh('/api/auth/me');
-            return res.json();
-        },
-        staleTime: 60_000,
-    });
-
-    const isAdmin = me?.data?.role_name === 'admin';
+    const canRefund = usePermission('payments.refund');
 
     if (isLoading) {
         return (
@@ -105,7 +91,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                     </div>
                 </div>
 
-                {isAdmin && data.refund_at === null ? (
+                {canRefund && data.refund_at === null ? (
                     <Button onClick={() => setRefundOpen(true)}>{t('refund_button')}</Button>
                 ) : null}
             </header>

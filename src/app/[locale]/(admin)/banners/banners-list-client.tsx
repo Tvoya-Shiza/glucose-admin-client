@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { getBanner, listBanners } from '@/lib/banners/api';
 import type { BannerDetail, BannerRow, BannerStatus } from '@/lib/banners/types';
 import { BulkStatusSheet } from './components/bulk-status-sheet';
@@ -60,8 +61,9 @@ export function BannersListClient() {
         },
         staleTime: 5 * 60 * 1000,
     });
-    const role = me.data?.data?.role_name;
-    const isAdmin = role === 'admin';
+    const canView = usePermission('banners.view');
+    const canCreate = usePermission('banners.create');
+    const canPublish = usePermission('banners.publish');
 
     const queryKey = useMemo(
         () => ['admin.banners.list', { page, page_size, status, q, sort, order }] as const,
@@ -80,7 +82,7 @@ export function BannersListClient() {
                 order: (order as 'asc' | 'desc') ?? undefined,
             }),
         placeholderData: (prev) => prev,
-        enabled: !me.isLoading && isAdmin,
+        enabled: !me.isLoading && canView,
     });
 
     const rows: BannerRow[] = data?.rows ?? [];
@@ -120,7 +122,7 @@ export function BannersListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                 />
             }
             footer={
@@ -154,14 +156,16 @@ export function BannersListClient() {
                 />
             </Card>
 
-            <BulkActionToolbar selectedCount={selection.selectedCount} onClear={() => selection.clear()}>
-                <Button size='sm' onClick={() => setBulkSheet({ open: true, target: 'publish' })}>
-                    {t('publish_action_short')}
-                </Button>
-                <Button size='sm' variant='outline' onClick={() => setBulkSheet({ open: true, target: 'pending' })}>
-                    {t('unpublish_action_short')}
-                </Button>
-            </BulkActionToolbar>
+            {canPublish ? (
+                <BulkActionToolbar selectedCount={selection.selectedCount} onClear={() => selection.clear()}>
+                    <Button size='sm' onClick={() => setBulkSheet({ open: true, target: 'publish' })}>
+                        {t('publish_action_short')}
+                    </Button>
+                    <Button size='sm' variant='outline' onClick={() => setBulkSheet({ open: true, target: 'pending' })}>
+                        {t('unpublish_action_short')}
+                    </Button>
+                </BulkActionToolbar>
+            ) : null}
 
             <Card className='overflow-hidden p-0'>
                 {error ? (

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { listCategories, updateQuiz } from '@/lib/quizzes/api';
+import { usePermission } from '@/lib/access/use-permission';
 import type { QuizDetail, QuizStatus, Translation, UpdateQuiz } from '@/lib/quizzes/types';
 import { QuizTranslationForm } from '../components/translation-form';
 
@@ -51,7 +52,8 @@ export interface OverviewTabProps {
 export function OverviewTab({ quiz, role }: OverviewTabProps) {
     const t = useTranslations('admin.quizzes');
     const queryClient = useQueryClient();
-    const isReadOnly = role === 'curator';
+    const canEdit = usePermission('quizzes.edit');
+    const isReadOnly = !canEdit;
 
     // Categories list (Plan 03) — used by the category select. Fetched once per detail
     // mount; cached by TanStack Query so revisits to the tab don't re-fetch.

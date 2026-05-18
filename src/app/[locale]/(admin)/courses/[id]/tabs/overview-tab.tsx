@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { statusBadgeVariant } from '@/lib/courses/format';
 import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import { updateCourse } from '@/lib/courses/api';
+import { usePermission } from '@/lib/access/use-permission';
 import type { CourseDetail } from '@/lib/courses/types';
 import { CoverImageUploader } from '../components/cover-image-uploader';
 import { EditCourseForm } from '../components/edit-course-form';
@@ -49,7 +50,7 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
     const [editing, setEditing] = useState(false);
     const queryClient = useQueryClient();
 
-    const canEdit = role === 'admin' || role === 'teacher';
+    const canEdit = usePermission('courses.edit');
 
     // Plan 04: persist cover URL after a successful upload via updateCourse.
     // Separate mutation from EditCourseForm's save path so the user doesn't

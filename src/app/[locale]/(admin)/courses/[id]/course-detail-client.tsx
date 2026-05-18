@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { getCourse } from '@/lib/courses/api';
 import { statusBadgeVariant } from '@/lib/courses/format';
 import type { CourseDetail, CourseRow } from '@/lib/courses/types';
@@ -124,9 +125,8 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
     const ruTitle = data.translations.find((tr) => tr.locale === 'kz')?.title;
     const headerTitle = ruTitle && ruTitle.trim().length > 0 ? ruTitle : data.slug;
 
-    const isAdmin = role === 'admin';
-    const isOwnerTeacher = role === 'teacher' && data.teacher && data.teacher.id === me.data?.data?.user_id;
-    const canDelete = isAdmin || isOwnerTeacher;
+    const canEdit = usePermission('courses.edit');
+    const canDelete = usePermission('courses.delete');
 
     // DeleteCourseDialog accepts a CourseRow. Synthesize one from CourseDetail —
     // the dialog only reads id, slug, and chapter_count.
@@ -178,7 +178,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         }
                         actions={
                             <>
-                                {isAdmin ? (
+                                {canEdit ? (
                                     <Button variant='outline' onClick={() => setTeacherOpen(true)}>
                                         {t('change_teacher')}
                                     </Button>
@@ -223,7 +223,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                     />
                 ) : null}
 
-                {isAdmin ? (
+                {canEdit ? (
                     <TeacherChangeDialog open={teacherOpen} onOpenChange={setTeacherOpen} course={data} />
                 ) : null}
             </PageShell>

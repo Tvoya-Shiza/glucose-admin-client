@@ -23,7 +23,7 @@ import { changeCourseTeacher } from '@/lib/courses/api';
 import type { CourseDetail } from '@/lib/courses/types';
 
 /**
- * CRS-06 — admin-only course-author reassignment dialog (Plan 07).
+ * CRS-06 — course-author reassignment dialog (Plan 07).
  *
  * Mirrors Phase 4 Plan 03 SupervisorChangeDialog verbatim. Differences:
  *   - field name: `teacher_id` (admin-api ChangeTeacherDto.teacher_id, NOT NULL).
@@ -31,9 +31,9 @@ import type { CourseDetail } from '@/lib/courses/types';
  *     on schema, so the input requires a positive integer. (>=1 enforced by zod.)
  *   - error key surface: 'courses.teacher_not_found' surfaces as the localized
  *     "Указанный пользователь не является преподавателем" copy.
- *   - admin-only visibility: caller (course-detail-client) gates the trigger button
- *     on `role_name === 'admin'`. Server enforces too via @Roles('admin') — the
- *     client check is UX, not security.
+ *   - visibility: caller (course-detail-client) gates the trigger button via
+ *     usePermission('courses.edit'). Server enforces too via @RequirePermission
+ *     on the endpoint — the client check is UX, not security.
  *
  * AUDIT METADATA — `previous_teacher_id` strip (Phase 4 Plan 03 trick):
  *   The admin-api response carries `previous_teacher_id` so AuditInterceptor records

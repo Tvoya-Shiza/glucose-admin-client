@@ -12,6 +12,7 @@ import { DataTablePagination } from '@/components/admin/data-table-pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { getPromocode, listPromocodes } from '@/lib/promocodes/api';
 import type { DiscountType, PromocodeDetail, PromocodeRow } from '@/lib/promocodes/types';
 import { DeletePromocodeDialog } from './components/delete-promocode-dialog';
@@ -60,8 +61,8 @@ export function PromocodesListClient() {
         },
         staleTime: 5 * 60 * 1000,
     });
-    const role = me.data?.data?.role_name;
-    const isAdmin = role === 'admin';
+    const canView = usePermission('promocodes.view');
+    const canCreate = usePermission('promocodes.create');
 
     const isActiveBool: boolean | undefined =
         is_active === 'true' ? true : is_active === 'false' ? false : undefined;
@@ -89,7 +90,7 @@ export function PromocodesListClient() {
                 order: (order as 'asc' | 'desc') ?? undefined,
             }),
         placeholderData: (prev) => prev,
-        enabled: !me.isLoading && isAdmin,
+        enabled: !me.isLoading && canView,
     });
 
     const rows: PromocodeRow[] = data?.rows ?? [];
@@ -122,7 +123,7 @@ export function PromocodesListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                 />
             }
             footer={

@@ -90,6 +90,7 @@ Prettier config (`.prettierrc`):
 - Removing `src/i18n/routing.ts` or changing `localePrefix` without team review.
 - Storing JWTs in `localStorage` or any other browser-readable storage.
 - Bypassing the BFF proxy (Phase 2+) by calling admin-api directly from the browser. The browser must NEVER send a Bearer token to admin-api. EXCEPTION: the file-upload route uses an `X-Upload-Token` (a 5-min single-use JWT) as the credential per CONTEXT D-13 — Bearer is still never sent to admin-api.
+- Hardcoding `role_name === 'admin'` checks in components. Use `usePermission(code)` or `<Can permission="code">` from `src/lib/access/`. Admin (`is_super`) automatically passes every check. Permission codes are defined in `src/lib/access/permission-codes.ts` (kept in sync with the catalog in `glucose-admin-api/prisma/seeds/permissions.seed.ts`). RBAC reference: `glucose-admin-api/docs/access-control.md`.
 
 ## Local dev env vars
 

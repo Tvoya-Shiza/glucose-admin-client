@@ -31,6 +31,8 @@ export interface BlogsTableProps {
     onEdit: (row: BlogRow) => void;
     onDelete: (row: BlogRow) => void;
     skeletonRowCount?: number;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 function formatUnixSecondsOrDash(value: number | null | undefined, locale: string): string {
@@ -59,6 +61,8 @@ export function BlogsTable({
     onEdit,
     onDelete,
     skeletonRowCount = 10,
+    canEdit = true,
+    canDelete = true,
 }: BlogsTableProps) {
     const t = useTranslations('admin.blogs');
     const locale = useLocale();
@@ -144,28 +148,34 @@ export function BlogsTable({
                                   {formatUnixSecondsOrDash(r.created_at, locale)}
                               </TableCell>
                               <TableCell>
-                                  <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                          <Button
-                                              variant='ghost'
-                                              size='icon'
-                                              aria-label={t('row_actions')}
-                                          >
-                                              <MoreHorizontalIcon className='h-4 w-4' />
-                                          </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align='end'>
-                                          <DropdownMenuItem onClick={() => onEdit(r)}>
-                                              {t('edit')}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                              onClick={() => onDelete(r)}
-                                              className='text-destructive'
-                                          >
-                                              {t('delete')}
-                                          </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                  </DropdownMenu>
+                                  {canEdit || canDelete ? (
+                                      <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                              <Button
+                                                  variant='ghost'
+                                                  size='icon'
+                                                  aria-label={t('row_actions')}
+                                              >
+                                                  <MoreHorizontalIcon className='h-4 w-4' />
+                                              </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align='end'>
+                                              {canEdit ? (
+                                                  <DropdownMenuItem onClick={() => onEdit(r)}>
+                                                      {t('edit')}
+                                                  </DropdownMenuItem>
+                                              ) : null}
+                                              {canDelete ? (
+                                                  <DropdownMenuItem
+                                                      onClick={() => onDelete(r)}
+                                                      className='text-destructive'
+                                                  >
+                                                      {t('delete')}
+                                                  </DropdownMenuItem>
+                                              ) : null}
+                                          </DropdownMenuContent>
+                                      </DropdownMenu>
+                                  ) : null}
                               </TableCell>
                           </TableRow>
                       ))}

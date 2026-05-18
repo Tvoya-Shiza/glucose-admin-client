@@ -12,6 +12,7 @@ import { DataTablePagination } from '@/components/admin/data-table-pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { listGroups } from '@/lib/groups/api';
 import type { GroupSortField, GroupStatus, MemberCountBucket, SortOrder } from '@/lib/groups/types';
 import { CreateGroupDialog } from './components/create-group-dialog';
@@ -68,6 +69,8 @@ export function GroupsListClient() {
     const role = me.data?.data?.role_name;
     const isAdmin = role === 'admin';
     const isCurator = role === 'curator';
+    const canCreate = usePermission('groups.create');
+    const canDelete = usePermission('groups.delete');
 
     const queryKey = useMemo(
         () =>
@@ -128,7 +131,7 @@ export function GroupsListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                 />
             }
             footer={
@@ -175,23 +178,21 @@ export function GroupsListClient() {
                     <GroupsTable
                         rows={rows}
                         loading={isLoading}
-                        isAdmin={isAdmin}
+                        isAdmin={canDelete}
                         onDelete={(id) => setDeleteId(id)}
                     />
                 )}
             </Card>
 
-            {isAdmin ? (
-                <>
-                    <CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
-                    <DeleteGroupDialog
-                        open={deleteId !== null}
-                        onOpenChange={(o) => {
-                            if (!o) setDeleteId(null);
-                        }}
-                        groupId={deleteId}
-                    />
-                </>
+            {canCreate ? <CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} /> : null}
+            {canDelete ? (
+                <DeleteGroupDialog
+                    open={deleteId !== null}
+                    onOpenChange={(o) => {
+                        if (!o) setDeleteId(null);
+                    }}
+                    groupId={deleteId}
+                />
             ) : null}
             <span hidden aria-hidden data-curator={isCurator ? '1' : '0'} />
         </PageShell>

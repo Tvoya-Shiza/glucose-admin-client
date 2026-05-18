@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { getGroup } from '@/lib/groups/api';
 import { statusBadgeVariant } from '@/lib/groups/format';
 import { DeleteGroupDialog } from '../components/delete-group-dialog';
@@ -62,6 +63,7 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
         staleTime: 5 * 60 * 1000,
     });
     const role = me.data?.data?.role_name ?? 'curator';
+    const canDelete = usePermission('groups.delete');
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['admin.groups.detail', groupId],
@@ -111,7 +113,7 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
                         </Badge>
                     }
                     actions={
-                        role === 'admin' ? (
+                        canDelete ? (
                             <Button variant='destructive' onClick={() => setDeleteOpen(true)}>
                                 {t('delete')}
                             </Button>
@@ -138,7 +140,7 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
                 </TabsContent>
             </Tabs>
 
-            {role === 'admin' ? (
+            {canDelete ? (
                 <DeleteGroupDialog open={deleteOpen} onOpenChange={setDeleteOpen} groupId={data.id} />
             ) : null}
         </PageShell>

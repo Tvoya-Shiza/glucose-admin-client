@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
 import {
     LayoutDashboard,
     Users,
@@ -20,9 +19,12 @@ import {
     Mail,
     CreditCard,
     TrendingUp,
+    ShieldCheck,
     type LucideIcon,
 } from 'lucide-react';
-import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { useMe } from '@/lib/access/use-me';
+import { useIsSuper, usePermissions } from '@/lib/access/use-permission';
+import { getRequiredPermission } from '@/lib/access/route-permissions';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -30,11 +32,6 @@ interface NavItem {
     href: string;
     labelKey: string;
     icon: LucideIcon;
-    /**
-     * UX-only filter; hard RBAC enforced by middleware + admin-api @Roles.
-     * See Phase 7 Plan 01 threat register T-07-01-01.
-     */
-    adminOnly?: boolean;
 }
 
 interface NavSection {
@@ -42,6 +39,9 @@ interface NavSection {
     items: NavItem[];
 }
 
+// Required permission per href is resolved via getRequiredPermission() from
+// src/lib/access/route-permissions.ts — the single source of truth shared with
+// <PermissionGate>. To add a route, register it there.
 const NAV_SECTIONS: NavSection[] = [
     {
         titleKey: 'sections.main',
@@ -67,32 +67,31 @@ const NAV_SECTIONS: NavSection[] = [
     {
         titleKey: 'sections.marketing',
         items: [
-            { href: '/stories', labelKey: 'stories', icon: Sparkles, adminOnly: true },
-            { href: '/banners', labelKey: 'banners', icon: ImageIcon, adminOnly: true },
-            { href: '/blogs', labelKey: 'blogs', icon: BookOpen, adminOnly: true },
-            { href: '/promocodes', labelKey: 'promocodes', icon: Ticket, adminOnly: true },
+            { href: '/stories', labelKey: 'stories', icon: Sparkles },
+            { href: '/banners', labelKey: 'banners', icon: ImageIcon },
+            { href: '/blogs', labelKey: 'blogs', icon: BookOpen },
+            { href: '/promocodes', labelKey: 'promocodes', icon: Ticket },
         ],
     },
     {
         titleKey: 'sections.comms',
         items: [
-            { href: '/push', labelKey: 'push', icon: Bell, adminOnly: true },
-            { href: '/mailings', labelKey: 'mailings', icon: Mail, adminOnly: true },
+            { href: '/push', labelKey: 'push', icon: Bell },
+            { href: '/mailings', labelKey: 'mailings', icon: Mail },
         ],
     },
     {
         titleKey: 'sections.finance',
         items: [
-            { href: '/payments', labelKey: 'payments', icon: CreditCard, adminOnly: true },
-            { href: '/sales', labelKey: 'sales', icon: TrendingUp, adminOnly: true },
+            { href: '/payments', labelKey: 'payments', icon: CreditCard },
+            { href: '/sales', labelKey: 'sales', icon: TrendingUp },
         ],
     },
+    {
+        titleKey: 'sections.admin',
+        items: [{ href: '/access/roles', labelKey: 'access', icon: ShieldCheck }],
+    },
 ];
-
-interface MeResponse {
-    success: boolean;
-    data?: { user_id: number; email: string | null; role_name: string };
-}
 
 interface AdminNavProps {
     collapsed?: boolean;
@@ -104,21 +103,45 @@ export function AdminNav({ collapsed = false, onNavigate }: AdminNavProps) {
     const locale = useLocale();
     const t = useTranslations('admin.nav');
 
-    const { data: me } = useQuery<MeResponse>({
-        queryKey: ['auth.me'],
-        queryFn: async () => {
-            const res = await fetchWithRefresh('/api/auth/me');
-            return res.json();
-        },
-        staleTime: 60_000,
-    });
+    const { data: me, isPending } = useMe();
+    const isSuper = useIsSuper();
+    const perms = usePermissions();
 
-    const isAdmin = me?.data?.role_name === 'admin';
+    // Skeleton while /auth/me is loading OR before the first fetch has settled
+    // (useQuery's default state is { data: undefined, isLoading: false } so we
+    // also need to treat undefined data as a loading sentinel — otherwise the
+    // filter below collapses every item and the sidebar renders empty).
+    if (isPending || !me) {
+        return (
+            <nav className='flex flex-col gap-5 px-2 py-4'>
+                {Array.from({ length: 6 }).map((_, sectionIdx) => (
+                    <div key={sectionIdx} className='flex flex-col gap-0.5'>
+                        {!collapsed && <div className='mx-3 mb-1.5 h-3 w-20 animate-pulse rounded bg-muted/60' />}
+                        {Array.from({ length: sectionIdx === 0 ? 1 : 2 }).map((__, itemIdx) => (
+                            <div
+                                key={itemIdx}
+                                className={cn(
+                                    'flex items-center gap-3 rounded-md',
+                                    collapsed ? 'mx-auto h-10 w-10' : 'mx-2 h-9 px-3',
+                                )}
+                            >
+                                <div className='h-4 w-4 shrink-0 animate-pulse rounded bg-muted/60' />
+                                {!collapsed && <div className='h-3 flex-1 animate-pulse rounded bg-muted/40' />}
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </nav>
+        );
+    }
 
     return (
         <nav className='flex flex-col gap-5 px-2 py-4'>
             {NAV_SECTIONS.map((section) => {
-                const visibleItems = section.items.filter((item) => !item.adminOnly || isAdmin);
+                const visibleItems = section.items.filter((item) => {
+                    const required = getRequiredPermission(item.href);
+                    return !required || isSuper || perms.has(required);
+                });
                 if (visibleItems.length === 0) return null;
 
                 return (

@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BulkActionToolbar } from '@/components/users/bulk-action-toolbar';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { getMemberProgress, listGroupMembers } from '@/lib/groups/api';
 import type { ActivityWindow, MemberProgressRow, MemberRow } from '@/lib/groups/types';
 import { BulkAddMembersSheet } from '../components/bulk-add-members-sheet';
@@ -72,8 +73,7 @@ export function MembersTab({ groupId }: { groupId: number }) {
         },
         staleTime: 5 * 60 * 1000,
     });
-    const role = me.data?.data?.role_name ?? 'curator';
-    const canMutate = role === 'admin';
+    const canMutate = usePermission('groups.edit');
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['admin.groups.members', groupId, page, page_size, q],

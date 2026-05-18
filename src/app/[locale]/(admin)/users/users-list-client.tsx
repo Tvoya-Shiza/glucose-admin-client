@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users as UsersIcon } from 'lucide-react';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
-import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { usePermission } from '@/lib/access/use-permission';
 import { listUsers } from '@/lib/users/api';
 import type { UserStatus } from '@/lib/users/types';
 import { BulkGrantSheet } from './components/bulk-grant-sheet';
@@ -21,11 +21,6 @@ import { CreateUserDialog } from './components/create-user-dialog';
 import { ExportButton } from './components/export-button';
 import { UsersFilters } from './users-filters';
 import { UsersTable } from './users-table';
-
-interface MeResponse {
-    success: boolean;
-    data?: { user_id: number; email: string | null; role_name: 'admin' | 'curator' | 'teacher' };
-}
 
 /**
  * USR-01 — TanStack-Query-driven list page with nuqs URL state.
@@ -81,22 +76,9 @@ export function UsersListClient() {
 
     const anyFilterActive = Boolean(role_name || status || region_id || (q && q.trim().length > 0));
 
-    // Role detection — gates the "Create user" button (admin-only).
-    const me = useQuery<MeResponse>({
-        queryKey: ['auth.me'],
-        queryFn: async () => {
-            const res = await fetchWithRefresh('/api/auth/me');
-            return res.json();
-        },
-        staleTime: 5 * 60 * 1000,
-    });
-    // Defer conditional UI until after hydration. SSR has no /api/auth/me result, but
-    // a warm TanStack Query cache may resolve it synchronously on the client — that
-    // mismatch was triggering "data-slot=button vs data-slot=dropdown-menu-trigger"
-    // hydration errors when the Create button shifted ExportButton's DOM position.
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-    const isAdmin = mounted && me.data?.data?.role_name === 'admin';
+    // Phase 11 — Create button is gated by `users.create`. usePermission is
+    // deny-during-load so SSR (no perms yet) and CSR agree → no hydration mismatch.
+    const canCreate = usePermission('users.create');
 
     // Plan 05: bulk-grant flow. Sheet opens from BulkActionToolbar; on commit, list
     // query is invalidated (inside BulkGrantSheet) and selection is cleared here.
@@ -112,7 +94,7 @@ export function UsersListClient() {
                     subtitle={t('list_subtitle')}
                     actions={
                         <>
-                            {isAdmin ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                            {canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
                             <ExportButton
                                 filters={{
                                     role_name: role_name ?? undefined,
