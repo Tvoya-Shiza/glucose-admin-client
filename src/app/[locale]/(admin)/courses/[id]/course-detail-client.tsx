@@ -90,6 +90,9 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [teacherOpen, setTeacherOpen] = useState(false);
 
+    const canEdit = usePermission('courses.edit');
+    const canDelete = usePermission('courses.delete');
+
     if (isLoading) {
         return (
             <div className='space-y-3 p-6'>
@@ -124,9 +127,6 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
     // Header title: prefer RU translation, fallback to slug.
     const ruTitle = data.translations.find((tr) => tr.locale === 'kz')?.title;
     const headerTitle = ruTitle && ruTitle.trim().length > 0 ? ruTitle : data.slug;
-
-    const canEdit = usePermission('courses.edit');
-    const canDelete = usePermission('courses.delete');
 
     // DeleteCourseDialog accepts a CourseRow. Synthesize one from CourseDetail —
     // the dialog only reads id, slug, and chapter_count.

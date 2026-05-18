@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { FolderOpen, FolderPlus, MoreHorizontal, Trash2, Pencil } from 'lucide-react';
+import { FolderOpen, FolderPlus, MoreHorizontal, Trash2, Pencil, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { FileFolder } from '@shared/folders';
 import { EmptyState } from '@/components/admin/empty-state';
@@ -32,6 +32,7 @@ import {
     useFolderTree,
 } from '@/lib/folders/use-folder-tree';
 import { listUploads, moveUpload } from '@/lib/uploads/client';
+import { useFileUpload } from '@/lib/uploads/use-file-upload';
 import { mapUploadErrorToI18nKey } from '@/lib/uploads/errors';
 import type { UploadAsset, UploadKind } from '@/lib/uploads/types';
 import { DeleteFileDialog } from './components/delete-file-dialog';
@@ -103,6 +104,45 @@ export function FilesListClient() {
     const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
     const [activeDrag, setActiveDrag] = useState(false);
 
+    const uploadInputRef = useRef<HTMLInputElement | null>(null);
+
+    const onUploadSuccess = () => {
+        toast.success(tUpload('succeeded'));
+        qc.invalidateQueries({ queryKey: ['admin.uploads.list'] });
+    };
+    const onUploadError = (i18nKey: string) => {
+        toast.error(tUpload(i18nKey.replace(/^upload\./, '')));
+    };
+
+    const imageUploader = useFileUpload({ kind: 'image', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
+    const coverUploader = useFileUpload({ kind: 'cover', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
+    const videoUploader = useFileUpload({ kind: 'video', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
+
+    const activeUploader =
+        videoUploader.state === 'requesting' || videoUploader.state === 'uploading'
+            ? videoUploader
+            : coverUploader.state === 'requesting' || coverUploader.state === 'uploading'
+              ? coverUploader
+              : imageUploader;
+    const uploading = activeUploader.state === 'requesting' || activeUploader.state === 'uploading';
+
+    const handleUploadPick = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (uploadInputRef.current) uploadInputRef.current.value = '';
+        if (!file) return;
+        if (file.type.startsWith('video/')) {
+            videoUploader.upload(file);
+            return;
+        }
+        // Respect the current kind filter for images: if user is browsing
+        // covers, save as cover. Otherwise default to image.
+        if (kind === 'cover') {
+            coverUploader.upload(file);
+        } else {
+            imageUploader.upload(file);
+        }
+    };
+
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
     const moveMutation = useMutation({
@@ -140,10 +180,28 @@ export function FilesListClient() {
                     <PageHeader
                         title={t('title')}
                         actions={
-                            <Button type='button' variant='outline' onClick={() => setCreateFolderOpen(true)}>
-                                <FolderPlus className='mr-1 h-4 w-4' />
-                                {tFolders('new_folder')}
-                            </Button>
+                            <div className='flex flex-wrap items-center gap-2'>
+                                <Button type='button' variant='outline' onClick={() => setCreateFolderOpen(true)}>
+                                    <FolderPlus className='mr-1 h-4 w-4' />
+                                    {tFolders('new_folder')}
+                                </Button>
+                                <Button
+                                    type='button'
+                                    variant='default'
+                                    onClick={() => uploadInputRef.current?.click()}
+                                    disabled={uploading}
+                                >
+                                    <Upload className='mr-1 h-4 w-4' />
+                                    {uploading ? `${activeUploader.progress}%` : tFolders('upload_here')}
+                                </Button>
+                                <input
+                                    ref={uploadInputRef}
+                                    type='file'
+                                    accept='image/jpeg,image/png,image/webp,video/mp4,video/webm'
+                                    className='hidden'
+                                    onChange={handleUploadPick}
+                                />
+                            </div>
                         }
                     />
                 }

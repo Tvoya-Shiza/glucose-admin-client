@@ -2,13 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { statusBadgeVariant } from '@/lib/courses/format';
 import { resolveAssetUrl } from '@/lib/uploads/asset-url';
-import { updateCourse } from '@/lib/courses/api';
 import { usePermission } from '@/lib/access/use-permission';
 import type { CourseDetail } from '@/lib/courses/types';
 import { CoverImageUploader } from '../components/cover-image-uploader';
@@ -48,24 +45,8 @@ export interface OverviewTabProps {
 export function OverviewTab({ course, role }: OverviewTabProps) {
     const t = useTranslations('admin.courses');
     const [editing, setEditing] = useState(false);
-    const queryClient = useQueryClient();
 
     const canEdit = usePermission('courses.edit');
-
-    // Plan 04: persist cover URL after a successful upload via updateCourse.
-    // Separate mutation from EditCourseForm's save path so the user doesn't
-    // need to be in edit-mode to swap the cover.
-    const coverMutation = useMutation({
-        mutationFn: (newUrl: string) => updateCourse(course.id, { image_cover: newUrl }),
-        onSuccess: () => {
-            toast.success(t('upload_succeeded'));
-            void queryClient.invalidateQueries({ queryKey: ['course', course.id] });
-            void queryClient.invalidateQueries({ queryKey: ['courses'] });
-        },
-        onError: () => {
-            toast.error(t('upload_failed'));
-        },
-    });
 
     if (editing && canEdit) {
         return (
@@ -88,7 +69,6 @@ export function OverviewTab({ course, role }: OverviewTabProps) {
                     <CoverImageUploader
                         courseId={course.id}
                         currentCoverUrl={course.image_cover}
-                        onUploaded={(newUrl) => coverMutation.mutate(newUrl)}
                     />
                 ) : (
                     <div className='bg-muted text-muted-foreground flex h-24 w-40 items-center justify-center overflow-hidden rounded border text-xs'>

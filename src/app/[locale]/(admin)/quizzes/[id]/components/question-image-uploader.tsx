@@ -29,6 +29,7 @@ export function QuestionImageUploader({
             onChange={(url) => onUploaded(url)}
             onClear={onClear}
             disabled={disabled}
+            pickFromLibrary
         />
     );
 }

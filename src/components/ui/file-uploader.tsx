@@ -193,6 +193,7 @@ export function FileUploader({
                     >
                         {uploading ? `${progress}%` : triggerCopy}
                     </Button>
+                    {libraryButton}
                     {hasValue && onClear ? (
                         <Button
                             type='button'
@@ -206,6 +207,7 @@ export function FileUploader({
                     ) : null}
                 </div>
                 {hiddenInput}
+                {pickerDialog}
             </div>
         );
     }

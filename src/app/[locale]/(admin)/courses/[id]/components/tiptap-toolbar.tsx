@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Editor } from '@tiptap/react';
 import {
@@ -18,11 +18,9 @@ import {
     Link as LinkIcon,
     Image as ImageIcon,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
-import { acceptForKind } from '@/lib/uploads/constants';
-import { useFileUpload } from '@/lib/uploads/use-file-upload';
+import { FileLibraryPicker } from '@/components/ui/file-library-picker';
 
 /**
  * TiptapToolbar — custom toolbar for Tiptap 3.
@@ -34,9 +32,8 @@ import { useFileUpload } from '@/lib/uploads/use-file-upload';
  * Active-state reflection: each Toggle reads `editor.isActive('mark')` and
  * its onPressedChange runs `editor.chain().focus().toggleX().run()`.
  *
- * Image flow: opens a hidden file input, runs the Plan 04 upload-token round-trip
- * via the shared `useFileUpload` hook (Phase 5+ unification), then inserts the
- * resulting URL into the document via `setImage({src})`.
+ * Image flow: opens FileLibraryPicker → user picks an existing asset, uploads
+ * a new one into a chosen folder, or pastes a URL → setImage({src}) inserts it.
  *
  * Link flow: window.prompt for URL (replace with a dialog in a future polish);
  * Tiptap's link extension carries openOnClick=false (configured at editor init)
@@ -49,32 +46,10 @@ export interface TiptapToolbarProps {
 
 export function TiptapToolbar({ editor }: TiptapToolbarProps) {
     const t = useTranslations('admin.courses');
-    const tUpload = useTranslations('upload');
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-    // Hook owns: client-side MIME/size pre-flight, token round-trip, abort.
-    // We provide success/error callbacks to insert into the editor + toast.
-    const { upload, state } = useFileUpload({
-        kind: 'image',
-        onSuccess: (url, meta) => {
-            const alt = meta.original_name ?? '';
-            editor.chain().focus().setImage({ src: url, alt }).run();
-            toast.success(tUpload('succeeded'));
-        },
-        onError: (i18nKey) => {
-            toast.error(tUpload(i18nKey.replace(/^upload\./, '')));
-        },
-    });
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     const handleImageClick = () => {
-        if (state === 'requesting' || state === 'uploading') return;
-        fileInputRef.current?.click();
-    };
-
-    const handleImagePicked = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        if (file) upload(file);
+        setPickerOpen(true);
     };
 
     const handleLinkClick = () => {
@@ -218,13 +193,14 @@ export function TiptapToolbar({ editor }: TiptapToolbarProps) {
             >
                 <ImageIcon className='h-4 w-4' />
             </Button>
-            <input
-                ref={fileInputRef}
-                type='file'
-                accept={acceptForKind('image')}
-                className='hidden'
-                onChange={handleImagePicked}
-                aria-hidden
+            <FileLibraryPicker
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                kind='image'
+                onPick={(url, meta) => {
+                    const alt = meta.original_name ?? '';
+                    editor.chain().focus().setImage({ src: url, alt }).run();
+                }}
             />
         </div>
     );

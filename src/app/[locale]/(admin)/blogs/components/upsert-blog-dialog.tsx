@@ -307,6 +307,7 @@ export function UpsertBlogDialog({ open, onOpenChange, blog }: UpsertBlogDialogP
                                         value={field.value ?? ''}
                                         onChange={(url) => field.onChange(url)}
                                         onClear={() => field.onChange('')}
+                                        pickFromLibrary
                                     />
                                     <FormMessage />
                                 </FormItem>

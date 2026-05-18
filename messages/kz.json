@@ -987,6 +987,7 @@
       "content_kz_label": "Мазмұны (KZ)",
       "content_editor_label": "Мақала мазмұны",
       "content_editor_placeholder": "Жазуды бастаңыз...",
+      "content_after_create_hint": "Мақала жасалғаннан кейін мазмұнды бөлек бетте өңдеуге болады",
       "cover_image_label": "Мұқаба",
       "slug_label": "Slug",
       "slug_placeholder": "ent-tips-2026",
@@ -1470,6 +1471,9 @@
     "uploaded_by": "Жүктеген",
     "uploaded_at": "Жүктелген",
     "size_mb": "{mb} МБ",
+    "or_paste_url_label": "Немесе сілтеме қойыңыз:",
+    "apply_url": "Қолдану",
+    "invalid_url": "Жарамсыз URL",
     "folders": {
       "root": "Түбір",
       "new_folder": "Жаңа қалта",

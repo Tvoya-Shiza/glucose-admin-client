@@ -236,6 +236,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                     setFileType('');
                                     setVolume('0');
                                 }}
+                                pickFromLibrary
                             />
                         </div>
                     ) : null}

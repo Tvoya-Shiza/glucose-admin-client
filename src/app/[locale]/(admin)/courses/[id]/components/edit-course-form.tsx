@@ -151,7 +151,6 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                 <CoverImageUploader
                     courseId={course.id}
                     currentCoverUrl={course.image_cover}
-                    onUploaded={() => undefined}
                 />
             </div>
 
