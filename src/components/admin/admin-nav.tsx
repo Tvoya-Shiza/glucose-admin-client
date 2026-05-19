@@ -20,6 +20,7 @@ import {
     CreditCard,
     TrendingUp,
     ShieldCheck,
+    KanbanSquare,
     type LucideIcon,
 } from 'lucide-react';
 import { useMe } from '@/lib/access/use-me';
@@ -45,7 +46,10 @@ interface NavSection {
 const NAV_SECTIONS: NavSection[] = [
     {
         titleKey: 'sections.main',
-        items: [{ href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard }],
+        items: [
+            { href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
+            { href: '/boards', labelKey: 'boards', icon: KanbanSquare },
+        ],
     },
     {
         titleKey: 'sections.content',

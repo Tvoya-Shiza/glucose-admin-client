@@ -5,6 +5,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { AdminNav } from './admin-nav';
 import { BrandLogo } from './brand-logo';
 import { SidebarFooter } from './sidebar-footer';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -119,6 +120,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
                     <main className='flex-1 overflow-auto'>{children}</main>
                 </div>
+
+                {/* Floating notification bell — fixed bottom-right; lives outside
+                    the per-page layout so every admin page gets it for free. */}
+                <NotificationBell />
             </div>
         </TooltipProvider>
     );

@@ -90,6 +90,21 @@ export const PERMISSION_CODES = [
     'sales.export',
     // access
     'access.manage',
+    // boards (Phase 12 — mini-Trello)
+    'boards.view',
+    'boards.create',
+    'boards.edit',
+    'boards.delete',
+    'boards.manage_members',
+    'boards.manage_columns',
+    // tasks (Phase 12 — mini-Trello)
+    'tasks.view',
+    'tasks.create',
+    'tasks.edit',
+    'tasks.delete',
+    'tasks.assign',
+    'tasks.comment',
+    'tasks.complete',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];

@@ -30,6 +30,7 @@ export const ROUTE_PERMISSIONS = {
     '/payments': 'payments.view',
     '/sales': 'sales.view',
     '/access/roles': 'access.manage',
+    '/boards': 'boards.view',
 } as const satisfies Record<string, PermissionCode>;
 
 // Matches the configured locales from src/i18n/routing.ts. Keep in sync if
