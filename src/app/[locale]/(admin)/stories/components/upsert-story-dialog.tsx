@@ -215,6 +215,13 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        <p className='text-xs text-muted-foreground'>
+                                            {t(
+                                                field.value === 'publish'
+                                                    ? 'status_hint_publish'
+                                                    : 'status_hint_pending'
+                                            )}
+                                        </p>
                                         <FormMessage />
                                     </FormItem>
                                 )}
