@@ -30,6 +30,7 @@ import { FileUploader } from '@/components/ui/file-uploader';
 import { createBanner, updateBanner } from '@/lib/banners/api';
 import type { BannerDetail, BannerStatus, BannerUpsertInput } from '@/lib/banners/types';
 import { slugify, SLUG_REGEX } from '@/lib/courses/format';
+import { cn } from '@/lib/utils';
 
 /**
  * BAN-01 — create + edit dialog for banners. Single component, two modes
@@ -202,21 +203,30 @@ export function UpsertBannerDialog({ open, onOpenChange, banner }: UpsertBannerD
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>{t('status_label')}</FormLabel>
-                                        <Select value={field.value} onValueChange={field.onChange}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder={t('status_label')} />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value='pending'>
-                                                    {t('status_pending')}
-                                                </SelectItem>
-                                                <SelectItem value='publish'>
-                                                    {t('status_publish')}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <FormControl>
+                                            <div
+                                                role='radiogroup'
+                                                className='inline-flex w-full rounded-md border bg-muted/30 p-1'
+                                            >
+                                                {(['pending', 'publish'] as const).map((opt) => (
+                                                    <button
+                                                        key={opt}
+                                                        type='button'
+                                                        role='radio'
+                                                        aria-checked={field.value === opt}
+                                                        onClick={() => field.onChange(opt)}
+                                                        className={cn(
+                                                            'flex-1 rounded px-3 py-1.5 text-sm font-medium transition-colors',
+                                                            field.value === opt
+                                                                ? 'bg-background text-foreground shadow-sm'
+                                                                : 'text-muted-foreground hover:text-foreground'
+                                                        )}
+                                                    >
+                                                        {t(`status_${opt}`)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </FormControl>
                                         <p className='text-xs text-muted-foreground'>
                                             {t(
                                                 field.value === 'publish'
