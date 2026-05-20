@@ -125,12 +125,16 @@ export interface CourseDetailCategoryRef {
     title_kz: string | null;
 }
 
+export type FileAccessibility = 'free' | 'paid';
+
 export interface ChapterItemFileRef {
     id: number;
     file_type: string;
     storage: string;
     file: string;
     volume: string;
+    /** Phase 13: per-item access gate. Mirrors Files.accessibility on the schema. */
+    accessibility?: FileAccessibility;
 }
 
 export interface ChapterItemQuizRef {
@@ -168,6 +172,12 @@ export interface CourseCounts {
     schedule_count: number;
 }
 
+export interface CoursePricing {
+    /** Decimal as string for arbitrary precision (matches admin-api Decimal(15,3)). */
+    price: string;
+    access_days: number;
+}
+
 export interface CourseDetail {
     id: number;
     slug: string;
@@ -179,6 +189,9 @@ export interface CourseDetail {
     thumbnail: string;
     capacity: number | null;
     certificate: boolean;
+    /** Phase 13: paid course flag. When true, `pricing` is non-null. */
+    is_paid: boolean;
+    pricing: CoursePricing | null;
     start_date: number | null;
     duration: number | null;
     position: number | null;
@@ -205,6 +218,10 @@ export interface CreateCoursePayload {
     image_cover?: string;
     thumbnail?: string;
     translations: Translation[];
+    /** Phase 13 pricing. When `is_paid=true`, `price` + `access_days` are required. */
+    is_paid?: boolean;
+    price?: number;
+    access_days?: number;
 }
 
 export interface UpdateCoursePayload {
@@ -214,6 +231,9 @@ export interface UpdateCoursePayload {
     image_cover?: string;
     thumbnail?: string;
     translations?: Translation[];
+    is_paid?: boolean;
+    price?: number;
+    access_days?: number;
 }
 
 export interface ChangeTeacherPayload {

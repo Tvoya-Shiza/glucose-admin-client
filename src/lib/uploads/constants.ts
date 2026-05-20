@@ -16,12 +16,25 @@ export const KIND_MAX_BYTES: Record<UploadKind, number> = {
     image: 10 * 1024 * 1024,
     cover: 10 * 1024 * 1024,
     video: 200 * 1024 * 1024,
+    // Phase 14 — documents (assignment attachments + future doc uploads).
+    document: 50 * 1024 * 1024,
 };
 
 export const MIME_BY_KIND: Record<UploadKind, ReadonlyArray<UploadContentType>> = {
     image: ['image/jpeg', 'image/png', 'image/webp'],
     cover: ['image/jpeg', 'image/png', 'image/webp'],
     video: ['video/mp4', 'video/webm'],
+    document: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'application/zip',
+    ],
 };
 
 export const EXT_BY_MIME: Record<UploadContentType, string> = {
@@ -30,6 +43,16 @@ export const EXT_BY_MIME: Record<UploadContentType, string> = {
     'image/webp': '.webp',
     'video/mp4': '.mp4',
     'video/webm': '.webm',
+    // Phase 14 — documents.
+    'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'application/vnd.ms-excel': '.xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+    'application/vnd.ms-powerpoint': '.ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+    'text/plain': '.txt',
+    'application/zip': '.zip',
 };
 
 /** `accept` attribute value for `<input type="file">`, joined by comma. */

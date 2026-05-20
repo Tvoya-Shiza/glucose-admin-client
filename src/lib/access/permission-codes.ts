@@ -43,6 +43,19 @@ export const PERMISSION_CODES = [
     'quizzes.badges_manage',
     'quizzes.categories_manage',
     'quizzes.results_view',
+    // assignments (Тапсырма) — course assignments with student submissions + grading
+    'assignments.view',
+    'assignments.create',
+    'assignments.edit',
+    'assignments.delete',
+    'assignments.publish',
+    'assignments.submissions_view',
+    'assignments.grade',
+    // schedules — calendar of curator+group events bound to course content
+    'schedules.view',
+    'schedules.create',
+    'schedules.edit',
+    'schedules.delete',
     // files
     'files.view',
     'files.create',

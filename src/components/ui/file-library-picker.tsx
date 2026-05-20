@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Upload, FolderPlus, Folder, ArrowUp } from 'lucide-react';
+import { Upload, FolderPlus, Folder, ArrowUp, FileText } from 'lucide-react';
 import type { FileFolder } from '@shared/folders';
 import { Button } from '@/components/ui/button';
 import {
@@ -297,6 +297,13 @@ function PickerFileCard({
                         preload='metadata'
                         muted
                     />
+                ) : asset.kind === 'document' ? (
+                    <div className='flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center text-muted-foreground'>
+                        <FileText className='h-8 w-8' />
+                        <span className='truncate text-[10px] uppercase tracking-wider'>
+                            {extensionFromUrl(asset.file_url) || 'doc'}
+                        </span>
+                    </div>
                 ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -323,4 +330,9 @@ function isValidUrl(s: string): boolean {
     } catch {
         return false;
     }
+}
+
+function extensionFromUrl(url: string): string {
+    const m = url.match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
+    return m && m[1] ? m[1].toLowerCase() : '';
 }

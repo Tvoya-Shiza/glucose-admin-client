@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { FileText as FileTextIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FileLibraryPicker } from '@/components/ui/file-library-picker';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,7 @@ const PREVIEW_SIZE_CLASSES: Record<FileUploaderPreviewSize, string> = {
 function defaultTriggerKey(kind: UploadKind, hasValue: boolean): string {
     if (kind === 'video') return hasValue ? 'replace_video' : 'choose_video';
     if (kind === 'cover') return hasValue ? 'replace_cover' : 'choose_cover';
+    if (kind === 'document') return hasValue ? 'replace_document' : 'choose_document';
     return hasValue ? 'replace_image' : 'choose_image';
 }
 
@@ -325,6 +327,24 @@ function PreviewBox({
                 controls
                 preload='metadata'
             />
+        );
+    }
+    if (kind === 'document') {
+        // Documents don't render inline — show the filename + a click-through to open.
+        const filename = value.split('/').pop()?.split('?')[0] ?? value;
+        return (
+            <a
+                href={src}
+                target='_blank'
+                rel='noopener noreferrer'
+                className={cn(
+                    'flex flex-col items-center justify-center gap-1 rounded border bg-muted/40 p-2 text-center text-xs hover:bg-muted',
+                    sizeClass,
+                )}
+            >
+                <FileTextIcon className='h-6 w-6 text-muted-foreground' />
+                <span className='truncate max-w-full' title={filename}>{filename}</span>
+            </a>
         );
     }
     return (

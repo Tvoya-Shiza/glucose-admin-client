@@ -113,6 +113,8 @@ export function TeacherChangeDialog({ open, onOpenChange, course, onChanged }: T
                 thumbnail: withMeta.thumbnail,
                 capacity: withMeta.capacity,
                 certificate: withMeta.certificate,
+                is_paid: withMeta.is_paid,
+                pricing: withMeta.pricing,
                 start_date: withMeta.start_date,
                 duration: withMeta.duration,
                 position: withMeta.position,

@@ -58,21 +58,37 @@ const translationSchema = z.object({
     description: z.string().max(65535).optional().or(z.literal('')),
 });
 
-const schema = z.object({
-    slug: z
-        .string()
-        .min(3)
-        .max(255)
-        .regex(SLUG_REGEX, 'slug_invalid_format'),
-    status: z.enum(['active', 'pending', 'is_draft', 'inactive']),
-    category_id: z
-        .string()
-        .refine(
-            (v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number.isInteger(Number(v))),
-            { message: 'category_id_invalid' },
-        ),
-    kz: translationSchema,
-});
+const schema = z
+    .object({
+        slug: z
+            .string()
+            .min(3)
+            .max(255)
+            .regex(SLUG_REGEX, 'slug_invalid_format'),
+        status: z.enum(['active', 'pending', 'is_draft', 'inactive']),
+        category_id: z
+            .string()
+            .refine(
+                (v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number.isInteger(Number(v))),
+                { message: 'category_id_invalid' },
+            ),
+        is_paid: z.boolean(),
+        // Strings on the form (text inputs); validated below when is_paid=true.
+        price: z.string(),
+        access_days: z.string(),
+        kz: translationSchema,
+    })
+    .superRefine((vals, ctx) => {
+        if (!vals.is_paid) return;
+        const priceN = Number(vals.price);
+        const accessN = Number(vals.access_days);
+        if (!Number.isFinite(priceN) || priceN <= 0) {
+            ctx.addIssue({ code: 'custom', path: ['price'], message: 'price_required' });
+        }
+        if (!Number.isFinite(accessN) || !Number.isInteger(accessN) || accessN <= 0) {
+            ctx.addIssue({ code: 'custom', path: ['access_days'], message: 'access_days_required' });
+        }
+    });
 type Values = z.infer<typeof schema>;
 
 export interface EditCourseFormProps {
@@ -93,6 +109,9 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
             slug: course.slug,
             status: course.status,
             category_id: course.category ? String(course.category.id) : '',
+            is_paid: course.is_paid,
+            price: course.pricing?.price ?? '',
+            access_days: course.pricing?.access_days != null ? String(course.pricing.access_days) : '',
             kz: {
                 title: initialKz?.title ?? '',
                 description: initialKz?.description ?? '',
@@ -100,6 +119,8 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
         },
         mode: 'onSubmit',
     });
+
+    const isPaid = form.watch('is_paid');
 
     const mutation = useMutation({
         mutationFn: (values: Values) => {
@@ -116,6 +137,13 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                 status: values.status as CourseStatus,
                 category_id: cat === '' ? null : Number(cat),
                 translations,
+                is_paid: values.is_paid,
+                ...(values.is_paid
+                    ? {
+                          price: Number(values.price),
+                          access_days: Number(values.access_days),
+                      }
+                    : {}),
             });
         },
         onMutate: () => {
@@ -244,6 +272,61 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                             : '—'}
                     </div>
                 </div>
+            </div>
+
+            <div className='rounded border bg-muted/30 p-3 space-y-3'>
+                <div className='flex items-center justify-between'>
+                    <div>
+                        <Label htmlFor='is_paid' className='cursor-pointer'>
+                            {t('pricing_is_paid_label')}
+                        </Label>
+                        <p className='text-xs text-muted-foreground'>{t('pricing_is_paid_hint')}</p>
+                    </div>
+                    <Controller
+                        control={form.control}
+                        name='is_paid'
+                        render={({ field }) => (
+                            <input
+                                id='is_paid'
+                                type='checkbox'
+                                checked={field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                disabled={mutation.isPending}
+                                className='h-5 w-5 cursor-pointer'
+                            />
+                        )}
+                    />
+                </div>
+                {isPaid ? (
+                    <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                        <div className='space-y-1'>
+                            <Label htmlFor='price'>{t('pricing_price_label')}</Label>
+                            <Input
+                                id='price'
+                                inputMode='decimal'
+                                {...form.register('price')}
+                                placeholder='1990'
+                                disabled={mutation.isPending}
+                            />
+                            {form.formState.errors.price ? (
+                                <p className='text-xs text-destructive'>{t('pricing_price_required')}</p>
+                            ) : null}
+                        </div>
+                        <div className='space-y-1'>
+                            <Label htmlFor='access_days'>{t('pricing_access_days_label')}</Label>
+                            <Input
+                                id='access_days'
+                                inputMode='numeric'
+                                {...form.register('access_days')}
+                                placeholder='30'
+                                disabled={mutation.isPending}
+                            />
+                            {form.formState.errors.access_days ? (
+                                <p className='text-xs text-destructive'>{t('pricing_access_days_required')}</p>
+                            ) : null}
+                        </div>
+                    </div>
+                ) : null}
             </div>
 
             <div className='flex gap-2'>

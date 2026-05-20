@@ -16,12 +16,16 @@ import { TiptapToolbar } from './tiptap-toolbar';
  *   - StarterKit (defaults: paragraph, bold, italic, strike, code, underline,
  *     heading H1-H3, bullet/ordered list, blockquote, code-block, hard-break,
  *     dropcursor, gapcursor, history). Tiptap 3 StarterKit ships with `underline`
- *     bundled (verified at `node_modules/@tiptap/extension-underline/` present).
+ *     and `link` bundled. We disable the bundled `link` via
+ *     `StarterKit.configure({ link: false })` so we can register our own
+ *     `Link.configure(...)` with `openOnClick: false` below (otherwise the two
+ *     registrations collide and Tiptap warns
+ *     `Duplicate extension names found: ['link']`).
  *   - Image — installed via Plan 05 (`@tiptap/extension-image@^3.22.5`); used by
  *     the toolbar's image button after the upload-token round-trip.
- *   - Link — already present transitively (`@tiptap/extension-link`); configured
- *     with `openOnClick: false` so a click in the editor doesn't navigate the
- *     admin away (T-05-50 mitigation — defense-in-depth alongside the sanitizer).
+ *   - Link — explicit registration with `openOnClick: false` so a click in the
+ *     editor doesn't navigate the admin away (T-05-50 mitigation —
+ *     defense-in-depth alongside the sanitizer).
  *
  * Save flow:
  *   - On `update` Tiptap fires getHTML(). We sanitize CLIENT-SIDE via
@@ -51,7 +55,7 @@ export function TiptapEditor({ initialHtml, onChange }: TiptapEditorProps) {
 
     const editor = useEditor({
         extensions: [
-            StarterKit,
+            StarterKit.configure({ link: false }),
             Image,
             Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' } }),
         ],
