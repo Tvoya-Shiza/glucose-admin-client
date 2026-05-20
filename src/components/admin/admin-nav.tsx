@@ -23,6 +23,8 @@ import {
     TrendingUp,
     ShieldCheck,
     KanbanSquare,
+    Building2,
+    Library,
     type LucideIcon,
 } from 'lucide-react';
 import { useMe } from '@/lib/access/use-me';
@@ -70,6 +72,13 @@ const NAV_SECTIONS: NavSection[] = [
         items: [
             { href: '/users', labelKey: 'users', icon: Users },
             { href: '/groups', labelKey: 'groups', icon: UsersRound },
+        ],
+    },
+    {
+        titleKey: 'sections.education',
+        items: [
+            { href: '/universities', labelKey: 'universities', icon: Building2 },
+            { href: '/universities/specialties', labelKey: 'specialties', icon: Library },
         ],
     },
     {

@@ -118,6 +118,25 @@ export const PERMISSION_CODES = [
     'tasks.assign',
     'tasks.comment',
     'tasks.complete',
+    // universities (Phase 17 — catalog of KZ vuzes)
+    'universities.view',
+    'universities.create',
+    'universities.edit',
+    'universities.delete',
+    'universities.import',
+    'universities.export',
+    // specialties (Phase 17 — directory + M-M links with universities)
+    'specialties.view',
+    'specialties.create',
+    'specialties.edit',
+    'specialties.delete',
+    'specialties.import',
+    'specialties.export',
+    // admission stats (Phase 17 — per (link, year) grants/threshold/threshold_rural)
+    'admission_stats.view',
+    'admission_stats.edit',
+    'admission_stats.import',
+    'admission_stats.export',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
