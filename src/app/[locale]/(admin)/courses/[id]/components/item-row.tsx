@@ -101,6 +101,14 @@ export function ItemRow({ courseId, chapterId, item }: ItemRowProps) {
             </button>
             <Icon className='text-muted-foreground h-4 w-4 shrink-0' />
             <div className='min-w-0 flex-1 truncate text-sm'>{label}</div>
+            {!item.is_required ? (
+                <span
+                    className='text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide'
+                    title={t('item_optional_hint')}
+                >
+                    {t('item_optional_badge')}
+                </span>
+            ) : null}
             <Button type='button' variant='ghost' size='sm' onClick={() => setEditOpen(true)} aria-label={t('edit')}>
                 <Pencil className='h-4 w-4' />
             </Button>

@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -73,6 +74,7 @@ const schema = z
                 { message: 'category_id_invalid' },
             ),
         is_paid: z.boolean(),
+        strict_progress: z.boolean(),
         // Strings on the form (text inputs); validated below when is_paid=true.
         price: z.string(),
         access_days: z.string(),
@@ -110,6 +112,7 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
             status: course.status,
             category_id: course.category ? String(course.category.id) : '',
             is_paid: course.is_paid,
+            strict_progress: course.strict_progress,
             price: course.pricing?.price ?? '',
             access_days: course.pricing?.access_days != null ? String(course.pricing.access_days) : '',
             kz: {
@@ -121,6 +124,17 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
     });
 
     const isPaid = form.watch('is_paid');
+
+    // UX: when the user flips is_paid OFF→ON, default strict_progress to true
+    // (but never reset a course that was already paid+lax — only the transition).
+    // The user can still uncheck strict_progress after the auto-flip.
+    const prevIsPaidRef = useRef(course.is_paid);
+    useEffect(() => {
+        if (!prevIsPaidRef.current && isPaid) {
+            form.setValue('strict_progress', true, { shouldDirty: true });
+        }
+        prevIsPaidRef.current = isPaid;
+    }, [isPaid, form]);
 
     const mutation = useMutation({
         mutationFn: (values: Values) => {
@@ -138,6 +152,7 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                 category_id: cat === '' ? null : Number(cat),
                 translations,
                 is_paid: values.is_paid,
+                strict_progress: values.strict_progress,
                 ...(values.is_paid
                     ? {
                           price: Number(values.price),
@@ -327,6 +342,33 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                         </div>
                     </div>
                 ) : null}
+            </div>
+
+            <div className='rounded border bg-muted/30 p-3'>
+                <div className='flex items-center justify-between'>
+                    <div>
+                        <Label htmlFor='strict_progress' className='cursor-pointer'>
+                            {t('strict_progress_label')}
+                        </Label>
+                        <p className='text-xs text-muted-foreground'>
+                            {t('strict_progress_hint')}
+                        </p>
+                    </div>
+                    <Controller
+                        control={form.control}
+                        name='strict_progress'
+                        render={({ field }) => (
+                            <input
+                                id='strict_progress'
+                                type='checkbox'
+                                checked={field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                disabled={mutation.isPending}
+                                className='h-5 w-5 cursor-pointer'
+                            />
+                        )}
+                    />
+                </div>
             </div>
 
             <div className='flex gap-2'>

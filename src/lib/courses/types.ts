@@ -151,6 +151,12 @@ export interface ChapterItem {
     type: ChapterItemType;
     order: number | null;
     item_id: number;
+    /**
+     * Phase 16 — `true` means the item counts toward course completion.
+     * UI surfaces this as a single "Обязательный для прохождения курса" checkbox in
+     * UpsertItemDialog; default is `true` to preserve pre-Phase-16 semantics.
+     */
+    is_required: boolean;
     file: ChapterItemFileRef | null;
     quiz: ChapterItemQuizRef | null;
     assignment: ChapterItemAssignmentRef | null;
@@ -191,6 +197,14 @@ export interface CourseDetail {
     certificate: boolean;
     /** Phase 13: paid course flag. When true, `pricing` is non-null. */
     is_paid: boolean;
+    /**
+     * Phase 16: course-level strict completion check.
+     * Independent of `is_paid` — admin can opt a free course in, or a paid course out.
+     * When true, the user-API treats `is_required` items as gating course completion
+     * and surfaces `is_strict_required` on progress responses so the UI can show
+     * "still missing N required items".
+     */
+    strict_progress: boolean;
     pricing: CoursePricing | null;
     start_date: number | null;
     duration: number | null;
@@ -222,6 +236,8 @@ export interface CreateCoursePayload {
     is_paid?: boolean;
     price?: number;
     access_days?: number;
+    /** Phase 16 — strict completion check toggle. Optional on create (defaults false). */
+    strict_progress?: boolean;
 }
 
 export interface UpdateCoursePayload {
@@ -234,6 +250,8 @@ export interface UpdateCoursePayload {
     is_paid?: boolean;
     price?: number;
     access_days?: number;
+    /** Phase 16. */
+    strict_progress?: boolean;
 }
 
 export interface ChangeTeacherPayload {
@@ -284,6 +302,11 @@ export interface UpsertItemPayload {
     order?: number;
     /** Only honored when type='file' (maps to FileTranslations). Ignored otherwise. */
     translations?: Translation[];
+    /**
+     * Phase 16 — per-item "counts toward completion" flag. Default `true` on the
+     * server. Omitting the field on update keeps the existing value.
+     */
+    is_required?: boolean;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

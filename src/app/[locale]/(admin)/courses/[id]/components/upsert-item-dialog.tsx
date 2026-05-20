@@ -88,6 +88,10 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     const [volume, setVolume] = useState<string>(item?.file?.volume ?? '0');
     const [accessibility, setAccessibility] = useState<'free' | 'paid'>(item?.file?.accessibility ?? 'free');
     const [fkId, setFkId] = useState<string>(item && item.type !== 'file' ? String(item.item_id) : '');
+    // Phase 16 — per-item "counts toward course completion" toggle. Defaults to true
+    // for both new items and existing items that pre-date Phase 16 (the server backfills
+    // `is_required=1` for all legacy rows via the column default).
+    const [isRequired, setIsRequired] = useState<boolean>(item?.is_required ?? true);
 
     // Reset state when dialog opens on a different item.
     useEffect(() => {
@@ -101,6 +105,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
             setVolume(item?.file?.volume ?? '0');
             setAccessibility(item?.file?.accessibility ?? 'free');
             setFkId(item && item.type !== 'file' ? String(item.item_id) : '');
+            setIsRequired(item?.is_required ?? true);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, item?.id]);
@@ -114,6 +119,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                     type: 'file' as ChapterItemType,
                     item_id: item?.file?.id ?? 0,
                     accessibility,
+                    is_required: isRequired,
                     translations: [
                         { locale: 'kz' as const, title: kzTitle, description: subType === 'rich-text' ? kzHtml : undefined },
                     ],
@@ -139,6 +145,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                 chapter_id: chapterId,
                 type,
                 item_id: fkNumeric,
+                is_required: isRequired,
             });
         },
         onSuccess: () => {
@@ -337,6 +344,24 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                             <EntitySearchPicker kind='assignment' value={fkId} onChange={setFkId} />
                         </div>
                     ) : null}
+
+                    <div className='flex items-center justify-between rounded border bg-muted/30 p-3'>
+                        <div>
+                            <Label htmlFor='item_is_required' className='cursor-pointer'>
+                                {t('item_is_required_label')}
+                            </Label>
+                            <p className='text-xs text-muted-foreground'>
+                                {t('item_is_required_hint')}
+                            </p>
+                        </div>
+                        <input
+                            id='item_is_required'
+                            type='checkbox'
+                            checked={isRequired}
+                            onChange={(e) => setIsRequired(e.target.checked)}
+                            className='h-5 w-5 cursor-pointer'
+                        />
+                    </div>
                 </div>
 
                 <DialogFooter>
