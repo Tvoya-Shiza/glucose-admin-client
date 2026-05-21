@@ -96,14 +96,25 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                 ) : null}
             </header>
 
-            {/* Buyer block */}
+            {/* Buyer / Group block */}
             <section className='space-y-2'>
                 <h2 className='text-lg font-semibold'>{t('detail_buyer_block')}</h2>
                 <dl className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-                    <DetailRow label='id' value={String(data.buyer.id)} />
-                    <DetailRow label='full_name' value={data.buyer.full_name ?? '—'} />
-                    <DetailRow label='email' value={data.buyer.email ?? '—'} />
-                    <DetailRow label='mobile' value={data.buyer.mobile ?? '—'} />
+                    {data.buyer ? (
+                        <>
+                            <DetailRow label='id' value={String(data.buyer.id)} />
+                            <DetailRow label='full_name' value={data.buyer.full_name ?? '—'} />
+                            <DetailRow label='email' value={data.buyer.email ?? '—'} />
+                            <DetailRow label='mobile' value={data.buyer.mobile ?? '—'} />
+                        </>
+                    ) : data.group ? (
+                        <>
+                            <DetailRow label='group_id' value={String(data.group.id)} />
+                            <DetailRow label='group_name' value={data.group.name} />
+                        </>
+                    ) : (
+                        <DetailRow label='target' value='—' />
+                    )}
                 </dl>
             </section>
 

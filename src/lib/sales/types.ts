@@ -28,9 +28,18 @@ export interface SaleBuyerRef {
     mobile: string | null;
 }
 
+/** Phase 18 — group-scoped sales reference the granting Group instead of a User buyer. */
+export interface SaleGroupRef {
+    id: number;
+    name: string;
+}
+
 export interface SaleRow {
     id: number;
-    buyer: SaleBuyerRef;
+    /** NULL for Phase 18 group-scoped grants — `group` is set instead. */
+    buyer: SaleBuyerRef | null;
+    /** NULL for direct (per-user) sales; populated for Phase 18 group grants. */
+    group: SaleGroupRef | null;
     seller_id: number | null;
     type: SaleTypeLit | null;
     payment_method: PaymentMethodLit | null;

@@ -137,6 +137,14 @@ export const PERMISSION_CODES = [
     'admission_stats.edit',
     'admission_stats.import',
     'admission_stats.export',
+    // course access (Phase 18 — grant/revoke/extend course access for users and groups)
+    'course_access.view',
+    'course_access.grant',
+    'course_access.revoke',
+    'course_access.extend',
+    // progress overrides (Phase 18 — per-item content unlocks bypassing strict_progress)
+    'progress_overrides.view',
+    'progress_overrides.manage',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];

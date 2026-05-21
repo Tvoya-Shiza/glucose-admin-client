@@ -16,11 +16,12 @@ import { usePermission } from '@/lib/access/use-permission';
 import { getGroup } from '@/lib/groups/api';
 import { statusBadgeVariant } from '@/lib/groups/format';
 import { DeleteGroupDialog } from '../components/delete-group-dialog';
+import { CourseAccessTab } from './tabs/course-access-tab';
 import { MembersTab } from './tabs/members-tab';
 import { OverviewTab } from './tabs/overview-tab';
 import { ScheduleTab } from './tabs/schedule-tab';
 
-const TABS = ['overview', 'members', 'schedule'] as const;
+const TABS = ['overview', 'members', 'schedule', 'course-access'] as const;
 type TabKey = (typeof TABS)[number];
 
 interface MeResponse {
@@ -128,6 +129,7 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
                     <TabsTrigger value='overview'>{t('overview_tab')}</TabsTrigger>
                     <TabsTrigger value='members'>{t('members_tab')}</TabsTrigger>
                     <TabsTrigger value='schedule'>{t('schedule_tab')}</TabsTrigger>
+                    <TabsTrigger value='course-access'>{t('course_access_tab')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value='overview'>
                     <OverviewTab group={data} role={role} />
@@ -137,6 +139,9 @@ export function GroupDetailClient({ groupId }: { groupId: number }) {
                 </TabsContent>
                 <TabsContent value='schedule'>
                     <ScheduleTab />
+                </TabsContent>
+                <TabsContent value='course-access'>
+                    {safeTab === 'course-access' ? <CourseAccessTab groupId={data.id} /> : null}
                 </TabsContent>
             </Tabs>
 

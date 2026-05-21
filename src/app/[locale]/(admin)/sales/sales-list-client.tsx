@@ -276,10 +276,21 @@ export function SalesListClient() {
                                       >
                                           <TableCell className='font-mono text-xs'>{r.id}</TableCell>
                                           <TableCell className='text-xs'>
-                                              <div>{r.buyer.full_name ?? '—'}</div>
-                                              <div className='text-muted-foreground'>
-                                                  {r.buyer.email ?? r.buyer.mobile ?? '—'}
-                                              </div>
+                                              {r.buyer ? (
+                                                  <>
+                                                      <div>{r.buyer.full_name ?? '—'}</div>
+                                                      <div className='text-muted-foreground'>
+                                                          {r.buyer.email ?? r.buyer.mobile ?? '—'}
+                                                      </div>
+                                                  </>
+                                              ) : r.group ? (
+                                                  <>
+                                                      <div>{r.group.name}</div>
+                                                      <div className='text-muted-foreground'>group #{r.group.id}</div>
+                                                  </>
+                                              ) : (
+                                                  <div>—</div>
+                                              )}
                                           </TableCell>
                                           <TableCell className='text-xs'>
                                               {r.product_label ?? r.type ?? '—'}

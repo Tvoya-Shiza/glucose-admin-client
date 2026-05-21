@@ -20,12 +20,14 @@ import type { CourseDetail, CourseRow } from '@/lib/courses/types';
 import { TranslationCompletenessBadge } from '../components/translation-completeness-badge';
 import { DeleteCourseDialog } from '../components/delete-course-dialog';
 import { TeacherChangeDialog } from './components/teacher-change-dialog';
+import { AccessorsTab } from './tabs/accessors-tab';
 import { OverviewTab } from './tabs/overview-tab';
 import { ContentTab } from './tabs/content-tab';
+import { ProgressTab } from './tabs/progress-tab';
 import { ScheduleTab } from './tabs/schedule-tab';
 import { PreviewTab } from './tabs/preview-tab';
 
-const TABS = ['overview', 'content', 'schedule', 'preview'] as const;
+const TABS = ['overview', 'content', 'schedule', 'preview', 'progress', 'accessors'] as const;
 type TabKey = (typeof TABS)[number];
 
 interface MeResponse {
@@ -200,6 +202,8 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         <TabsTrigger value='content'>{t('content_tab')}</TabsTrigger>
                         <TabsTrigger value='schedule'>{t('schedule_tab')}</TabsTrigger>
                         <TabsTrigger value='preview'>{t('preview_tab')}</TabsTrigger>
+                        <TabsTrigger value='progress'>{t('progress_tab')}</TabsTrigger>
+                        <TabsTrigger value='accessors'>{t('accessors_tab')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value='overview'>
                         <OverviewTab course={data} role={role} />
@@ -212,6 +216,12 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                     </TabsContent>
                     <TabsContent value='preview'>
                         {safeTab === 'preview' ? <PreviewTab courseId={courseId} /> : null}
+                    </TabsContent>
+                    <TabsContent value='progress'>
+                        {safeTab === 'progress' ? <ProgressTab courseId={courseId} /> : null}
+                    </TabsContent>
+                    <TabsContent value='accessors'>
+                        {safeTab === 'accessors' ? <AccessorsTab courseId={courseId} /> : null}
                     </TabsContent>
                 </Tabs>
 

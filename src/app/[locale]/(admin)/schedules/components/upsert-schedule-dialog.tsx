@@ -62,13 +62,24 @@ interface UpsertScheduleDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editing?: Schedule | null;
+    /** Preselect course in the create form. Ignored when `editing` is set. */
+    defaultCourseId?: number | null;
 }
 
-function defaultValues(editing: Schedule | null | undefined, fallbackCuratorId: number | null): UpsertScheduleValues {
+function defaultValues(
+    editing: Schedule | null | undefined,
+    fallbackCuratorId: number | null,
+    fallbackCourseId: number | null,
+): UpsertScheduleValues {
     return {
         curator_id: editing?.curator_id != null ? String(editing.curator_id) : fallbackCuratorId ? String(fallbackCuratorId) : '',
         group_id: editing?.group_id != null ? String(editing.group_id) : '',
-        course_id: editing?.course_id != null ? String(editing.course_id) : '',
+        course_id:
+            editing?.course_id != null
+                ? String(editing.course_id)
+                : fallbackCourseId != null
+                  ? String(fallbackCourseId)
+                  : '',
         start_at_local: unixToDatetimeLocal(editing?.start_at ?? Math.floor(Date.now() / 1000)),
         end_at_local: unixToDatetimeLocal(editing?.end_at ?? Math.floor(Date.now() / 1000) + 60 * 60),
         description: editing?.description ?? '',
@@ -76,7 +87,7 @@ function defaultValues(editing: Schedule | null | undefined, fallbackCuratorId: 
     };
 }
 
-export function UpsertScheduleDialog({ open, onOpenChange, editing }: UpsertScheduleDialogProps) {
+export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCourseId }: UpsertScheduleDialogProps) {
     const t = useTranslations('admin.schedules');
     const qc = useQueryClient();
     const isEdit = !!editing?.id;
@@ -84,9 +95,11 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing }: UpsertSche
     const { data: me } = useMe();
     const myId = me?.user_id ?? null;
 
+    const fallbackCourseId = defaultCourseId ?? null;
+
     const form = useForm<UpsertScheduleValues>({
         resolver: zodResolver(upsertScheduleSchema),
-        defaultValues: defaultValues(editing, myId),
+        defaultValues: defaultValues(editing, myId, fallbackCourseId),
         mode: 'onSubmit',
     });
 
@@ -94,7 +107,7 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing }: UpsertSche
 
     useEffect(() => {
         if (open) {
-            form.reset(defaultValues(editing, myId));
+            form.reset(defaultValues(editing, myId, fallbackCourseId));
             if (editing) {
                 setItems(
                     editing.items.map((it, idx) => ({
@@ -111,7 +124,7 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing }: UpsertSche
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, editing?.id, myId]);
+    }, [open, editing?.id, myId, fallbackCourseId]);
 
     const courseIdStr = form.watch('course_id');
     const courseIdNum = courseIdStr && courseIdStr.length > 0 ? Number(courseIdStr) : null;
