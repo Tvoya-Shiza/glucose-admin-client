@@ -6,6 +6,9 @@ import type {
     UserActivityResponse,
     UserDetail,
     UserListResponse,
+    UserQuizzesResponse,
+    UsersAnalyticsQuery,
+    UsersAnalyticsResponse,
 } from './types';
 
 /**
@@ -292,6 +295,60 @@ export async function exportUsers(input: ExportInput): Promise<Blob> {
     if (!res.ok) {
         const json = await res.json().catch(() => ({}) as Record<string, unknown>);
         const msg = (json as { message?: string })?.message ?? `exportUsers failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    return res.blob();
+}
+
+/**
+ * GET /admin-api/v1/admin/users/analytics — KPI + registrations trend for the
+ * users page. Curator/teacher see counts narrowed to their data scope.
+ */
+export async function fetchUsersAnalytics(q?: UsersAnalyticsQuery): Promise<UsersAnalyticsResponse> {
+    const usp = new URLSearchParams();
+    if (q?.range) usp.set('range', q.range);
+    if (typeof q?.from === 'number') usp.set('from', String(q.from));
+    if (typeof q?.to === 'number') usp.set('to', String(q.to));
+    if (q?.bucket) usp.set('bucket', q.bucket);
+    const qs = usp.toString();
+    const res = await fetchWithRefresh(`${BASE}/analytics${qs ? `?${qs}` : ''}`);
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `fetchUsersAnalytics failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json?.data ?? json) as UsersAnalyticsResponse;
+}
+
+/**
+ * GET /admin-api/v1/admin/users/:id/quizzes — quiz access + result feed used by
+ * the detail page's "Tests" tab (lazy-loaded on tab activation).
+ */
+export async function fetchUserQuizzes(id: number | string): Promise<UserQuizzesResponse> {
+    const res = await fetchWithRefresh(`${BASE}/${encodeURIComponent(String(id))}/quizzes`);
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `fetchUserQuizzes failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json?.data ?? json) as UserQuizzesResponse;
+}
+
+/**
+ * POST /admin-api/v1/admin/users/:id/export — per-user audit report (CSV or
+ * multi-sheet XLSX). admin-api throttles at 10 calls / 15 min / IP.
+ */
+export async function exportUserDetail(id: number | string, format: 'csv' | 'xlsx'): Promise<Blob> {
+    const res = await fetchWithRefresh(`${BASE}/${encodeURIComponent(String(id))}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format }),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `exportUserDetail failed: ${res.status}`;
         throw new Error(msg);
     }
     return res.blob();

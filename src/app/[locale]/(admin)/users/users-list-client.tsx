@@ -19,6 +19,7 @@ import type { UserStatus } from '@/lib/users/types';
 import { BulkGrantSheet } from './components/bulk-grant-sheet';
 import { CreateUserDialog } from './components/create-user-dialog';
 import { ExportButton } from './components/export-button';
+import { UsersAnalyticsSection } from './components/users-analytics-section';
 import { UsersFilters } from './users-filters';
 import { UsersTable } from './users-table';
 
@@ -125,6 +126,7 @@ export function UsersListClient() {
             contentClassName='space-y-4'
         >
             <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
+            <UsersAnalyticsSection />
             <Card className='p-4'>
                 <UsersFilters
                     value={{

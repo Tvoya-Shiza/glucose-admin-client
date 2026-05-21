@@ -7,14 +7,17 @@ import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { usePermission } from '@/lib/access/use-permission';
 import { getUser } from '@/lib/users/api';
+import { ExportUserButton } from './components/export-user-button';
 import { ActivityTab } from './tabs/activity-tab';
 import { CoursesTab } from './tabs/courses-tab';
 import { MembershipsTab } from './tabs/memberships-tab';
 import { PaymentsTab } from './tabs/payments-tab';
 import { ProfileTab } from './tabs/profile-tab';
+import { TestsTab } from './tabs/tests-tab';
 
-const TABS = ['profile', 'memberships', 'courses', 'activity', 'payments'] as const;
+const TABS = ['profile', 'memberships', 'courses', 'tests', 'activity', 'payments'] as const;
 type TabKey = (typeof TABS)[number];
 
 /**
@@ -35,6 +38,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
     const t = useTranslations('admin.users');
     const locale = useLocale();
     const [tab, setTab] = useQueryState('tab', parseAsString.withDefault('profile'));
+    const canExport = usePermission('users.export');
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['admin.users.detail', userId],
@@ -65,6 +69,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
                         { label: t('list_title'), href: `/${locale}/users` },
                         { label: data.full_name ?? `#${data.id}` },
                     ]}
+                    actions={canExport ? <ExportUserButton userId={data.id} /> : undefined}
                 />
             }
             contentClassName='space-y-4'
@@ -74,6 +79,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
                     <TabsTrigger value='profile'>{t('tabs_profile')}</TabsTrigger>
                     <TabsTrigger value='memberships'>{t('tabs_memberships')}</TabsTrigger>
                     <TabsTrigger value='courses'>{t('tabs_courses')}</TabsTrigger>
+                    <TabsTrigger value='tests'>{t('tabs_tests')}</TabsTrigger>
                     <TabsTrigger value='activity'>{t('tabs_activity')}</TabsTrigger>
                     <TabsTrigger value='payments'>{t('tabs_payments')}</TabsTrigger>
                 </TabsList>
@@ -85,6 +91,9 @@ export function UserDetailClient({ userId }: { userId: string }) {
                 </TabsContent>
                 <TabsContent value='courses'>
                     <CoursesTab user={data} />
+                </TabsContent>
+                <TabsContent value='tests'>
+                    {safeTab === 'tests' ? <TestsTab userId={data.id} /> : null}
                 </TabsContent>
                 <TabsContent value='activity'>
                     {safeTab === 'activity' ? <ActivityTab userId={data.id} /> : null}

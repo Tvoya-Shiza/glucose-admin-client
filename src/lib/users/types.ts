@@ -120,3 +120,55 @@ export interface CreateUserPayload {
     role_name: 'admin' | 'curator' | 'teacher' | 'student';
     status?: UserStatus;
 }
+
+/**
+ * Mirrors admin-api `UsersAnalyticsResponseDto` (GET /admin-api/v1/admin/users/analytics).
+ * `bucket` is Unix seconds at bucket start; bucket size is reflected in `range.bucket`.
+ */
+export type AnalyticsRange = '7d' | '30d' | '90d' | '365d' | 'custom';
+export type AnalyticsBucket = 'day' | 'week' | 'month';
+
+export interface UsersAnalyticsQuery {
+    range?: AnalyticsRange;
+    from?: number;
+    to?: number;
+    bucket?: AnalyticsBucket;
+}
+
+export interface UsersAnalyticsResponse {
+    totals: {
+        total_users: number;
+        new_users_in_range: number;
+        active_users_30d: number;
+    };
+    by_status: { active: number; inactive: number; pending: number };
+    by_role: Array<{ role_name: string; count: number }>;
+    registrations: Array<{ bucket: number; count: number }>;
+    range: { from: number; to: number; bucket: AnalyticsBucket };
+    generated_at: number;
+}
+
+/**
+ * Mirrors admin-api `UserQuizzesResponseDto` (GET /admin-api/v1/admin/users/:id/quizzes).
+ */
+export interface UserQuizzesResponse {
+    access: Array<{
+        sale_id: number;
+        quiz_id: number | null;
+        quiz_badge_id: number | null;
+        quiz_name: string | null;
+        kind: 'quiz' | 'quiz_badge';
+        manual_added: boolean;
+        access_days: number | null;
+        created_at: number;
+        refund_at: number | null;
+    }>;
+    results: Array<{
+        id: number;
+        quiz_id: number;
+        quiz_name: string | null;
+        status: 'waiting' | 'passed' | 'failed';
+        user_grade: number | null;
+        created_at: number;
+    }>;
+}
