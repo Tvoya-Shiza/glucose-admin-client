@@ -55,6 +55,8 @@ export interface UpsertCategoryDialogProps {
     };
     /** Required in create mode; ignored in edit mode (stays from initial). */
     parentIdForCreate?: number | null;
+    /** Fires after a successful create with the new row — used by pickers to auto-select. */
+    onCreated?: (row: import('@/lib/quizzes/types').QuizCategory) => void;
 }
 
 export function UpsertCategoryDialog({
@@ -62,6 +64,7 @@ export function UpsertCategoryDialog({
     onOpenChange,
     initial,
     parentIdForCreate,
+    onCreated,
 }: UpsertCategoryDialogProps) {
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
@@ -93,9 +96,10 @@ export function UpsertCategoryDialog({
             };
             return upsertCategory(payload);
         },
-        onSuccess: () => {
+        onSuccess: (row) => {
             toast.success(isEdit ? t('categories.updated_success') : t('categories.created_success'));
             qc.invalidateQueries({ queryKey: ['admin.quiz-categories.list'] });
+            if (!isEdit && onCreated) onCreated(row);
             onOpenChange(false);
         },
         onError: (err: unknown) => {

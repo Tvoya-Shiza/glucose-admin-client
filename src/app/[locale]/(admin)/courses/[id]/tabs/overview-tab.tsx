@@ -6,6 +6,7 @@ import {
     BookOpen,
     Calendar,
     CheckCircle2,
+    Clock,
     Coins,
     GraduationCap,
     ImageOff,
@@ -182,6 +183,13 @@ export function OverviewTab({ course }: OverviewTabProps) {
                         <MetaRow icon={Calendar} label={t('schedules_count_label')}>
                             <span>{course.counts.schedule_count}</span>
                         </MetaRow>
+                        <MetaRow icon={Clock} label={t('duration_label')}>
+                            {course.duration != null && course.duration > 0 ? (
+                                <span>{formatDurationMinutes(course.duration, t)}</span>
+                            ) : (
+                                <span className='text-muted-foreground'>—</span>
+                            )}
+                        </MetaRow>
                     </CardContent>
                 </Card>
 
@@ -291,4 +299,21 @@ function formatPrice(decimalString: string): string {
     const [intPart = '0', fracPart] = trimmed.split('.');
     const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     return fracPart ? `${grouped}.${fracPart} ₸` : `${grouped} ₸`;
+}
+
+/**
+ * Minutes → "X сағ Y мин" (or "Y мин" when X=0, "X сағ" when Y=0).
+ * Falls back to a plain minutes badge for absurdly large values so the cell never
+ * overflows. `t` is passed in so the labels respect the active locale.
+ */
+function formatDurationMinutes(
+    totalMinutes: number,
+    t: ReturnType<typeof useTranslations>,
+): string {
+    if (totalMinutes <= 0) return t('duration_unknown');
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return t('duration_minutes_value', { minutes });
+    if (minutes === 0) return t('duration_hours_value', { hours });
+    return t('duration_hours_minutes_value', { hours, minutes });
 }

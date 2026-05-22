@@ -94,7 +94,7 @@ export function CoursesTable({
                                   {r.teacher?.full_name ?? '—'}
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
-                                  {r.category?.slug ?? '—'}
+                                  {r.category ? (r.category.title_kz ?? r.category.slug) : '—'}
                               </TableCell>
                               <TableCell>
                                   <Badge variant={statusBadgeVariant(r.status)}>

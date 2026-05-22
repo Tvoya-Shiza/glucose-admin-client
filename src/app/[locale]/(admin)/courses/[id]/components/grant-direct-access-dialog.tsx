@@ -27,9 +27,11 @@ import { grantUserAccess } from '@/lib/course-access/api';
  * Accessors tab. Mirrors GrantCourseAccessDialog (group flavour) — same date /
  * perpetual UX, identical conflict messages.
  *
- * The user picker searches across student role only (operators rarely grant
- * teachers / curators direct access via this surface). If you need to grant
- * to staff, swap the roles list to ['student','curator','teacher'].
+ * User picker scope: no role filter. The original `roles={['student']}` cut
+ * out anyone whose role_name was anything else (staff, unset, etc.), which
+ * silently broke the search whenever data didn't fit that single label.
+ * `roles={[]}` runs one unfiltered listUsers call and surfaces the top match
+ * regardless of role — admin-api still applies its own scope rules.
  */
 const schema = z
     .object({
@@ -124,7 +126,8 @@ export function GrantDirectAccessDialog({ open, onOpenChange, courseId }: GrantD
                                     <FormLabel>{t('field_user')}</FormLabel>
                                     <FormControl>
                                         <UserPicker
-                                            roles={['student']}
+                                            roles={[]}
+                                            minQueryLength={0}
                                             value={field.value ? Number(field.value) : null}
                                             onChange={(id, row) => {
                                                 field.onChange(id ? String(id) : '');

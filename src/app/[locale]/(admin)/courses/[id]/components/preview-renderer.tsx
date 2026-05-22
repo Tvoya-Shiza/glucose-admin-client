@@ -197,10 +197,29 @@ function PreviewItem({ item, locale }: { item: PreviewChapterItem; locale: Local
             );
         }
         if (file.file_type.startsWith('video/')) {
+            // YouTube / Vimeo / arbitrary iframe targets render in an <iframe>;
+            // only locally-hosted binary uploads (storage='upload') use <video>.
+            const isEmbed =
+                file.storage === 'youtube' ||
+                file.storage === 'vimeo' ||
+                file.storage === 'iframe';
             return (
                 <figure className='space-y-2 rounded-md border p-3'>
                     {itemTitle ? <h3 className='font-medium'>{itemTitle}</h3> : null}
-                    <video src={resolveAssetUrl(file.file)} controls className='max-w-full rounded' />
+                    {isEmbed ? (
+                        <div className='aspect-video w-full overflow-hidden rounded'>
+                            <iframe
+                                src={file.file}
+                                title={itemTitle || 'video'}
+                                className='h-full w-full'
+                                frameBorder={0}
+                                allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                                allowFullScreen
+                            />
+                        </div>
+                    ) : (
+                        <video src={resolveAssetUrl(file.file)} controls className='max-w-full rounded' />
+                    )}
                 </figure>
             );
         }

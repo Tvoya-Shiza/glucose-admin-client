@@ -1,26 +1,22 @@
 import { setRequestLocale } from 'next-intl/server';
-import { ResultsListClient } from './results-list-client';
+import { ResultsPageClient } from './results-page-client';
 
 /**
- * QZ-08 + QZ-09 — server-component shell for the standalone QuizResults page.
+ * QZ-08 + QZ-09 + QZ-10 — server-component shell for the cross-quiz audit page.
  *
- * `force-dynamic` because the underlying client uses TanStack Query against
- * `/api/auth/me` and `/api/proxy/v1/admin/quiz-results` — both require runtime
- * cookies and can't be statically rendered.
+ * `force-dynamic` because the client uses TanStack Query against
+ * `/api/auth/me`, `/api/proxy/v1/admin/quiz-results`, and
+ * `/api/proxy/v1/admin/quiz-results/stats` — all require runtime cookies.
  *
  * Server-side RBAC enforces:
- *   - admin → cross-quiz audit
- *   - curator → narrowed to own group's user results
- *   - teacher → narrowed to own webinar's results
+ *   - admin   → cross-quiz audit + global analytics
+ *   - curator → narrowed to own groups' members
+ *   - teacher → narrowed to own webinars (top_groups is empty)
  */
 export const dynamic = 'force-dynamic';
 
-export default async function QuizResultsPage({
-    params,
-}: {
-    params: Promise<{ locale: string }>;
-}) {
+export default async function QuizResultsPage({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
     setRequestLocale(locale);
-    return <ResultsListClient />;
+    return <ResultsPageClient />;
 }

@@ -30,6 +30,7 @@ export interface QuizzesTableProps {
     canMutate: boolean;
     canDelete: boolean;
     onDelete: (row: QuizRow) => void;
+    onAddToBadge?: (row: QuizRow) => void;
     skeletonRowCount?: number;
 }
 
@@ -53,6 +54,7 @@ export function QuizzesTable({
     canMutate,
     canDelete,
     onDelete,
+    onAddToBadge,
     skeletonRowCount = 10,
 }: QuizzesTableProps) {
     const t = useTranslations('admin.quizzes');
@@ -135,6 +137,13 @@ export function QuizzesTable({
                                                   </Link>
                                               </DropdownMenuItem>
                                               <DuplicateQuizButton quizId={r.id} asMenuItem />
+                                              {onAddToBadge ? (
+                                                  <DropdownMenuItem
+                                                      onClick={() => onAddToBadge(r)}
+                                                  >
+                                                      {t('add_quiz_to_badge')}
+                                                  </DropdownMenuItem>
+                                              ) : null}
                                               {canDelete ? (
                                                   <DropdownMenuItem
                                                       onClick={() => onDelete(r)}

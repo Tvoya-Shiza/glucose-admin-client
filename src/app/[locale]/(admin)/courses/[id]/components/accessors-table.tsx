@@ -137,6 +137,7 @@ export function AccessorsTable({ courseId }: AccessorsTableProps) {
                         <TableRow>
                             <TableHead>{t('col_user')}</TableHead>
                             <TableHead>{t('col_source')}</TableHead>
+                            <TableHead>{t('col_progress')}</TableHead>
                             <TableHead>{t('col_granted_at')}</TableHead>
                             <TableHead>{t('col_expires_at')}</TableHead>
                             <TableHead>{t('col_days_remaining')}</TableHead>
@@ -147,7 +148,7 @@ export function AccessorsTable({ courseId }: AccessorsTableProps) {
                     <TableBody>
                         {rows.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className='text-center text-muted-foreground'>
+                                <TableCell colSpan={8} className='text-center text-muted-foreground'>
                                     {t('accessors_empty')}
                                 </TableCell>
                             </TableRow>
@@ -172,6 +173,9 @@ export function AccessorsTable({ courseId }: AccessorsTableProps) {
                                             ) : (
                                                 <Badge>{t('source_direct')}</Badge>
                                             )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <ProgressCell progress={r.progress} />
                                         </TableCell>
                                         <TableCell className='text-xs'>
                                             {formatScheduleDate(r.granted_at, locale)}
@@ -283,6 +287,26 @@ interface ActionButtonProps {
     disabled?: boolean;
     tooltip?: string;
     onClick: () => void;
+}
+
+function ProgressCell({ progress }: { progress: CourseAccessorRow['progress'] }) {
+    if (!progress || progress.total === 0) {
+        return <span className='text-xs text-muted-foreground'>—</span>;
+    }
+    const pct = Math.min(100, Math.max(0, Math.round(progress.percent * 100)));
+    return (
+        <div className='flex min-w-[7rem] items-center gap-2'>
+            <div className='h-1.5 w-20 overflow-hidden rounded-full bg-muted'>
+                <div
+                    className='h-full rounded-full bg-primary/70'
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+            <span className='text-xs tabular-nums text-muted-foreground'>
+                {progress.done}/{progress.total} · {pct}%
+            </span>
+        </div>
+    );
 }
 
 function ActionButton({ label, variant = 'outline', disabled, tooltip, onClick }: ActionButtonProps) {

@@ -1,8 +1,8 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ChevronLeft } from 'lucide-react';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
@@ -23,6 +23,7 @@ interface AssignmentDetailClientProps {
 
 export function AssignmentDetailClient({ assignmentId }: AssignmentDetailClientProps) {
     const t = useTranslations('admin.assignments');
+    const locale = useLocale();
 
     const { data, isLoading, error } = useQuery<AssignmentDetail>({
         queryKey: ['admin.assignments.detail', assignmentId],
@@ -52,7 +53,7 @@ export function AssignmentDetailClient({ assignmentId }: AssignmentDetailClientP
                     }
                     actions={
                         <Button asChild variant='ghost' size='sm'>
-                            <Link href='/assignments'>
+                            <Link href={`/${locale}/assignments`}>
                                 <ChevronLeft className='mr-1 h-4 w-4' />
                                 {t('back_to_list')}
                             </Link>

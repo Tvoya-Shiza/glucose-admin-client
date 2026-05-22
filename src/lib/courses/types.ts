@@ -67,6 +67,9 @@ export interface TeacherRef {
 export interface CategoryRef {
     id: number;
     slug: string;
+    /** KZ title from WebinarCategoryTranslations. null when not translated — UI should
+     *  fall back to slug so the row never renders blank. */
+    title_kz: string | null;
 }
 
 export interface CourseRow {
@@ -144,6 +147,8 @@ export interface ChapterItemQuizRef {
 
 export interface ChapterItemAssignmentRef {
     id: number;
+    /** KZ title from WebinarAssignmentTranslation. Empty string when not translated. */
+    title: string;
 }
 
 export interface ChapterItem {
@@ -157,6 +162,13 @@ export interface ChapterItem {
      * UpsertItemDialog; default is `true` to preserve pre-Phase-16 semantics.
      */
     is_required: boolean;
+    /**
+     * Phase 20 — per-item content access gate (free | paid). Applies to ALL types
+     * (file / quiz / assignment). For type='file' the linked Files.accessibility
+     * is kept in sync server-side; the item-level value is the source of truth
+     * for content-tree gating.
+     */
+    accessibility: FileAccessibility;
     file: ChapterItemFileRef | null;
     quiz: ChapterItemQuizRef | null;
     assignment: ChapterItemAssignmentRef | null;
@@ -238,6 +250,8 @@ export interface CreateCoursePayload {
     access_days?: number;
     /** Phase 16 — strict completion check toggle. Optional on create (defaults false). */
     strict_progress?: boolean;
+    /** Estimated study time in MINUTES. Optional — null/undefined = unknown. */
+    duration?: number;
 }
 
 export interface UpdateCoursePayload {
@@ -252,6 +266,8 @@ export interface UpdateCoursePayload {
     access_days?: number;
     /** Phase 16. */
     strict_progress?: boolean;
+    /** Estimated study time in MINUTES. Pass `null` to clear. */
+    duration?: number | null;
 }
 
 export interface ChangeTeacherPayload {
@@ -297,7 +313,9 @@ export interface UpsertItemPayload {
     id?: number;
     chapter_id: number;
     type: ChapterItemType;
-    /** FK to Files / Quizzes / WebinarAssignment depending on type. */
+    /** FK to Files / Quizzes / WebinarAssignment depending on type. Pass `0`
+     *  on create when `type='file'` — the server spawns a fresh Files row from
+     *  the (file_url, file_type, volume, storage) bundle below. */
     item_id: number;
     order?: number;
     /** Only honored when type='file' (maps to FileTranslations). Ignored otherwise. */
@@ -307,6 +325,15 @@ export interface UpsertItemPayload {
      * server. Omitting the field on update keeps the existing value.
      */
     is_required?: boolean;
+    /** Only honored when type='file'. Used both on create (item_id=0) to
+     *  populate the new Files row and on update to patch the linked Files row. */
+    accessibility?: FileAccessibility;
+    file_url?: string;
+    file_type?: string;
+    volume?: string;
+    /** Maps to Files.storage enum. 'upload' for binary uploads,
+     *  'youtube' | 'vimeo' | 'iframe' for embedded video / external iframe targets. */
+    storage?: 'upload' | 'youtube' | 'vimeo' | 'iframe' | 'external_link' | 'google_drive' | 'dropbox' | 's3' | 'upload_archive' | 'secure_host';
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -420,6 +447,8 @@ export interface PreviewFileRef {
     id: number;
     file: string;
     file_type: string;
+    /** Files.storage enum value. Mirrors backend PreviewFileRef.storage. */
+    storage: string;
     volume: string;
     translations: PreviewFileTranslation[];
 }

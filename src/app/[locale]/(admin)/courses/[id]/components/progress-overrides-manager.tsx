@@ -222,10 +222,15 @@ function ChapterTree({ course, checked, onToggleItem, onToggleChapter, disabled 
                             <ul className='divide-y'>
                                 {chapter.items.map((item) => {
                                     const isOn = checked.has(item.id);
+                                    const kzTitle = item.translations?.find((tr) => tr.locale === 'kz')?.title;
                                     const title =
+                                        (kzTitle && kzTitle.length > 0 ? kzTitle : null) ??
+                                        (item.assignment?.title && item.assignment.title.length > 0
+                                            ? item.assignment.title
+                                            : null) ??
+                                        (item.quiz?.slug && item.quiz.slug.length > 0 ? item.quiz.slug : null) ??
                                         item.file?.file ??
-                                        item.quiz?.slug ??
-                                        (item.assignment ? `#${item.assignment.id}` : `#${item.item_id}`);
+                                        `#${item.item_id}`;
                                     return (
                                         <li key={item.id} className='flex items-center gap-3 px-3 py-2'>
                                             <Checkbox

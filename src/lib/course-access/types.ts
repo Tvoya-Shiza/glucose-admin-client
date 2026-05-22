@@ -110,6 +110,9 @@ export interface CourseAccessorRow {
     days_remaining: number | null;
     last_course_activity: number | null;
     is_active: boolean;
+    /** Aggregate progress on REQUIRED items. `total` is the same for every accessor
+     *  on this course; `done` is per-user; `percent` is a 0..1 ratio. */
+    progress: { done: number; total: number; percent: number };
 }
 
 export interface CourseAccessorsListResponse {

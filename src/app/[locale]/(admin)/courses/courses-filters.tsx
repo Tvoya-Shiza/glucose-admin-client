@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { CategoryPicker } from '@/components/courses/category-picker';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -35,17 +36,15 @@ export interface CoursesFiltersProps {
  * doesn't accept empty-string values, so we use the sentinel '__all__' for "no filter"
  * and convert at the boundary.
  *
- * teacher_id and category_id are numeric text fields for now — autocomplete pickers
- * are deferred (per Phase 4 carry-over precedent). Empty input clears the filter.
+ * teacher_id stays a numeric text input (teacher-picker for filters is a follow-up);
+ * category_id uses the searchable CategoryPicker — same component the create / edit
+ * flows use, so the three surfaces stay in lockstep.
  */
 export function CoursesFilters({ value, onChange, showTeacherFilter }: CoursesFiltersProps) {
     const t = useTranslations('admin.courses');
     const [qLocal, setQLocal] = useState(value.q ?? '');
     const [teacherLocal, setTeacherLocal] = useState(
         value.teacher_id ? String(value.teacher_id) : '',
-    );
-    const [categoryLocal, setCategoryLocal] = useState(
-        value.category_id ? String(value.category_id) : '',
     );
 
     // Debounce q at 300ms (D-02). Dependency intentionally narrow.
@@ -71,19 +70,6 @@ export function CoursesFilters({ value, onChange, showTeacherFilter }: CoursesFi
         return () => clearTimeout(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teacherLocal]);
-
-    useEffect(() => {
-        const id = setTimeout(() => {
-            const parsed = categoryLocal.trim() === '' ? undefined : Number(categoryLocal.trim());
-            const next =
-                parsed && Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-            if ((value.category_id ?? undefined) !== next) {
-                onChange({ ...value, category_id: next });
-            }
-        }, 300);
-        return () => clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [categoryLocal]);
 
     return (
         <div className='flex flex-wrap items-center gap-3 border-b p-4'>
@@ -141,13 +127,15 @@ export function CoursesFilters({ value, onChange, showTeacherFilter }: CoursesFi
                     onChange={(e) => setTeacherLocal(e.target.value.replace(/[^\d]/g, ''))}
                 />
             ) : null}
-            <Input
-                className='w-44'
-                inputMode='numeric'
-                placeholder={t('filter_category')}
-                value={categoryLocal}
-                onChange={(e) => setCategoryLocal(e.target.value.replace(/[^\d]/g, ''))}
-            />
+            <div className='w-56'>
+                <CategoryPicker
+                    value={value.category_id ?? null}
+                    onChange={(id) =>
+                        onChange({ ...value, category_id: id ?? undefined })
+                    }
+                    placeholder={t('filter_category')}
+                />
+            </div>
         </div>
     );
 }

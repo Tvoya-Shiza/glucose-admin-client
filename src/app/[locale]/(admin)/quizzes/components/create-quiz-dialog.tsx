@@ -34,6 +34,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { QuizCategoryPicker } from '@/components/quizzes/quiz-category-picker';
 import { createQuiz } from '@/lib/quizzes/api';
 import type { CreateQuiz, QuizStatus } from '@/lib/quizzes/types';
 
@@ -49,6 +50,7 @@ import type { CreateQuiz, QuizStatus } from '@/lib/quizzes/types';
  */
 const createQuizSchema = z.object({
     status: z.enum(['active', 'inactive']),
+    category_id: z.number().int().positive().nullable(),
     pass_mark: z
         .string()
         .min(1)
@@ -78,6 +80,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
         resolver: zodResolver(createQuizSchema),
         defaultValues: {
             status: 'active',
+            category_id: null,
             pass_mark: '0',
             time: '',
             attempt: '',
@@ -105,6 +108,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
         mutationFn: (values: CreateQuizValues) => {
             const payload: CreateQuiz = {
                 status: values.status as QuizStatus,
+                category_id: values.category_id,
                 pass_mark: Number(values.pass_mark.trim()),
                 certificate: values.certificate,
                 time:
@@ -194,6 +198,23 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                                 )}
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name='category_id'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('category_label')}</FormLabel>
+                                    <FormControl>
+                                        <QuizCategoryPicker
+                                            value={field.value ?? null}
+                                            onChange={(id) => field.onChange(id)}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <div className='grid grid-cols-2 gap-3'>
                             <FormField

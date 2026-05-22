@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
+import { QuizBadgePicker } from '@/components/quizzes/quiz-badge-picker';
+import { QuizCategoryPicker } from '@/components/quizzes/quiz-category-picker';
 import {
     Select,
     SelectContent,
@@ -33,17 +35,12 @@ export interface QuizzesFiltersProps {
  * doesn't accept empty-string values, so we use the sentinel '__all__' for "no filter"
  * and convert at the boundary.
  *
- * category_id / badge_id are numeric text inputs for now (matches Phase 5 courses
- * filter posture — autocomplete picker deferred). Plan 03 (categories) and Plan 06
- * (badges) will land their own pickers we can swap in.
+ * category_id / badge_id use autocomplete pickers (Plan 03 / Plan 06) — the picker
+ * fetches its own catalog and emits the picked id.
  */
 export function QuizzesFilters({ value, onChange }: QuizzesFiltersProps) {
     const t = useTranslations('admin.quizzes');
     const [qLocal, setQLocal] = useState(value.q ?? '');
-    const [categoryLocal, setCategoryLocal] = useState(
-        value.category_id ? String(value.category_id) : '',
-    );
-    const [badgeLocal, setBadgeLocal] = useState(value.badge_id ? String(value.badge_id) : '');
 
     useEffect(() => {
         const id = setTimeout(() => {
@@ -54,30 +51,6 @@ export function QuizzesFilters({ value, onChange }: QuizzesFiltersProps) {
         return () => clearTimeout(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [qLocal]);
-
-    useEffect(() => {
-        const id = setTimeout(() => {
-            const parsed = categoryLocal.trim() === '' ? undefined : Number(categoryLocal.trim());
-            const next = parsed && Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-            if ((value.category_id ?? undefined) !== next) {
-                onChange({ ...value, category_id: next });
-            }
-        }, 300);
-        return () => clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [categoryLocal]);
-
-    useEffect(() => {
-        const id = setTimeout(() => {
-            const parsed = badgeLocal.trim() === '' ? undefined : Number(badgeLocal.trim());
-            const next = parsed && Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-            if ((value.badge_id ?? undefined) !== next) {
-                onChange({ ...value, badge_id: next });
-            }
-        }, 300);
-        return () => clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [badgeLocal]);
 
     return (
         <div className='flex flex-wrap items-center gap-3 border-b p-4'>
@@ -126,20 +99,20 @@ export function QuizzesFilters({ value, onChange }: QuizzesFiltersProps) {
                     <SelectItem value='31+'>{t('question_count_31_plus')}</SelectItem>
                 </SelectContent>
             </Select>
-            <Input
-                className='w-40'
-                inputMode='numeric'
-                placeholder={t('filter_category')}
-                value={categoryLocal}
-                onChange={(e) => setCategoryLocal(e.target.value.replace(/[^\d]/g, ''))}
-            />
-            <Input
-                className='w-44'
-                inputMode='numeric'
-                placeholder={t('filter_badge')}
-                value={badgeLocal}
-                onChange={(e) => setBadgeLocal(e.target.value.replace(/[^\d]/g, ''))}
-            />
+            <div className='w-56'>
+                <QuizCategoryPicker
+                    value={value.category_id ?? null}
+                    onChange={(id) => onChange({ ...value, category_id: id ?? undefined })}
+                    placeholder={t('filter_category')}
+                />
+            </div>
+            <div className='w-56'>
+                <QuizBadgePicker
+                    value={value.badge_id ?? null}
+                    onChange={(id) => onChange({ ...value, badge_id: id ?? undefined })}
+                    placeholder={t('filter_badge')}
+                />
+            </div>
         </div>
     );
 }

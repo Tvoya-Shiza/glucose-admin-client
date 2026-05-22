@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { GraduationCap } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
@@ -50,6 +51,7 @@ interface MeResponse {
  */
 export function CoursesListClient() {
     const t = useTranslations('admin.courses');
+    const locale = useLocale();
 
     const [
         { page, page_size, status, teacher_id, category_id, translation_completeness, q, sort, order },
@@ -150,7 +152,16 @@ export function CoursesListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={
+                        <>
+                            <Button asChild variant='outline'>
+                                <Link href={`/${locale}/courses/categories`}>{t('cat_manage_link')}</Link>
+                            </Button>
+                            {canCreate ? (
+                                <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button>
+                            ) : null}
+                        </>
+                    }
                 />
             }
             footer={

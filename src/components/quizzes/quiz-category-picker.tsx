@@ -6,41 +6,33 @@ import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { usePermission } from '@/lib/access/use-permission';
-import { listCourseCategories, type CourseCategoryRow } from '@/lib/courses/api';
-import { UpsertCategoryDialog } from '@/app/[locale]/(admin)/courses/categories/components/upsert-category-dialog';
+import { listCategories } from '@/lib/quizzes/api';
+import type { QuizCategory } from '@/lib/quizzes/types';
+import { UpsertCategoryDialog } from '@/app/[locale]/(admin)/quizzes/categories/components/upsert-category-dialog';
 
-export interface CategoryPickerProps {
+export interface QuizCategoryPickerProps {
     value: number | null;
-    onChange: (id: number | null, category: CourseCategoryRow | null) => void;
+    onChange: (id: number | null, category: QuizCategory | null) => void;
     placeholder?: string;
     disabled?: boolean;
-    /** When true the "+ New" inline-create row is rendered at the top of the
-     *  dropdown (gated by the user's `courses.create` permission). Defaults to
-     *  true everywhere — set false when the picker is used in a context that
-     *  shouldn't allow editing the catalog (e.g. read-only audit views). */
+    /** Inline "+ Жаңа санат" row at top of dropdown (gated by `quizzes.create`). */
     allowInlineCreate?: boolean;
 }
 
 /**
- * Searchable picker for WebinarCategory rows. The list is small (< 200 rows in
- * current prod) so we fetch the whole page and let the server's `q` filter
- * narrow it. The 60s staleTime keeps re-opens snappy.
- *
- * Inline create: a "+ Жаңа санат" item at the top of the dropdown opens the
- * shared UpsertCategoryDialog. On success we invalidate the categories query
- * cache (the dialog already does this) AND auto-select the newly-created row
- * via the dialog's onCreated callback, so the operator goes straight back to
- * the form with the new value picked.
+ * Picker for QuizCategory rows — mirrors `CategoryPicker` for courses but talks
+ * to the quizzes endpoints. The category list is small (< 200 rows typical) so
+ * we fetch all of it and filter client-side by KZ title substring.
  */
-export function CategoryPicker({
+export function QuizCategoryPicker({
     value,
     onChange,
     placeholder,
     disabled,
     allowInlineCreate = true,
-}: CategoryPickerProps) {
-    const t = useTranslations('admin.courses');
-    const canCreate = usePermission('courses.create');
+}: QuizCategoryPickerProps) {
+    const t = useTranslations('admin.quizzes');
+    const canCreate = usePermission('quizzes.create');
     const showCreateRow = allowInlineCreate && canCreate;
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -49,24 +41,29 @@ export function CategoryPicker({
     const [createOpen, setCreateOpen] = useState(false);
 
     useEffect(() => {
-        const id = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 250);
+        const id = setTimeout(() => setDebouncedQuery(searchQuery.trim().toLowerCase()), 250);
         return () => clearTimeout(id);
     }, [searchQuery]);
 
     const query = useQuery({
-        queryKey: ['admin.courses.categories', { q: debouncedQuery }],
-        queryFn: () => listCourseCategories({ q: debouncedQuery || undefined, page_size: 50 }),
+        queryKey: ['admin.quiz-categories.list'],
+        queryFn: listCategories,
         enabled: !disabled,
         staleTime: 60_000,
     });
 
-    // Categories DTO carries only title_kz today. When the API gains title_ru we can
-    // branch on locale here; until then, slug is the only sane fallback.
-    const labelOf = (c: CourseCategoryRow): string => c.title_kz ?? c.slug;
+    const labelOf = (c: QuizCategory): string =>
+        c.translations.find((tr) => tr.locale === 'kz')?.title ?? `#${c.id}`;
+
+    const filtered = useMemo(() => {
+        const rows = query.data ?? [];
+        if (debouncedQuery === '') return rows;
+        return rows.filter((c) => labelOf(c).toLowerCase().includes(debouncedQuery));
+    }, [query.data, debouncedQuery]);
 
     const selected = useMemo(() => {
         if (value == null) return null;
-        return query.data?.rows.find((c) => c.id === value) ?? null;
+        return (query.data ?? []).find((c) => c.id === value) ?? null;
     }, [query.data, value]);
 
     const displayValue = open ? searchQuery : selected ? labelOf(selected) : value != null ? `#${value}` : '';
@@ -84,12 +81,12 @@ export function CategoryPicker({
                 }}
                 onFocus={() => setOpen(true)}
                 onBlur={() => setTimeout(() => setOpen(false), 150)}
-                placeholder={placeholder ?? t('category_placeholder')}
+                placeholder={placeholder ?? t('filter_category')}
                 disabled={disabled}
                 autoComplete='off'
             />
             {open && !disabled ? (
-                <div className='absolute z-50 mt-1 w-full max-h-56 overflow-auto rounded border bg-popover text-popover-foreground shadow-md'>
+                <div className='absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded border bg-popover text-popover-foreground shadow-md'>
                     {showCreateRow ? (
                         <button
                             type='button'
@@ -101,13 +98,13 @@ export function CategoryPicker({
                             className='flex w-full items-center gap-2 border-b px-3 py-2 text-left text-sm text-primary hover:bg-muted'
                         >
                             <Plus className='size-3.5' />
-                            {t('cat_add')}
+                            {t('categories.add_root')}
                         </button>
                     ) : null}
                     {query.isLoading ? (
-                        <p className='p-3 text-xs text-muted-foreground'>...</p>
-                    ) : (query.data?.rows.length ?? 0) === 0 ? (
-                        <p className='p-3 text-xs text-muted-foreground'>{t('category_none')}</p>
+                        <p className='p-3 text-xs text-muted-foreground'>{t('loading')}</p>
+                    ) : filtered.length === 0 ? (
+                        <p className='p-3 text-xs text-muted-foreground'>{t('filter_all')}</p>
                     ) : (
                         <>
                             <button
@@ -120,9 +117,9 @@ export function CategoryPicker({
                                 }}
                                 className='flex w-full items-center px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted'
                             >
-                                {t('category_none')}
+                                {t('filter_all')}
                             </button>
-                            {(query.data?.rows ?? []).map((c) => {
+                            {filtered.map((c) => {
                                 const isSelected = value === c.id;
                                 return (
                                     <button
@@ -152,10 +149,9 @@ export function CategoryPicker({
                 <UpsertCategoryDialog
                     open={createOpen}
                     onOpenChange={setCreateOpen}
-                    initial={null}
+                    initial={undefined}
+                    parentIdForCreate={null}
                     onCreated={(row) => {
-                        // Auto-select the freshly-created row so the operator doesn't
-                        // have to scroll the dropdown to find it.
                         onChange(row.id, row);
                         setSearchQuery('');
                     }}

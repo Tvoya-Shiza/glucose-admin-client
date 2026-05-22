@@ -14,6 +14,8 @@ import type {
     QuizResultsListResponse,
     ReorderBadgeItemsEntry,
     ReorderQuestions,
+    ResultsStatsQuery,
+    ResultsStatsResponse,
     UpdateQuiz,
     UpsertAnswer,
     UpsertBadge,
@@ -492,5 +494,13 @@ export async function reorderBadgeItems(badgeId: number, items: ReorderBadgeItem
 export async function listResults(query?: ListResultsQuery): Promise<QuizResultsListResponse> {
     const res = await fetchWithRefresh(`${QUIZ_RESULTS_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
     if (!res.ok) throw new Error(`listResults failed: ${res.status}`);
+    return res.json();
+}
+
+export async function getResultsStats(query?: ResultsStatsQuery): Promise<ResultsStatsResponse> {
+    const res = await fetchWithRefresh(
+        `${QUIZ_RESULTS_API_BASE}/stats${buildQuery(query as Record<string, unknown> | undefined)}`,
+    );
+    if (!res.ok) throw new Error(`getResultsStats failed: ${res.status}`);
     return res.json();
 }

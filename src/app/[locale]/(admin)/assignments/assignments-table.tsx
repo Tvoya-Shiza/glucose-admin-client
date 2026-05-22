@@ -1,7 +1,7 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +26,7 @@ function formatDate(unix: string | number | null): string {
 
 export function AssignmentsTable({ rows, loading, canEdit, canDelete, onEdit, onDelete }: AssignmentsTableProps) {
     const t = useTranslations('admin.assignments');
+    const locale = useLocale();
 
     if (loading && rows.length === 0) {
         return (
@@ -58,7 +59,7 @@ export function AssignmentsTable({ rows, loading, canEdit, canDelete, onEdit, on
                     return (
                         <TableRow key={row.id}>
                             <TableCell className='font-medium'>
-                                <Link href={`/assignments/${row.id}`} className='hover:underline'>
+                                <Link href={`/${locale}/assignments/${row.id}`} className='hover:underline'>
                                     {title}
                                 </Link>
                                 {row.translation_completeness === 'incomplete' ? (
@@ -91,7 +92,7 @@ export function AssignmentsTable({ rows, loading, canEdit, canDelete, onEdit, on
                             <TableCell className='text-right'>
                                 <div className='flex justify-end gap-2'>
                                     <Button asChild variant='ghost' size='sm'>
-                                        <Link href={`/assignments/${row.id}`}>{t('open_detail')}</Link>
+                                        <Link href={`/${locale}/assignments/${row.id}`}>{t('open_detail')}</Link>
                                     </Button>
                                     {canEdit ? (
                                         <Button variant='ghost' size='sm' onClick={() => onEdit?.(row)}>

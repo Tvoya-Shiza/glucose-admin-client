@@ -25,8 +25,10 @@ import {
 import { FileUploader } from '@/components/ui/file-uploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { upsertItem } from '@/lib/courses/api';
-import type { ChapterItem, ChapterItemType } from '@/lib/courses/types';
+import type { ChapterItem, ChapterItemType, UpsertItemPayload } from '@/lib/courses/types';
 import { parseVideoUrl } from '@/lib/uploads/parse-video-url';
+
+type UpsertItemPayloadStorage = NonNullable<UpsertItemPayload['storage']>;
 import { EntitySearchPicker } from './entity-search-picker';
 import { TiptapEditor } from './tiptap-editor';
 
@@ -86,7 +88,15 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     const [fileUrl, setFileUrl] = useState<string>(item?.file?.file ?? '');
     const [fileType, setFileType] = useState<string>(item?.file?.file_type ?? '');
     const [volume, setVolume] = useState<string>(item?.file?.volume ?? '0');
-    const [accessibility, setAccessibility] = useState<'free' | 'paid'>(item?.file?.accessibility ?? 'free');
+    const [storage, setStorage] = useState<UpsertItemPayloadStorage>(
+        (item?.file?.storage as UpsertItemPayloadStorage | undefined) ?? 'upload',
+    );
+    // Phase 20 — accessibility now lives on the chapter item itself for all types.
+    // Fall back to the linked file.accessibility for legacy responses where the
+    // item-level field may be missing (pre-Phase-20 admin-api builds).
+    const [accessibility, setAccessibility] = useState<'free' | 'paid'>(
+        item?.accessibility ?? item?.file?.accessibility ?? 'free',
+    );
     const [fkId, setFkId] = useState<string>(item && item.type !== 'file' ? String(item.item_id) : '');
     // Phase 16 — per-item "counts toward course completion" toggle. Defaults to true
     // for both new items and existing items that pre-date Phase 16 (the server backfills
@@ -103,7 +113,8 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
             setFileUrl(item?.file?.file ?? '');
             setFileType(item?.file?.file_type ?? '');
             setVolume(item?.file?.volume ?? '0');
-            setAccessibility(item?.file?.accessibility ?? 'free');
+            setStorage((item?.file?.storage as UpsertItemPayloadStorage | undefined) ?? 'upload');
+            setAccessibility(item?.accessibility ?? item?.file?.accessibility ?? 'free');
             setFkId(item && item.type !== 'file' ? String(item.item_id) : '');
             setIsRequired(item?.is_required ?? true);
         }
@@ -113,7 +124,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     const mutation = useMutation({
         mutationFn: async () => {
             if (type === 'file') {
-                const payload: any = {
+                const base: UpsertItemPayload = {
                     id: item?.id,
                     chapter_id: chapterId,
                     type: 'file' as ChapterItemType,
@@ -124,15 +135,10 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                         { locale: 'kz' as const, title: kzTitle, description: subType === 'rich-text' ? kzHtml : undefined },
                     ],
                 };
-                if (subType === 'rich-text') {
-                    payload.file_url = '';
-                    payload.file_type = 'text/html';
-                    payload.volume = '0';
-                } else {
-                    payload.file_url = fileUrl;
-                    payload.file_type = fileType;
-                    payload.volume = volume;
-                }
+                const payload: UpsertItemPayload =
+                    subType === 'rich-text'
+                        ? { ...base, file_url: '', file_type: 'text/html', volume: '0', storage: 'upload' }
+                        : { ...base, file_url: fileUrl, file_type: fileType, volume, storage };
                 return upsertItem(courseId, payload);
             }
             // quiz | assignment — numeric FK reference
@@ -146,6 +152,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                 type,
                 item_id: fkNumeric,
                 is_required: isRequired,
+                accessibility,
             });
         },
         onSuccess: () => {
@@ -220,31 +227,6 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                     placeholder={t('item_title_placeholder')}
                                 />
                             </div>
-                            <div className='space-y-1.5'>
-                                <Label>{t('item_accessibility_label')}</Label>
-                                <div className='flex gap-4'>
-                                    <label className='inline-flex cursor-pointer items-center gap-2 text-sm'>
-                                        <input
-                                            type='radio'
-                                            name='accessibility'
-                                            value='free'
-                                            checked={accessibility === 'free'}
-                                            onChange={() => setAccessibility('free')}
-                                        />
-                                        {t('item_accessibility_free')}
-                                    </label>
-                                    <label className='inline-flex cursor-pointer items-center gap-2 text-sm'>
-                                        <input
-                                            type='radio'
-                                            name='accessibility'
-                                            value='paid'
-                                            checked={accessibility === 'paid'}
-                                            onChange={() => setAccessibility('paid')}
-                                        />
-                                        {t('item_accessibility_paid')}
-                                    </label>
-                                </div>
-                            </div>
                             {subType === 'rich-text' ? (
                                 <div className='space-y-1.5'>
                                     <Label>{t('description_label')}</Label>
@@ -253,6 +235,32 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                             ) : null}
                         </div>
                     ) : null}
+
+                    <div className='space-y-1.5'>
+                        <Label>{t('item_accessibility_label')}</Label>
+                        <div className='flex gap-4'>
+                            <label className='inline-flex cursor-pointer items-center gap-2 text-sm'>
+                                <input
+                                    type='radio'
+                                    name='accessibility'
+                                    value='free'
+                                    checked={accessibility === 'free'}
+                                    onChange={() => setAccessibility('free')}
+                                />
+                                {t('item_accessibility_free')}
+                            </label>
+                            <label className='inline-flex cursor-pointer items-center gap-2 text-sm'>
+                                <input
+                                    type='radio'
+                                    name='accessibility'
+                                    value='paid'
+                                    checked={accessibility === 'paid'}
+                                    onChange={() => setAccessibility('paid')}
+                                />
+                                {t('item_accessibility_paid')}
+                            </label>
+                        </div>
+                    </div>
 
                     {type === 'file' && subType === 'image' ? (
                         <div className='space-y-2 rounded border p-3'>
@@ -295,11 +303,13 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                             setFileUrl(url);
                                             setFileType(meta.mime);
                                             setVolume(String(meta.size));
+                                            setStorage('upload');
                                         }}
                                         onClear={() => {
                                             setFileUrl('');
                                             setFileType('');
                                             setVolume('0');
+                                            setStorage('upload');
                                         }}
                                         pickFromLibrary
                                     />
@@ -309,23 +319,39 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                         value={fileUrl}
                                         onChange={(e) => {
                                             const raw = e.target.value;
+                                            // parseVideoUrl handles raw URLs AND full
+                                            // <iframe …> snippets (extracts src and recurses).
                                             const parsed = parseVideoUrl(raw);
                                             if (parsed) {
                                                 setFileUrl(parsed.file);
                                                 setFileType(`video/${parsed.storage}`);
+                                                setStorage(parsed.storage);
                                                 setVolume('0');
                                             } else {
                                                 setFileUrl(raw);
                                                 setFileType('video/url');
+                                                setStorage('iframe');
                                                 setVolume('0');
                                             }
                                         }}
                                         placeholder={t('item_video_url_placeholder')}
                                     />
                                     {fileUrl && /^https?:\/\//i.test(fileUrl) ? (
-                                        <p className='text-xs text-muted-foreground'>
-                                            {t('item_video_url_resolved', { storage: fileType.replace('video/', '') })}
-                                        </p>
+                                        <>
+                                            <p className='text-xs text-muted-foreground'>
+                                                {t('item_video_url_resolved', { storage })}
+                                            </p>
+                                            <div className='aspect-video w-full overflow-hidden rounded border bg-muted'>
+                                                <iframe
+                                                    src={fileUrl}
+                                                    title='video-preview'
+                                                    className='h-full w-full'
+                                                    frameBorder={0}
+                                                    allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                                                    allowFullScreen
+                                                />
+                                            </div>
+                                        </>
                                     ) : null}
                                 </TabsContent>
                             </Tabs>

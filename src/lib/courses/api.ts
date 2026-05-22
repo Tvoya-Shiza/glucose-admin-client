@@ -105,6 +105,71 @@ export async function listCourseCategories(
     return res.json();
 }
 
+export interface UpsertCourseCategoryPayload {
+    slug?: string;
+    title_kz?: string;
+}
+
+/** Thrown by deleteCourseCategory when admin-api 409s — UI can read .course_count
+ *  / .child_count to render the actual blocker without a second roundtrip. */
+export class CategoryDependentsError extends Error {
+    constructor(public readonly course_count: number, public readonly child_count: number) {
+        super('course_categories.has_dependents');
+        this.name = 'CategoryDependentsError';
+    }
+}
+
+export async function createCourseCategory(
+    payload: UpsertCourseCategoryPayload,
+): Promise<CourseCategoryRow> {
+    const res = await fetchWithRefresh(`${COURSES_API_BASE}/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createCourseCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<CourseCategoryRow>(json);
+}
+
+export async function updateCourseCategory(
+    id: number,
+    payload: UpsertCourseCategoryPayload,
+): Promise<CourseCategoryRow> {
+    const res = await fetchWithRefresh(`${COURSES_API_BASE}/categories/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateCourseCategory failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<CourseCategoryRow>(json);
+}
+
+export async function deleteCourseCategory(id: number): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${COURSES_API_BASE}/categories/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}) as Record<string, unknown>);
+        // admin-api wraps 4xx errors in apiResponse; the dependent-count metadata
+        // lives at body.message.course_count|child_count OR at body.course_count|child_count
+        // depending on the exception filter shape — read both shapes defensively.
+        const inner =
+            (body as { message?: { course_count?: number; child_count?: number } }).message ?? body;
+        const msg = (body as { message?: unknown })?.message;
+        const isDeps =
+            res.status === 409 &&
+            (typeof msg === 'object' || (typeof msg === 'string' && msg.includes('has_dependents')));
+        if (isDeps) {
+            const course_count = Number((inner as { course_count?: number })?.course_count ?? 0);
+            const child_count = Number((inner as { child_count?: number })?.child_count ?? 0);
+            throw new CategoryDependentsError(course_count, child_count);
+        }
+        throw new Error(await readErrorMessage(res, `deleteCourseCategory failed: ${res.status}`));
+    }
+    const json = await res.json();
+    return unwrapData<{ id: number; deleted: true }>(json);
+}
+
 export async function listCourses(query?: ListCoursesQuery): Promise<CourseListResponse> {
     const res = await fetchWithRefresh(`${COURSES_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
     if (!res.ok) throw new Error(`listCourses failed: ${res.status}`);

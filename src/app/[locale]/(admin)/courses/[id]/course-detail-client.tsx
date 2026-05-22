@@ -140,7 +140,9 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
         teacher: data.teacher
             ? { id: data.teacher.id, full_name: data.teacher.full_name }
             : null,
-        category: data.category ? { id: data.category.id, slug: data.category.slug } : null,
+        category: data.category
+            ? { id: data.category.id, slug: data.category.slug, title_kz: data.category.title_kz }
+            : null,
         image_cover: data.image_cover,
         translation_completeness: data.translation_completeness,
         missing_locales: data.missing_locales,

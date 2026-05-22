@@ -8,13 +8,18 @@ import { listUsers, getUser } from '@/lib/users/api';
 import type { StaffRoleName, UserRow } from '@/lib/users/types';
 
 export interface UserPickerProps {
-    /** Roles to search across — multiple roles run as parallel listUsers queries. */
+    /** Roles to search across — multiple roles run as parallel listUsers queries.
+     *  Pass an empty array to search ALL users regardless of role (one unfiltered
+     *  listUsers call). Useful when operators need to find anyone by name/email
+     *  without knowing their role label upfront. */
     roles: Array<StaffRoleName | 'student'>;
     value: number | null;
     onChange: (id: number | null, user: UserRow | null) => void;
     placeholder?: string;
     disabled?: boolean;
-    /** Hide the listbox until the user types this many characters. Default 1. */
+    /** Hide the listbox until the user types this many characters. Default 1.
+     *  Set to 0 to show top candidates on focus (helpful when the search source
+     *  is bounded — e.g. one role). */
     minQueryLength?: number;
     /** Optional fallback display label when value is set but row hasn't loaded yet. */
     initialLabel?: string | null;
@@ -54,15 +59,29 @@ export function UserPicker({
         return () => clearTimeout(id);
     }, [searchQuery]);
 
-    // Parallel queries per requested role — tanstack useQueries keeps cache hits warm.
-    const queries = useQueries({
-        queries: roles.map((role) => ({
-            queryKey: ['admin.users.list', { role_name: role, q: debouncedQuery, page_size: 10 }],
-            queryFn: () => listUsers({ role_name: role, q: debouncedQuery || undefined, page_size: 10 }),
-            enabled: open && debouncedQuery.length >= minQueryLength && !disabled,
-            staleTime: 30_000,
-        })),
-    });
+    // When `roles` is empty we fall through to a single unfiltered query — covers
+    // the "search anyone by name/email" UX without forcing the caller to enumerate
+    // every role label. Otherwise parallel queries per role with cache reuse.
+    const queryDefs = useMemo(
+        () =>
+            roles.length === 0
+                ? [
+                      {
+                          queryKey: ['admin.users.list', { role_name: null, q: debouncedQuery, page_size: 10 }] as const,
+                          queryFn: () => listUsers({ q: debouncedQuery || undefined, page_size: 10 }),
+                          enabled: open && debouncedQuery.length >= minQueryLength && !disabled,
+                          staleTime: 30_000,
+                      },
+                  ]
+                : roles.map((role) => ({
+                      queryKey: ['admin.users.list', { role_name: role, q: debouncedQuery, page_size: 10 }] as const,
+                      queryFn: () => listUsers({ role_name: role, q: debouncedQuery || undefined, page_size: 10 }),
+                      enabled: open && debouncedQuery.length >= minQueryLength && !disabled,
+                      staleTime: 30_000,
+                  })),
+        [roles, debouncedQuery, open, minQueryLength, disabled],
+    );
+    const queries = useQueries({ queries: queryDefs });
 
     // Single fetch to resolve the selected value's display label when no search text.
     const selectedQuery = useQuery({

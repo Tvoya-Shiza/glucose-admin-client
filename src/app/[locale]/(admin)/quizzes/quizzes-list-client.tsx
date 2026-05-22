@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { ClipboardList } from 'lucide-react';
+import { Award, ClipboardList, FolderTree } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
@@ -21,6 +22,7 @@ import type {
     QuizStatus,
     SortOrder,
 } from '@/lib/quizzes/types';
+import { AddToBadgeDialog } from './components/add-to-badge-dialog';
 import { CreateQuizDialog } from './components/create-quiz-dialog';
 import { DeleteQuizDialog } from './components/delete-quiz-dialog';
 import { QuizzesFilters } from './quizzes-filters';
@@ -50,6 +52,7 @@ interface MeResponse {
  */
 export function QuizzesListClient() {
     const t = useTranslations('admin.quizzes');
+    const locale = useLocale();
 
     const [
         { page, page_size, status, category_id, badge_id, question_count_bucket, q, sort, order },
@@ -129,6 +132,7 @@ export function QuizzesListClient() {
 
     const [createOpen, setCreateOpen] = useState(false);
     const [deleteRow, setDeleteRow] = useState<QuizRow | null>(null);
+    const [addToBadgeRow, setAddToBadgeRow] = useState<QuizRow | null>(null);
 
     const emptyTitle = anyFilterActive ? t('empty_no_results') : t('empty_admin');
 
@@ -138,7 +142,25 @@ export function QuizzesListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={
+                        <>
+                            <Button asChild variant='outline' size='sm'>
+                                <Link href={`/${locale}/quizzes/categories`}>
+                                    <FolderTree className='mr-2 h-4 w-4' />
+                                    {t('categories_page_title')}
+                                </Link>
+                            </Button>
+                            <Button asChild variant='outline' size='sm'>
+                                <Link href={`/${locale}/quizzes/badges`}>
+                                    <Award className='mr-2 h-4 w-4' />
+                                    {t('badges_page_title')}
+                                </Link>
+                            </Button>
+                            {canCreate ? (
+                                <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button>
+                            ) : null}
+                        </>
+                    }
                 />
             }
             footer={
@@ -191,6 +213,7 @@ export function QuizzesListClient() {
                         canMutate={canMutate}
                         canDelete={canDelete}
                         onDelete={(row) => setDeleteRow(row)}
+                        onAddToBadge={canEdit ? (row) => setAddToBadgeRow(row) : undefined}
                     />
                 )}
             </Card>
@@ -203,6 +226,15 @@ export function QuizzesListClient() {
                         if (!o) setDeleteRow(null);
                     }}
                     quiz={deleteRow}
+                />
+            ) : null}
+            {canEdit ? (
+                <AddToBadgeDialog
+                    open={addToBadgeRow !== null}
+                    onOpenChange={(o) => {
+                        if (!o) setAddToBadgeRow(null);
+                    }}
+                    quiz={addToBadgeRow}
                 />
             ) : null}
         </PageShell>

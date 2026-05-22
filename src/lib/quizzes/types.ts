@@ -454,6 +454,8 @@ export interface ReorderBadgeItemsEntry {
 export interface ListResultsQuery {
     quiz_id?: number;
     badge_id?: number;
+    /** Narrow to attempts by users in this group. Curator-scope-validated server-side. */
+    group_id?: number;
     user_id?: number;
     status?: QuizResultStatus;
     /** Unix seconds. */
@@ -465,6 +467,66 @@ export interface ListResultsQuery {
     page_size?: number;
     sort?: 'created_at';
     order?: SortOrder;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Results stats (QZ-10 — mirrors results-stats.dto.ts + ResultsStatsResponse)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface ResultsStatsQuery {
+    quiz_id?: number;
+    badge_id?: number;
+    group_id?: number;
+    status?: QuizResultStatus;
+    /** Unix seconds. */
+    date_from?: number;
+    /** Unix seconds. */
+    date_to?: number;
+}
+
+export interface ResultsStatsTotals {
+    total: number;
+    passed: number;
+    failed: number;
+    waiting: number;
+    /** passed / (passed + failed); 0 when denominator is 0. */
+    pass_rate: number;
+    avg_grade: number | null;
+    unique_students: number;
+}
+
+export interface DailyTrendPoint {
+    /** 'YYYY-MM-DD' (UTC). */
+    date: string;
+    passed: number;
+    failed: number;
+    waiting: number;
+}
+
+export interface TopQuizRow {
+    quiz_id: number;
+    title_kz: string | null;
+    attempt_count: number;
+    pass_rate: number;
+}
+
+export interface TopGroupRow {
+    group_id: number;
+    name: string;
+    attempt_count: number;
+    pass_rate: number;
+}
+
+export interface ResultsStatsResponse {
+    totals: ResultsStatsTotals;
+    daily_trend: DailyTrendPoint[];
+    top_quizzes: TopQuizRow[];
+    top_groups: TopGroupRow[];
+    bucket: 'day';
+    date_from: number;
+    date_to: number;
+    /** Unix seconds — server timestamp at the moment of computation. */
+    snapshot_at: number;
 }
 
 export interface QuizResultUserRef {

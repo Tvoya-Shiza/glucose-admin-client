@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm /Users/admin/Documents/work/glucose-admin-client/src/app/\\\\[locale\\\\]/\\\\\\(admin\\\\\\)/quizzes/results/results-list-client.tsx && ls /Users/admin/Documents/work/glucose-admin-client/src/app/\\\\[locale\\\\]/\\\\\\(admin\\\\\\)/quizzes/results/)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('/Users/admin/Documents/work/glucose-admin-client/messages/kz.json','utf8'\\)\\);console.log\\('ok'\\)\")",
+      "Bash(mysql -h 127.0.0.1 -P 3306 -u root -pfytyfyty2005 glucose -e \"SHOW COLUMNS FROM webinar_chapter_items;\")",
+      "Bash(mysql -h 127.0.0.1 -P 3306 -u root -pfytyfyty2005 glucose -e \"SHOW COLUMNS FROM webinar_chapter_items LIKE 'accessibility';\")",
+      "Bash(mysql -h 127.0.0.1 -P 3306 -u root -pfytyfyty2005 glucose -e \"SELECT type, accessibility, COUNT\\(*\\) FROM webinar_chapter_items GROUP BY type, accessibility ORDER BY type, accessibility;\")",
+      "Bash(mysql -h 127.0.0.1 -P 3306 -u root -pfytyfyty2005 glucose -e \"SELECT accessibility, COUNT\\(*\\) FROM files GROUP BY accessibility;\")"
+    ],
+    "additionalDirectories": [
+      "/Users/admin/Documents/work/glucose-admin-client/src/app/[locale]/(admin)/quizzes/results"
+    ]
+  }
+}

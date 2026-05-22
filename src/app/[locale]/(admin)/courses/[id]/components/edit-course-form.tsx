@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { CategoryPicker } from '@/components/courses/category-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,17 +68,24 @@ const schema = z
             .max(255)
             .regex(SLUG_REGEX, 'slug_invalid_format'),
         status: z.enum(['active', 'pending', 'is_draft', 'inactive']),
-        category_id: z
-            .string()
-            .refine(
-                (v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number.isInteger(Number(v))),
-                { message: 'category_id_invalid' },
-            ),
+        // Mirrors create-course-dialog (nullable positive int) so both surfaces
+        // share the same shape and validation behaviour.
+        category_id: z.number().int().positive().nullable(),
         is_paid: z.boolean(),
         strict_progress: z.boolean(),
         // Strings on the form (text inputs); validated below when is_paid=true.
         price: z.string(),
         access_days: z.string(),
+        // Estimated study time in MINUTES — operator-supplied free-form integer.
+        // Empty string = "leave unknown / clear server-side".
+        duration_minutes: z
+            .string()
+            .refine(
+                (v) =>
+                    v === '' ||
+                    (Number.isFinite(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0),
+                { message: 'duration_invalid' },
+            ),
         kz: translationSchema,
     })
     .superRefine((vals, ctx) => {
@@ -110,11 +118,12 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
         defaultValues: {
             slug: course.slug,
             status: course.status,
-            category_id: course.category ? String(course.category.id) : '',
+            category_id: course.category?.id ?? null,
             is_paid: course.is_paid,
             strict_progress: course.strict_progress,
             price: course.pricing?.price ?? '',
             access_days: course.pricing?.access_days != null ? String(course.pricing.access_days) : '',
+            duration_minutes: course.duration != null ? String(course.duration) : '',
             kz: {
                 title: initialKz?.title ?? '',
                 description: initialKz?.description ?? '',
@@ -145,14 +154,15 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                     description: values.kz.description?.trim() ? values.kz.description : null,
                 },
             ];
-            const cat = values.category_id.trim();
+            const durationStr = values.duration_minutes.trim();
             return updateCourse(course.id, {
                 slug: values.slug,
                 status: values.status as CourseStatus,
-                category_id: cat === '' ? null : Number(cat),
+                category_id: values.category_id,
                 translations,
                 is_paid: values.is_paid,
                 strict_progress: values.strict_progress,
+                duration: durationStr === '' ? null : Number(durationStr),
                 ...(values.is_paid
                     ? {
                           price: Number(values.price),
@@ -270,12 +280,17 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
 
                 <div className='space-y-1'>
                     <Label htmlFor='category_id'>{t('category_label')}</Label>
-                    <Input
-                        id='category_id'
-                        inputMode='numeric'
-                        {...form.register('category_id')}
-                        placeholder={t('category_placeholder')}
-                        disabled={mutation.isPending}
+                    <Controller
+                        control={form.control}
+                        name='category_id'
+                        render={({ field }) => (
+                            <CategoryPicker
+                                value={field.value ?? null}
+                                onChange={(id) => field.onChange(id)}
+                                placeholder={t('category_placeholder')}
+                                disabled={mutation.isPending}
+                            />
+                        )}
                     />
                 </div>
 
@@ -286,6 +301,21 @@ export function EditCourseForm({ course, onCancel, onSaved }: EditCourseFormProp
                             ? `${course.teacher.full_name ?? `user#${course.teacher.id}`} (id ${course.teacher.id})`
                             : '—'}
                     </div>
+                </div>
+
+                <div className='space-y-1'>
+                    <Label htmlFor='duration_minutes'>{t('duration_label')}</Label>
+                    <Input
+                        id='duration_minutes'
+                        inputMode='numeric'
+                        {...form.register('duration_minutes')}
+                        placeholder='720'
+                        disabled={mutation.isPending}
+                    />
+                    <p className='text-xs text-muted-foreground'>{t('duration_hint')}</p>
+                    {errors.duration_minutes ? (
+                        <p className='text-destructive text-xs'>{t('duration_invalid')}</p>
+                    ) : null}
                 </div>
             </div>
 
