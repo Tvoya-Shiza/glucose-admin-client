@@ -53,12 +53,21 @@ async function handle(req: NextRequest, params: { path: string[] }): Promise<Nex
 
     const upstream = await fetchAdminApi(targetPath, init);
 
-    // Pass through status + body. Headers: copy Content-Type only — never reflect
+    // Pass through status + body. Headers: explicit allowlist — never reflect
     // upstream Set-Cookie (the BFF owns cookie management; auth routes are the
     // only places cookies can be set/cleared) and never reflect Authorization.
+    //
+    // Content-Disposition + Content-Length are needed for binary downloads
+    // (e.g. submission file attachments served by AssignmentsSubmissionFilesController):
+    // the browser uses Content-Disposition to pick the suggested filename and
+    // distinguish inline vs attachment. Cache-Control is forwarded so admin-api
+    // can mark sensitive responses (student work) as `private, no-store`.
     const resHeaders = new Headers();
-    const upstreamCt = upstream.headers.get('content-type');
-    if (upstreamCt) resHeaders.set('Content-Type', upstreamCt);
+    const passthrough = ['content-type', 'content-disposition', 'content-length', 'cache-control'];
+    for (const name of passthrough) {
+        const value = upstream.headers.get(name);
+        if (value) resHeaders.set(name, value);
+    }
 
     return new NextResponse(upstream.body, {
         status: upstream.status,

@@ -47,7 +47,7 @@ Middleware NEVER sets cookies (AUTH-08 rule).
 
 The admin-api URL is read from `process.env.ADMIN_API_URL` (no `NEXT_PUBLIC_` prefix). The helper at `src/lib/auth/admin-api-client.ts` is marked `import 'server-only'` so it cannot be bundled into client code.
 
-**Proxy header pass-through trade-offs (Phase 2):** The `/api/proxy/[...path]` route copies ONLY `Content-Type` from the upstream response. `Cache-Control`, `ETag`, `Last-Modified`, and other caching headers are NOT forwarded by the proxy in Phase 2 — revisit if Phase 3+ list endpoints need browser caching. The trade-off is intentional: the proxy owns response shaping (cookie management, Bearer-token confidentiality), and any header pass-through must be explicit + audited.
+**Proxy header pass-through:** The `/api/proxy/[...path]` route forwards a small explicit allowlist of upstream response headers: `Content-Type`, `Content-Disposition`, `Content-Length`, `Cache-Control`. `Content-Disposition` + `Content-Length` are needed for binary downloads (e.g. assignment submission file attachments served by admin-api's `AssignmentsSubmissionFilesController`) so the browser gets the suggested filename + correct size; `Cache-Control` lets admin-api mark sensitive responses (student work) as `private, no-store`. `ETag`, `Last-Modified`, and Set-Cookie are NOT forwarded. The trade-off is intentional: the proxy owns response shaping (cookie management, Bearer-token confidentiality), and any header pass-through must be explicit + audited.
 
 ### Client-side wrappers
 

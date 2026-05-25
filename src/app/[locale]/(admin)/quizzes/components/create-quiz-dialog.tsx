@@ -48,20 +48,44 @@ import type { CreateQuiz, QuizStatus } from '@/lib/quizzes/types';
  * On success: invalidate ['admin.quizzes.list'], toast success, navigate to
  * /[locale]/quizzes/:id (Plan 04 ships the detail editor).
  */
-const createQuizSchema = z.object({
-    status: z.enum(['active', 'inactive']),
-    category_id: z.number().int().positive().nullable(),
-    pass_mark: z
-        .string()
-        .min(1)
-        .refine((v) => Number.isFinite(Number(v.trim())) && Number(v.trim()) >= 0, {
-            message: 'invalid_number',
-        }),
-    time: z.string().optional(),
-    attempt: z.string().optional(),
-    certificate: z.boolean(),
-    title: z.string().min(1).max(255),
-});
+const createQuizSchema = z
+    .object({
+        status: z.enum(['active', 'inactive']),
+        category_id: z.number().int().positive().nullable(),
+        pass_mark: z
+            .string()
+            .min(1)
+            .refine((v) => Number.isFinite(Number(v.trim())) && Number(v.trim()) >= 0, {
+                message: 'invalid_number',
+            }),
+        time: z.string().optional(),
+        attempt: z.string().optional(),
+        certificate: z.boolean(),
+        is_listed: z.boolean(),
+        is_paid: z.boolean(),
+        price: z.string().optional(),
+        access_days: z.string().optional(),
+        title: z.string().min(1).max(255),
+    })
+    .superRefine((vals, ctx) => {
+        if (!vals.is_paid) return;
+        const priceN = Number((vals.price ?? '').trim());
+        if (!(priceN > 0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['price'],
+                message: 'price_required_when_paid',
+            });
+        }
+        const daysN = Number((vals.access_days ?? '').trim());
+        if (!Number.isInteger(daysN) || !(daysN > 0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['access_days'],
+                message: 'access_days_required_when_paid',
+            });
+        }
+    });
 
 type CreateQuizValues = z.infer<typeof createQuizSchema>;
 
@@ -85,6 +109,10 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
             time: '',
             attempt: '',
             certificate: false,
+            is_listed: true,
+            is_paid: false,
+            price: '',
+            access_days: '',
             title: '',
         },
         mode: 'onSubmit',
@@ -94,10 +122,15 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
         if (!open) {
             form.reset({
                 status: 'active',
+                category_id: null,
                 pass_mark: '0',
                 time: '',
                 attempt: '',
                 certificate: false,
+                is_listed: true,
+                is_paid: false,
+                price: '',
+                access_days: '',
                 title: '',
             });
         }
@@ -119,6 +152,12 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                     values.attempt && values.attempt.trim() !== ''
                         ? Number(values.attempt.trim())
                         : null,
+                is_listed: values.is_listed,
+                is_paid: values.is_paid,
+                price: values.is_paid ? values.price?.trim() ?? null : null,
+                access_days: values.is_paid
+                    ? Number((values.access_days ?? '').trim())
+                    : null,
                 translations: [{ locale: 'kz', title: values.title }],
             };
             return createQuiz(payload);
@@ -284,6 +323,93 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                                 </FormItem>
                             )}
                         />
+
+                        <FormField
+                            control={form.control}
+                            name='is_listed'
+                            render={({ field }) => (
+                                <FormItem className='flex items-center gap-2'>
+                                    <FormControl>
+                                        <Checkbox
+                                            checked={field.value}
+                                            onCheckedChange={(v) => field.onChange(!!v)}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className='m-0'>{t('is_listed_label')}</FormLabel>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name='is_paid'
+                            render={({ field }) => (
+                                <FormItem className='flex items-center gap-2'>
+                                    <FormControl>
+                                        <Checkbox
+                                            checked={field.value}
+                                            onCheckedChange={(v) => field.onChange(!!v)}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className='m-0'>{t('is_paid_label')}</FormLabel>
+                                </FormItem>
+                            )}
+                        />
+
+                        {form.watch('is_paid') ? (
+                            <div className='grid grid-cols-2 gap-3'>
+                                <FormField
+                                    control={form.control}
+                                    name='price'
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('price_label')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    inputMode='decimal'
+                                                    placeholder='0.00'
+                                                    value={field.value ?? ''}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            e.target.value.replace(/[^\d.]/g, ''),
+                                                        )
+                                                    }
+                                                    onBlur={field.onBlur}
+                                                    ref={field.ref}
+                                                    name={field.name}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name='access_days'
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('access_days_label')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    inputMode='numeric'
+                                                    placeholder='30'
+                                                    value={field.value ?? ''}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            e.target.value.replace(/[^\d]/g, ''),
+                                                        )
+                                                    }
+                                                    onBlur={field.onBlur}
+                                                    ref={field.ref}
+                                                    name={field.name}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        ) : null}
 
                         <FormField
                             control={form.control}

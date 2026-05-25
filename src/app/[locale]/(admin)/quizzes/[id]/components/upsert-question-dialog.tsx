@@ -32,7 +32,7 @@ import type {
 import { TiptapEditor } from '../../../courses/[id]/components/tiptap-editor';
 import { AnswersEditor } from './answers-editor';
 import { ForceConfirmDialog } from './force-confirm-dialog';
-import { IdentificativePairsEditor } from './identificative-pairs-editor';
+import { IdentificativeEntEditor } from './identificative-ent-editor';
 import { QuestionImageUploader } from './question-image-uploader';
 
 /**
@@ -318,7 +318,7 @@ export function UpsertQuestionDialog({
                                     />
                                 )}
                                 {type === 'identificative' && (
-                                    <IdentificativePairsEditor
+                                    <IdentificativeEntEditor
                                         quizId={quizId}
                                         questionId={question.id}
                                         answers={answersForChild}

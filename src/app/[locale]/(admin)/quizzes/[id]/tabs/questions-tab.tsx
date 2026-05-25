@@ -12,7 +12,7 @@ import { QuestionsList } from '../components/questions-list';
  *
  * Replaces Plan 04's placeholder. Renders <QuestionsList> with dnd-kit reorder,
  * Add Question button, and per-row Edit/Delete actions. The list, the
- * UpsertQuestionDialog, AnswersEditor, and IdentificativePairsEditor each handle
+ * UpsertQuestionDialog, AnswersEditor, and IdentificativeEntEditor each handle
  * their own ForceConfirmDialog when 409 ForceConfirmRequiredError surfaces.
  *
  * Query key: ['admin.quizzes.questions', quizId]. Server-side cache TTL 60s

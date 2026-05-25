@@ -8,42 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
+import { fetchCoursePickerItems, type PickerItemKind } from '@/lib/courses/picker-items';
 
 export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'curator' | 'user-group' | 'course';
+
+const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignment', 'file'];
 
 interface EntitySearchOption {
     id: number;
     title: string;
 }
 
-interface QuizRow {
-    id: number;
-    title_kz: string | null;
-}
-
-interface AssignmentRow {
-    id: number;
-    title_kz: string | null;
-    title_ru: string | null;
-}
-
 interface CourseRow {
     id: number;
     title_kz: string | null;
     title_ru: string | null;
-}
-
-interface ChapterRow {
-    id: number;
-    translations?: Array<{ locale: string; title: string }>;
-    title_kz?: string | null;
-    title_ru?: string | null;
-}
-
-interface FileRow {
-    id: number;
-    title_kz?: string | null;
-    title_ru?: string | null;
 }
 
 interface UserRow {
@@ -66,20 +45,20 @@ async function searchEntities(kind: EntityKind, q: string, courseId?: number | n
     const needle = q.trim();
     if (needle.length > 0) params.set('q', needle);
 
-    if (kind === 'quiz') {
-        params.set('status', 'active');
-        const res = await fetchWithRefresh(`/api/proxy/v1/admin/quizzes?${params.toString()}`);
-        if (!res.ok) throw new Error(`search failed: ${res.status}`);
-        const json = (await res.json()) as ListResponse<QuizRow>;
-        return json.rows.map((r) => ({ id: r.id, title: r.title_kz ?? `#${r.id}` }));
-    }
-
-    if (kind === 'assignment') {
-        params.set('status', 'active');
-        const res = await fetchWithRefresh(`/api/proxy/v1/admin/assignments?${params.toString()}`);
-        if (!res.ok) throw new Error(`search failed: ${res.status}`);
-        const json = (await res.json()) as ListResponse<AssignmentRow>;
-        return json.rows.map((r) => ({ id: r.id, title: r.title_kz ?? r.title_ru ?? `#${r.id}` }));
+    // lesson / quiz / assignment / file — all course-scoped: one shared
+    // /admin/courses/:id/picker-items endpoint, discriminated by kind.
+    if (COURSE_SCOPED_KINDS.includes(kind)) {
+        if (typeof courseId !== 'number' || courseId <= 0) {
+            // Picker should never be rendered without a course (the upsert dialog
+            // gates the items editor), but stay defensive — return empty rather
+            // than throw, so a misuse doesn't crash the form.
+            return [];
+        }
+        const json = await fetchCoursePickerItems(courseId, kind as PickerItemKind, needle);
+        return json.rows.map((r) => ({
+            id: r.id,
+            title: r.title_kz ?? r.title_ru ?? `#${r.id}`,
+        }));
     }
 
     if (kind === 'course') {
@@ -87,51 +66,6 @@ async function searchEntities(kind: EntityKind, q: string, courseId?: number | n
         const res = await fetchWithRefresh(`/api/proxy/v1/admin/courses?${params.toString()}`);
         if (!res.ok) throw new Error(`search failed: ${res.status}`);
         const json = (await res.json()) as ListResponse<CourseRow>;
-        return json.rows.map((r) => ({ id: r.id, title: r.title_kz ?? r.title_ru ?? `#${r.id}` }));
-    }
-
-    if (kind === 'lesson') {
-        // "lesson" = WebinarChapter. Two paths: scoped to a course, or global search.
-        if (typeof courseId === 'number' && courseId > 0) {
-            const res = await fetchWithRefresh(`/api/proxy/v1/admin/courses/${courseId}/chapters`);
-            if (!res.ok) throw new Error(`search failed: ${res.status}`);
-            const json = (await res.json()) as ListResponse<ChapterRow>;
-            const rows = json.rows.map((r) => ({
-                id: r.id,
-                title:
-                    r.title_kz ??
-                    r.title_ru ??
-                    r.translations?.find((t) => t.locale === 'kz')?.title ??
-                    r.translations?.find((t) => t.locale === 'ru')?.title ??
-                    `#${r.id}`,
-            }));
-            if (needle.length === 0) return rows;
-            const lower = needle.toLowerCase();
-            return rows.filter((r) => r.title.toLowerCase().includes(lower));
-        }
-        params.set('status', 'active');
-        const res = await fetchWithRefresh(`/api/proxy/v1/admin/chapters?${params.toString()}`);
-        if (!res.ok) {
-            // Endpoint may not exist (global chapter search isn't implemented) — fall back to empty.
-            return [];
-        }
-        const json = (await res.json()) as ListResponse<ChapterRow>;
-        return json.rows.map((r) => ({
-            id: r.id,
-            title:
-                r.title_kz ??
-                r.title_ru ??
-                r.translations?.find((t) => t.locale === 'kz')?.title ??
-                r.translations?.find((t) => t.locale === 'ru')?.title ??
-                `#${r.id}`,
-        }));
-    }
-
-    if (kind === 'file') {
-        params.set('status', 'active');
-        const res = await fetchWithRefresh(`/api/proxy/v1/admin/files?${params.toString()}`);
-        if (!res.ok) throw new Error(`search failed: ${res.status}`);
-        const json = (await res.json()) as ListResponse<FileRow>;
         return json.rows.map((r) => ({ id: r.id, title: r.title_kz ?? r.title_ru ?? `#${r.id}` }));
     }
 

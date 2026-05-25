@@ -95,12 +95,16 @@ export function MembersTab({ groupId }: { groupId: number }) {
     }, [progressQuery.data?.rows]);
 
     // Apply activity window client-side per CONTEXT D-20 (last_activity is in MemberRow).
+    // Fallback to joined_at when last_activity is null — newly-added members have no
+    // activity yet, but they should still show up in any window that covers their
+    // joined_at (otherwise bulk-add appears to do nothing in the default 7d view).
+    // Once joined_at is older than the window AND there's still no activity, they drop out.
     const filteredRows: MemberRow[] = useMemo(() => {
         if (!data?.rows) return [];
         if (windowFilter === 'all') return data.rows;
         const days = windowFilter === '1d' ? 1 : windowFilter === '7d' ? 7 : 30;
         const cutoff = Math.floor(Date.now() / 1000) - days * 86400;
-        return data.rows.filter((r) => (r.last_activity ?? 0) >= cutoff);
+        return data.rows.filter((r) => (r.last_activity ?? r.joined_at ?? 0) >= cutoff);
     }, [data?.rows, windowFilter]);
 
     if (isLoading) {

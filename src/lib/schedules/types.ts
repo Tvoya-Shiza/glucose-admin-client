@@ -81,7 +81,7 @@ export interface ScheduleListFilters {
 export interface CreateSchedulePayload {
     curator_id: number;
     group_id: number;
-    course_id?: number | null;
+    course_id: number;
     start_at: number;
     end_at: number;
     description?: string | null;
@@ -91,7 +91,7 @@ export interface CreateSchedulePayload {
 
 export interface UpdateSchedulePayload {
     group_id?: number;
-    course_id?: number | null;
+    course_id?: number;
     start_at?: number;
     end_at?: number;
     description?: string | null;

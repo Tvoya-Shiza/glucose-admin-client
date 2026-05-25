@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { Award, ClipboardList, FolderTree } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
@@ -55,12 +55,24 @@ export function QuizzesListClient() {
     const locale = useLocale();
 
     const [
-        { page, page_size, status, category_id, badge_id, question_count_bucket, q, sort, order },
+        {
+            page,
+            page_size,
+            status,
+            is_listed,
+            category_id,
+            badge_id,
+            question_count_bucket,
+            q,
+            sort,
+            order,
+        },
         setQ,
     ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
         page_size: parseAsInteger.withDefault(50),
         status: parseAsString,
+        is_listed: parseAsBoolean,
         category_id: parseAsInteger,
         badge_id: parseAsInteger,
         question_count_bucket: parseAsString,
@@ -90,6 +102,7 @@ export function QuizzesListClient() {
                     page,
                     page_size,
                     status,
+                    is_listed,
                     category_id,
                     badge_id,
                     question_count_bucket,
@@ -98,7 +111,18 @@ export function QuizzesListClient() {
                     order,
                 },
             ] as const,
-        [page, page_size, status, category_id, badge_id, question_count_bucket, q, sort, order],
+        [
+            page,
+            page_size,
+            status,
+            is_listed,
+            category_id,
+            badge_id,
+            question_count_bucket,
+            q,
+            sort,
+            order,
+        ],
     );
 
     const { data, isLoading, isFetching, error } = useQuery({
@@ -108,6 +132,7 @@ export function QuizzesListClient() {
                 page,
                 page_size,
                 status: (status as QuizStatus | null) ?? undefined,
+                is_listed: is_listed ?? undefined,
                 category_id: category_id ?? undefined,
                 badge_id: badge_id ?? undefined,
                 question_count_bucket: (question_count_bucket as QuestionCountBucket | null) ?? undefined,
@@ -124,6 +149,7 @@ export function QuizzesListClient() {
 
     const anyFilterActive = Boolean(
         status ||
+            is_listed !== null ||
             category_id ||
             badge_id ||
             question_count_bucket ||
@@ -183,6 +209,7 @@ export function QuizzesListClient() {
                     value={{
                         q: q ?? undefined,
                         status: (status as QuizStatus | null) ?? undefined,
+                        is_listed: is_listed ?? undefined,
                         category_id: category_id ?? undefined,
                         badge_id: badge_id ?? undefined,
                         question_count_bucket:
@@ -193,6 +220,7 @@ export function QuizzesListClient() {
                             page: 1,
                             q: next.q ?? null,
                             status: next.status ?? null,
+                            is_listed: next.is_listed === undefined ? null : next.is_listed,
                             category_id: next.category_id ?? null,
                             badge_id: next.badge_id ?? null,
                             question_count_bucket: next.question_count_bucket ?? null,

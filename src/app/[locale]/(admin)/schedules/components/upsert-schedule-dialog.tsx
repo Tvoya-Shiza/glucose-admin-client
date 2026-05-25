@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
@@ -41,7 +41,10 @@ const upsertScheduleSchema = z
     .object({
         curator_id: z.string().min(1, 'required'),
         group_id: z.string().min(1, 'required'),
-        course_id: z.string(),
+        // course_id is now required: the items picker is scoped to the schedule's
+        // bound course on the backend (CoursesPickerItemsService), and admin-api
+        // CreateScheduleDto rejects writes without it.
+        course_id: z.string().min(1, 'field_course_required'),
         start_at_local: z.string().min(1, 'required'),
         end_at_local: z.string().min(1, 'required'),
         description: z.string().max(2000),
@@ -129,6 +132,40 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
     const courseIdStr = form.watch('course_id');
     const courseIdNum = courseIdStr && courseIdStr.length > 0 ? Number(courseIdStr) : null;
 
+    // When the user manually changes the course AFTER picking items, the old
+    // items belong to a different course and would fail backend ref-validation
+    // — prompt and clear. The ref starts null and is "primed" on dialog open
+    // (effect above) so the initial defaultValues populating course_id doesn't
+    // trip the confirmation.
+    const prevCourseRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (!open) return;
+        if (prevCourseRef.current === null) {
+            prevCourseRef.current = courseIdNum;
+            return;
+        }
+        if (prevCourseRef.current === courseIdNum) return;
+        if (items.length === 0) {
+            prevCourseRef.current = courseIdNum;
+            return;
+        }
+        const confirmed = window.confirm(t('change_course_warning'));
+        if (confirmed) {
+            setItems([]);
+            prevCourseRef.current = courseIdNum;
+        } else {
+            // Revert the form value back to the previous course.
+            form.setValue('course_id', prevCourseRef.current != null ? String(prevCourseRef.current) : '');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseIdNum, open]);
+
+    // Reset the ref when the dialog closes so re-opening doesn't compare
+    // against stale state from a previous session.
+    useEffect(() => {
+        if (!open) prevCourseRef.current = null;
+    }, [open]);
+
     const mutation = useMutation({
         mutationFn: async (values: UpsertScheduleValues) => {
             const start_at = datetimeLocalToUnix(values.start_at_local);
@@ -144,7 +181,7 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
             if (isEdit && editing) {
                 const payload: UpdateSchedulePayload = {
                     group_id: Number(values.group_id),
-                    course_id: values.course_id.length > 0 ? Number(values.course_id) : null,
+                    course_id: Number(values.course_id),
                     start_at,
                     end_at,
                     description: values.description.length > 0 ? values.description : null,
@@ -157,7 +194,7 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
             const payload: CreateSchedulePayload = {
                 curator_id: Number(values.curator_id),
                 group_id: Number(values.group_id),
-                course_id: values.course_id.length > 0 ? Number(values.course_id) : undefined,
+                course_id: Number(values.course_id),
                 start_at,
                 end_at,
                 description: values.description.length > 0 ? values.description : undefined,
@@ -189,6 +226,26 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className='space-y-4'>
+                        {/* Course goes first — items editor is gated on it. */}
+                        <FormField
+                            control={form.control}
+                            name='course_id'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('field_course')}</FormLabel>
+                                    <FormControl>
+                                        <EntitySearchPicker
+                                            kind='course'
+                                            value={field.value}
+                                            onChange={(v) => field.onChange(v)}
+                                        />
+                                    </FormControl>
+                                    <p className='text-xs text-muted-foreground'>{t('field_course_required_hint')}</p>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                             <FormField
                                 control={form.control}
@@ -231,23 +288,6 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name='course_id'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{t('field_course_optional')}</FormLabel>
-                                    <FormControl>
-                                        <EntitySearchPicker
-                                            kind='course'
-                                            value={field.value}
-                                            onChange={(v) => field.onChange(v)}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
 
                         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                             <FormField
@@ -324,7 +364,13 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                             )}
                         />
 
-                        <ScheduleItemsEditor value={items} onChange={setItems} courseId={courseIdNum} />
+                        {courseIdNum != null ? (
+                            <ScheduleItemsEditor value={items} onChange={setItems} courseId={courseIdNum} />
+                        ) : (
+                            <p className='rounded border border-dashed p-3 text-center text-xs text-muted-foreground'>
+                                {t('select_course_first')}
+                            </p>
+                        )}
 
                         <DialogFooter>
                             <Button type='button' variant='ghost' onClick={() => onOpenChange(false)}>

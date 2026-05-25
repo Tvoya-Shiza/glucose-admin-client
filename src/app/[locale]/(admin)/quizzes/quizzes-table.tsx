@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { MoreHorizontalIcon } from 'lucide-react';
+import { Coins, EyeOff, MoreHorizontalIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ export function QuizzesTable({
     const t = useTranslations('admin.quizzes');
     const locale = useLocale();
 
-    const columnCount = canMutate ? 8 : 7;
+    const columnCount = canMutate ? 9 : 8;
 
     return (
         <Table>
@@ -68,6 +68,7 @@ export function QuizzesTable({
                 <TableRow>
                     <TableHead>{t('col_title')}</TableHead>
                     <TableHead>{t('col_status')}</TableHead>
+                    <TableHead>{t('col_listing')}</TableHead>
                     <TableHead>{t('col_category')}</TableHead>
                     <TableHead>{t('col_questions')}</TableHead>
                     <TableHead>{t('col_attempts')}</TableHead>
@@ -102,6 +103,28 @@ export function QuizzesTable({
                                   <Badge variant={statusVariant(r.status)}>
                                       {t(`status_${r.status}`)}
                                   </Badge>
+                              </TableCell>
+                              <TableCell>
+                                  <div className='flex flex-wrap items-center gap-1.5 text-xs'>
+                                      {r.is_listed ? (
+                                          <Badge variant='outline'>{t('listing_listed')}</Badge>
+                                      ) : (
+                                          <Badge variant='secondary' className='gap-1'>
+                                              <EyeOff className='h-3 w-3' />
+                                              {t('listing_unlisted')}
+                                          </Badge>
+                                      )}
+                                      {r.is_paid && r.price ? (
+                                          <Badge variant='outline' className='gap-1'>
+                                              <Coins className='h-3 w-3' />
+                                              {r.price}
+                                          </Badge>
+                                      ) : (
+                                          <Badge variant='outline' className='text-muted-foreground'>
+                                              {t('listing_free')}
+                                          </Badge>
+                                      )}
+                                  </div>
                               </TableCell>
                               <TableCell className='text-muted-foreground text-sm'>
                                   {r.category?.title_kz ?? '—'}

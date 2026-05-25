@@ -201,9 +201,102 @@ export function OverviewTab({ quiz, role }: OverviewTabProps) {
                             disabled={isReadOnly}
                         />
                     </FieldRow>
+
+                    {/* Phase 22 — listing flag */}
+                    <FieldRow label={t('is_listed_label')}>
+                        <Checkbox
+                            checked={quiz.is_listed}
+                            onCheckedChange={(v) => patch({ is_listed: !!v })}
+                            disabled={isReadOnly}
+                        />
+                    </FieldRow>
+
+                    {/* Phase 22 — paid flag */}
+                    <FieldRow label={t('is_paid_label')}>
+                        <Checkbox
+                            checked={quiz.is_paid}
+                            onCheckedChange={(v) => {
+                                // Flipping off clears pricing on the server side; UI just sends the flag.
+                                patch({ is_paid: !!v });
+                            }}
+                            disabled={isReadOnly}
+                        />
+                    </FieldRow>
                 </div>
+
+                {/* Phase 22 — pricing details (only when paid) */}
+                {quiz.is_paid ? (
+                    <div className='grid gap-4 md:grid-cols-2 border-t pt-4'>
+                        <DebouncedDecimalField
+                            label={t('price_label')}
+                            value={quiz.price}
+                            onCommit={(s) => patch({ price: s })}
+                            disabled={isReadOnly}
+                        />
+                        <DebouncedNumberField
+                            label={t('access_days_label')}
+                            value={quiz.access_days}
+                            onCommit={(n) => patch({ access_days: n })}
+                            disabled={isReadOnly}
+                            nullable={false}
+                        />
+                    </div>
+                ) : null}
             </div>
         </div>
+    );
+}
+
+/**
+ * Debounced decimal input — for price (Decimal(15,3)). Sends the raw string so
+ * the server can parse it as a Prisma Decimal without precision loss.
+ */
+function DebouncedDecimalField({
+    label,
+    value,
+    onCommit,
+    disabled,
+    debounceMs = 600,
+}: {
+    label: string;
+    value: string | null;
+    onCommit: (s: string) => void;
+    disabled?: boolean;
+    debounceMs?: number;
+}) {
+    const [draft, setDraft] = useState<string>(value ?? '');
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        setDraft(value ?? '');
+    }, [value]);
+
+    function commit(raw: string) {
+        const trimmed = raw.trim();
+        if (trimmed.length === 0) return;
+        if (!Number.isFinite(Number(trimmed))) return;
+        if (trimmed !== (value ?? '')) onCommit(trimmed);
+    }
+
+    return (
+        <FieldRow label={label}>
+            <Input
+                inputMode='decimal'
+                value={draft}
+                placeholder='0.00'
+                disabled={disabled}
+                onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d.]/g, '');
+                    setDraft(v);
+                    if (timerRef.current) clearTimeout(timerRef.current);
+                    timerRef.current = setTimeout(() => commit(v), debounceMs);
+                }}
+                onBlur={() => {
+                    if (timerRef.current) clearTimeout(timerRef.current);
+                    commit(draft);
+                }}
+            />
+        </FieldRow>
     );
 }
 

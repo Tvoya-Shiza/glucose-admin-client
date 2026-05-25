@@ -60,6 +60,8 @@ export interface ListQuizzesQuery {
     page?: number;
     page_size?: number;
     status?: QuizStatus;
+    /** Phase 22 — filter by public-catalog visibility. Omit for "all". */
+    is_listed?: boolean;
     category_id?: number;
     badge_id?: number;
     question_count_bucket?: QuestionCountBucket;
@@ -92,6 +94,14 @@ export interface QuizRow {
     /** null = unlimited attempts. */
     attempt: number | null;
     certificate: boolean;
+    /** Phase 22 — visible in public catalog. */
+    is_listed: boolean;
+    /** Phase 22 — paid flag (requires price + access_days when true). */
+    is_paid: boolean;
+    /** Phase 22 — Decimal(15,3) as string. null when free. */
+    price: string | null;
+    /** Phase 22 — days of access after purchase. null when free. */
+    access_days: number | null;
     /** _count.questions — server-side aggregate. */
     question_count: number;
     translation_completeness: TranslationCompleteness;
@@ -130,8 +140,14 @@ export interface AnswerTranslation {
 
 export interface AnswerDetail {
     id: number;
-    /** Self-FK: null = LEFT-side or non-identificative; N = RIGHT-side pointing to LEFT.id. */
+    /** Legacy 1:1 pair link (pre-Phase-24 identificative). Always null in new ENT format. */
     parent_id: number | null;
+    /**
+     * Phase 24 ENT identificative format. For prompt rows: id of the correct
+     * option from the shared pool. For option rows + non-identificative: null.
+     * Discriminator: `match_target_id != null` → this row is a prompt.
+     */
+    match_target_id: number | null;
     image: string | null;
     correct: boolean;
     translations: AnswerTranslation[];
@@ -191,6 +207,14 @@ export interface QuizDetail {
     certificate: boolean;
     display_questions_randomly: boolean;
     expiry_days: number | null;
+    /** Phase 22 — visible in public catalog. */
+    is_listed: boolean;
+    /** Phase 22 — paid flag. */
+    is_paid: boolean;
+    /** Phase 22 — Decimal(15,3) as string. null when free. */
+    price: string | null;
+    /** Phase 22 — days of access after purchase. null when free. */
+    access_days: number | null;
     translations: Translation[];
     translation_completeness: TranslationCompleteness;
     missing_locales: Locale[];
@@ -217,6 +241,14 @@ export interface CreateQuiz {
     certificate?: boolean;
     display_questions_randomly?: boolean;
     expiry_days?: number | null;
+    /** Phase 22 — visible in public catalog (default true on server). */
+    is_listed?: boolean;
+    /** Phase 22 — paid flag (requires price + access_days when true). */
+    is_paid?: boolean;
+    /** Phase 22 — Decimal(15,3) as string. Ignored unless is_paid=true. */
+    price?: string | null;
+    /** Phase 22 — days of access after purchase. Ignored unless is_paid=true. */
+    access_days?: number | null;
     translations: Translation[];
 }
 
@@ -230,6 +262,14 @@ export interface UpdateQuiz {
     certificate?: boolean;
     display_questions_randomly?: boolean;
     expiry_days?: number | null;
+    /** Phase 22 — visible in public catalog. */
+    is_listed?: boolean;
+    /** Phase 22 — paid flag. */
+    is_paid?: boolean;
+    /** Phase 22 — Decimal(15,3) as string. Ignored unless is_paid=true. */
+    price?: string | null;
+    /** Phase 22 — days of access after purchase. Ignored unless is_paid=true. */
+    access_days?: number | null;
     translations?: Translation[];
 }
 
@@ -268,11 +308,15 @@ export interface UpsertAnswer {
     /** Omit on create. */
     id?: number;
     question_id: number;
-    /**
-     * IDENTIFICATIVE pair link: null for non-identificative types and LEFT-side
-     * anchor rows; LEFT-side answer.id for RIGHT-side match rows.
-     */
+    /** Legacy 1:1 pair link (pre-Phase-24). New ENT-format editor leaves null. */
     parent_id?: number | null;
+    /**
+     * Phase 24 ENT identificative format. For prompt rows: id of the correct
+     * option from the shared pool. For option rows + non-identificative: null
+     * (or omit). Server validates target belongs to same question + is itself
+     * an option (not a prompt).
+     */
+    match_target_id?: number | null;
     correct: boolean;
     image?: string | null;
     translations: UpsertAnswerTranslation[];
@@ -365,6 +409,14 @@ export interface QuizBadge {
     id: number;
     is_active: boolean;
     quiz_category_id: number | null;
+    /** Phase 23 — visible in public catalog. */
+    is_listed: boolean;
+    /** Phase 23 — paid flag (requires price + access_days when true). */
+    is_paid: boolean;
+    /** Phase 23 — Decimal(15,3) as string. null when free. */
+    price: string | null;
+    /** Phase 23 — days of access after purchase. null when free. */
+    access_days: number | null;
     translations: Translation[];
     /** ISO 8601 string. NOT Unix Int. */
     created_at: string;
@@ -381,6 +433,14 @@ export interface QuizBadgeRow {
     id: number;
     is_active: boolean;
     quiz_category_id: number | null;
+    /** Phase 23 — visible in public catalog. */
+    is_listed: boolean;
+    /** Phase 23 — paid flag. */
+    is_paid: boolean;
+    /** Phase 23 — Decimal(15,3) as string. null when free. */
+    price: string | null;
+    /** Phase 23 — days of access after purchase. null when free. */
+    access_days: number | null;
     translations: { ru: string | null; kz: string | null };
     item_count: number;
     results_count: number;
@@ -416,6 +476,14 @@ export interface UpsertBadge {
     id?: number;
     is_active?: boolean;
     quiz_category_id?: number | null;
+    /** Phase 23 — visible in public catalog (default true on server). */
+    is_listed?: boolean;
+    /** Phase 23 — paid flag (requires price + access_days when true). */
+    is_paid?: boolean;
+    /** Phase 23 — Decimal(15,3) as string. Ignored unless is_paid=true. */
+    price?: string | null;
+    /** Phase 23 — days of access after purchase. Ignored unless is_paid=true. */
+    access_days?: number | null;
     translations: Translation[];
 }
 

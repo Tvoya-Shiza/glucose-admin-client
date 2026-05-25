@@ -46,11 +46,35 @@ import { listCategories, upsertBadge } from '@/lib/quizzes/api';
  * On submit invalidates ['admin.quiz-badges.list'] (and the detail key when editing)
  * and closes the dialog.
  */
-const schema = z.object({
-    kz_title: z.string().min(1).max(255),
-    is_active: z.boolean(),
-    quiz_category_id: z.number().int().min(1).nullable(),
-});
+const schema = z
+    .object({
+        kz_title: z.string().min(1).max(255),
+        is_active: z.boolean(),
+        quiz_category_id: z.number().int().min(1).nullable(),
+        is_listed: z.boolean(),
+        is_paid: z.boolean(),
+        price: z.string().optional(),
+        access_days: z.string().optional(),
+    })
+    .superRefine((vals, ctx) => {
+        if (!vals.is_paid) return;
+        const priceN = Number((vals.price ?? '').trim());
+        if (!(priceN > 0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['price'],
+                message: 'price_required_when_paid',
+            });
+        }
+        const daysN = Number((vals.access_days ?? '').trim());
+        if (!Number.isInteger(daysN) || !(daysN > 0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['access_days'],
+                message: 'access_days_required_when_paid',
+            });
+        }
+    });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -59,6 +83,10 @@ export interface UpsertBadgeDialogInitial {
     is_active: boolean;
     quiz_category_id: number | null;
     kz_title: string;
+    is_listed: boolean;
+    is_paid: boolean;
+    price: string | null;
+    access_days: number | null;
 }
 
 export interface UpsertBadgeDialogProps {
@@ -86,6 +114,11 @@ export function UpsertBadgeDialog({ open, onOpenChange, initial }: UpsertBadgeDi
             kz_title: initial?.kz_title ?? '',
             is_active: initial?.is_active ?? true,
             quiz_category_id: initial?.quiz_category_id ?? null,
+            is_listed: initial?.is_listed ?? true,
+            is_paid: initial?.is_paid ?? false,
+            price: initial?.price ?? '',
+            access_days:
+                initial?.access_days != null ? String(initial.access_days) : '',
         },
         mode: 'onSubmit',
     });
@@ -96,6 +129,11 @@ export function UpsertBadgeDialog({ open, onOpenChange, initial }: UpsertBadgeDi
                 kz_title: initial?.kz_title ?? '',
                 is_active: initial?.is_active ?? true,
                 quiz_category_id: initial?.quiz_category_id ?? null,
+                is_listed: initial?.is_listed ?? true,
+                is_paid: initial?.is_paid ?? false,
+                price: initial?.price ?? '',
+                access_days:
+                    initial?.access_days != null ? String(initial.access_days) : '',
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,6 +145,12 @@ export function UpsertBadgeDialog({ open, onOpenChange, initial }: UpsertBadgeDi
                 id: isEdit ? initial!.id : undefined,
                 is_active: values.is_active,
                 quiz_category_id: values.quiz_category_id,
+                is_listed: values.is_listed,
+                is_paid: values.is_paid,
+                price: values.is_paid ? (values.price ?? '').trim() : null,
+                access_days: values.is_paid
+                    ? Number((values.access_days ?? '').trim())
+                    : null,
                 translations: [{ locale: 'kz', title: values.kz_title.trim() }],
             }),
         onSuccess: (row) => {
@@ -215,6 +259,99 @@ export function UpsertBadgeDialog({ open, onOpenChange, initial }: UpsertBadgeDi
                                 </FormItem>
                             )}
                         />
+
+                        <FormField
+                            control={form.control}
+                            name='is_listed'
+                            render={({ field }) => (
+                                <FormItem className='flex items-center gap-2 space-y-0'>
+                                    <FormControl>
+                                        <Checkbox
+                                            checked={field.value}
+                                            onCheckedChange={(v) => field.onChange(!!v)}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className='!mt-0 cursor-pointer'>
+                                        {t('is_listed_label')}
+                                    </FormLabel>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name='is_paid'
+                            render={({ field }) => (
+                                <FormItem className='flex items-center gap-2 space-y-0'>
+                                    <FormControl>
+                                        <Checkbox
+                                            checked={field.value}
+                                            onCheckedChange={(v) => field.onChange(!!v)}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className='!mt-0 cursor-pointer'>
+                                        {t('is_paid_label')}
+                                    </FormLabel>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {form.watch('is_paid') ? (
+                            <div className='grid grid-cols-2 gap-3'>
+                                <FormField
+                                    control={form.control}
+                                    name='price'
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('price_label')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    inputMode='decimal'
+                                                    placeholder='0.00'
+                                                    value={field.value ?? ''}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            e.target.value.replace(/[^\d.]/g, ''),
+                                                        )
+                                                    }
+                                                    onBlur={field.onBlur}
+                                                    ref={field.ref}
+                                                    name={field.name}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name='access_days'
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('access_days_label')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    inputMode='numeric'
+                                                    placeholder='30'
+                                                    value={field.value ?? ''}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            e.target.value.replace(/[^\d]/g, ''),
+                                                        )
+                                                    }
+                                                    onBlur={field.onBlur}
+                                                    ref={field.ref}
+                                                    name={field.name}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        ) : null}
 
                         <DialogFooter>
                             <Button

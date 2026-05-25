@@ -26,8 +26,11 @@ export interface BulkAddMembersSheetProps {
  * GRP-03 — admin-only bulk-add-members sheet (Plan 04, mirrors Phase 3 BulkGrantSheet).
  *
  * UX:
- *   1. Sheet opens with an embedded user-picker (calls listUsers with role_name='student'
+ *   1. Sheet opens with an embedded user-picker (calls listUsers with role_name='user'
  *      + status='active' + free-text search). Page-scoped checkbox + selection.
+ *      Note: glucose legacy data stores learners as role_name='user' (not 'student');
+ *      the rest of admin-client uses 'student' as the type literal because the schema
+ *      contract was designed forward-looking, but the live users table only has 'user'.
  *   2. User clicks "Preview" -> useDryRunPreview hits POST /:id/members with mode='dry_run'.
  *   3. DryRunDialog shows the affected/insert/skip/error counts; gates >50 commits behind
  *      TypeTheCountConfirmation.
@@ -80,7 +83,7 @@ export function BulkAddMembersSheet({ open, onOpenChange, groupId }: BulkAddMemb
             listUsers({
                 page,
                 page_size,
-                role_name: 'student',
+                role_name: 'user',
                 status: 'active',
                 q: search || undefined,
                 sort: 'created_at',

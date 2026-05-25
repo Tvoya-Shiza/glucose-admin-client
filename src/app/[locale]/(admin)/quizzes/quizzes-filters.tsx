@@ -17,6 +17,8 @@ import type { QuestionCountBucket, QuizStatus } from '@/lib/quizzes/types';
 export interface QuizzesFiltersValue {
     q?: string;
     status?: QuizStatus;
+    /** Phase 22 — undefined = all; true = listed only; false = unlisted only. */
+    is_listed?: boolean;
     category_id?: number;
     badge_id?: number;
     question_count_bucket?: QuestionCountBucket;
@@ -76,6 +78,26 @@ export function QuizzesFilters({ value, onChange }: QuizzesFiltersProps) {
                     <SelectItem value='__all__'>{t('filter_all')}</SelectItem>
                     <SelectItem value='active'>{t('status_active')}</SelectItem>
                     <SelectItem value='inactive'>{t('status_inactive')}</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select
+                value={
+                    value.is_listed === true ? 'listed' : value.is_listed === false ? 'unlisted' : '__all__'
+                }
+                onValueChange={(v) =>
+                    onChange({
+                        ...value,
+                        is_listed: v === 'listed' ? true : v === 'unlisted' ? false : undefined,
+                    })
+                }
+            >
+                <SelectTrigger className='w-44'>
+                    <SelectValue placeholder={t('filter_listed')} />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value='__all__'>{t('filter_all')}</SelectItem>
+                    <SelectItem value='listed'>{t('filter_listed_yes')}</SelectItem>
+                    <SelectItem value='unlisted'>{t('filter_listed_no')}</SelectItem>
                 </SelectContent>
             </Select>
             <Select

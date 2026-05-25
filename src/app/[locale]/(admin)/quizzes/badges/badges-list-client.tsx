@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Award, MoreHorizontal, Pencil, Plus, Trash } from 'lucide-react';
+import { Award, Coins, EyeOff, MoreHorizontal, Pencil, Plus, Trash } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
@@ -145,6 +145,26 @@ export function BadgesListClient() {
                                         <Badge variant={row.is_active ? 'success' : 'muted'}>
                                             {row.is_active ? t('badge_active') : t('badge_inactive')}
                                         </Badge>
+                                        {row.is_listed ? (
+                                            <Badge variant='outline' className='text-xs'>
+                                                {t('listing_listed')}
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant='secondary' className='gap-1 text-xs'>
+                                                <EyeOff className='h-3 w-3' />
+                                                {t('listing_unlisted')}
+                                            </Badge>
+                                        )}
+                                        {row.is_paid && row.price ? (
+                                            <Badge variant='outline' className='gap-1 text-xs'>
+                                                <Coins className='h-3 w-3' />
+                                                {row.price}
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant='outline' className='text-muted-foreground text-xs'>
+                                                {t('listing_free')}
+                                            </Badge>
+                                        )}
                                         <span className='text-muted-foreground text-xs'>
                                             {t('badge_item_count', { count: row.item_count })}
                                         </span>
@@ -183,6 +203,10 @@ export function BadgesListClient() {
                               is_active: editTarget.is_active,
                               quiz_category_id: editTarget.quiz_category_id,
                               kz_title: editTarget.translations.kz ?? '',
+                              is_listed: editTarget.is_listed,
+                              is_paid: editTarget.is_paid,
+                              price: editTarget.price,
+                              access_days: editTarget.access_days,
                           }
                         : undefined
                 }

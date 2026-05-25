@@ -161,9 +161,9 @@ export function SubmissionDrawer({ assignmentId, historyId, onClose }: Submissio
                                                 {m.message ? (
                                                     <div className='whitespace-pre-wrap text-sm'>{m.message}</div>
                                                 ) : null}
-                                                {m.file_path ? (
+                                                {m.file_url ? (
                                                     <a
-                                                        href={m.file_path}
+                                                        href={`/api/proxy${m.file_url}`}
                                                         target='_blank'
                                                         rel='noopener noreferrer'
                                                         className='mt-2 inline-flex items-center gap-1 text-xs underline'

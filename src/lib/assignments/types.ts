@@ -162,8 +162,14 @@ export interface SubmissionMessage {
     message: string;
     /** Legacy single-shot column; new replies use polymorphic message rows. */
     curator_comment: string | null;
+    /** Display name (mojibake-normalized by admin-api). */
     file_title: string | null;
-    file_path: string | null;
+    /**
+     * admin-api path for the attached file
+     * (`/v1/admin/assignments/.../messages/:id/file`). The browser fetches it
+     * through the BFF proxy as `/api/proxy${file_url}`. null when no attachment.
+     */
+    file_url: string | null;
     /** Unix seconds as decimal string. */
     created_at: string;
 }
