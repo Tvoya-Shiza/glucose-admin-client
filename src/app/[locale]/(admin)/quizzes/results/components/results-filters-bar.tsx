@@ -66,7 +66,7 @@ export function ResultsFiltersBar({ value, showGroupFilter, onChange }: ResultsF
     }, [qLocal]);
 
     return (
-        <Card className='flex flex-wrap items-end gap-3 p-4'>
+        <Card className='flex-row flex-wrap items-end gap-3 p-4'>
             <div className='flex flex-col gap-1'>
                 <Label htmlFor='results-q' className='text-xs'>
                     {t('result_filter_search_label')}

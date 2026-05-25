@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Check, Search, X } from 'lucide-react';
@@ -103,16 +103,32 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
     const [query, setQuery] = useState('');
     const [debounced, setDebounced] = useState('');
     const [open, setOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const id = setTimeout(() => setDebounced(query), 250);
         return () => clearTimeout(id);
     }, [query]);
 
+    // Close dropdown when clicking outside the component.
+    useEffect(() => {
+        if (!open) return;
+        const onMouseDown = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onMouseDown);
+        return () => document.removeEventListener('mousedown', onMouseDown);
+    }, [open]);
+
+    const isCourseScoped = COURSE_SCOPED_KINDS.includes(kind);
+    const queryEnabled = open && (!isCourseScoped || typeof courseId === 'number');
+
     const { data, isFetching } = useQuery({
         queryKey: ['admin.entity-search', kind, debounced, courseId ?? null],
         queryFn: () => searchEntities(kind, debounced, courseId),
-        enabled: open,
+        enabled: queryEnabled,
         staleTime: 30_000,
         placeholderData: (prev) => prev,
     });
@@ -129,7 +145,7 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
               : `Search ${kind}…`;
 
     return (
-        <div className='space-y-1.5'>
+        <div ref={containerRef} className='space-y-1.5'>
             {selectedId != null ? (
                 <div className='flex items-center justify-between rounded border px-3 py-2'>
                     <div className='flex items-center gap-2'>

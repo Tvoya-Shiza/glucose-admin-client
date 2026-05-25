@@ -14,8 +14,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { upsertAnswer } from '@/lib/quizzes/api';
+import { ForceConfirmRequiredError, upsertAnswer } from '@/lib/quizzes/api';
 import type { AnswerDetail, UpsertAnswer } from '@/lib/quizzes/types';
+import { ForceConfirmDialog } from './force-confirm-dialog';
 
 /**
  * Phase 24 ENT-format identificative editor.
@@ -179,6 +180,10 @@ function PromptRow({ index, quizId, questionId, prompt, options }: PromptRowProp
         prompt.translations.find((x) => x.locale === 'kz')?.title?.trim() ?? '',
     );
     const [pending, setPending] = useState(false);
+    const [forceDialogOpen, setForceDialogOpen] = useState(false);
+    const [forceCount, setForceCount] = useState(0);
+    const [pendingPayload, setPendingPayload] = useState<UpsertAnswer | null>(null);
+    const [pendingToken, setPendingToken] = useState<string | null>(null);
 
     useEffect(() => {
         if (pending) return;
@@ -191,6 +196,9 @@ function PromptRow({ index, quizId, questionId, prompt, options }: PromptRowProp
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            setPendingPayload(null);
+            setPendingToken(null);
+            setForceDialogOpen(false);
         },
     });
 
@@ -200,7 +208,36 @@ function PromptRow({ index, quizId, questionId, prompt, options }: PromptRowProp
             await mutation.mutateAsync(payload);
             toast.success(t('saved'));
         } catch (err) {
+            if (err instanceof ForceConfirmRequiredError) {
+                setPendingPayload(payload);
+                setPendingToken(err.force_confirm_token);
+                setForceCount(err.open_attempts_count);
+                setForceDialogOpen(true);
+                return;
+            }
             toast.error((err as Error).message ?? t('save_failed'));
+        } finally {
+            setPending(false);
+        }
+    };
+
+    const onForceConfirm = async () => {
+        if (!pendingPayload || !pendingToken) return;
+        setPending(true);
+        try {
+            await mutation.mutateAsync({ ...pendingPayload, force_confirm_token: pendingToken });
+            toast.success(t('saved'));
+        } catch (err) {
+            const msg = (err as Error).message ?? '';
+            if (msg.includes('force_confirm.token_already_used')) {
+                toast.error(t('force_confirm_token_already_used'));
+            } else if (msg.includes('force_confirm.payload_changed')) {
+                toast.error(t('force_confirm_payload_changed'));
+            } else if (msg.includes('force_confirm')) {
+                toast.error(t('force_confirm_invalid'));
+            } else {
+                toast.error(msg || t('save_failed'));
+            }
         } finally {
             setPending(false);
         }
@@ -243,39 +280,48 @@ function PromptRow({ index, quizId, questionId, prompt, options }: PromptRowProp
     };
 
     return (
-        <div className='space-y-2 rounded-md border p-3'>
-            <div className='flex items-center gap-2'>
-                <span className='text-muted-foreground text-xs font-medium'>{index}.</span>
-                <Input
-                    value={title}
-                    placeholder={t('q_title_label')}
-                    onChange={(e) => setTitle(e.target.value)}
-                    onBlur={onTitleBlur}
-                />
+        <>
+            <div className='space-y-2 rounded-md border p-3'>
+                <div className='flex items-center gap-2'>
+                    <span className='text-muted-foreground text-xs font-medium'>{index}.</span>
+                    <Input
+                        value={title}
+                        placeholder={t('q_title_label')}
+                        onChange={(e) => setTitle(e.target.value)}
+                        onBlur={onTitleBlur}
+                    />
+                </div>
+                <Select
+                    value={prompt.match_target_id == null ? '__none__' : String(prompt.match_target_id)}
+                    onValueChange={onMatchChange}
+                >
+                    <SelectTrigger className='h-9'>
+                        <SelectValue placeholder={t('identificative_select_match_placeholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='__none__'>
+                            {t('identificative_no_match_chosen')}
+                        </SelectItem>
+                        {options.map((o, i) => {
+                            const optionTitle =
+                                o.translations.find((x) => x.locale === 'kz')?.title?.trim() ?? '';
+                            return (
+                                <SelectItem key={o.id} value={String(o.id)}>
+                                    {`${String.fromCharCode(65 + i)}) ${optionTitle.length > 0 ? optionTitle : `#${o.id}`}`}
+                                </SelectItem>
+                            );
+                        })}
+                    </SelectContent>
+                </Select>
             </div>
-            <Select
-                value={prompt.match_target_id == null ? '__none__' : String(prompt.match_target_id)}
-                onValueChange={onMatchChange}
-            >
-                <SelectTrigger className='h-9'>
-                    <SelectValue placeholder={t('identificative_select_match_placeholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value='__none__'>
-                        {t('identificative_no_match_chosen')}
-                    </SelectItem>
-                    {options.map((o, i) => {
-                        const optionTitle =
-                            o.translations.find((x) => x.locale === 'kz')?.title?.trim() ?? '';
-                        return (
-                            <SelectItem key={o.id} value={String(o.id)}>
-                                {`${String.fromCharCode(65 + i)}) ${optionTitle.length > 0 ? optionTitle : `#${o.id}`}`}
-                            </SelectItem>
-                        );
-                    })}
-                </SelectContent>
-            </Select>
-        </div>
+            <ForceConfirmDialog
+                open={forceDialogOpen}
+                onOpenChange={setForceDialogOpen}
+                openAttemptsCount={forceCount}
+                onConfirm={onForceConfirm}
+                isPending={pending}
+            />
+        </>
     );
 }
 
@@ -294,6 +340,10 @@ function OptionRow({ index, quizId, questionId, option }: OptionRowProps) {
         option.translations.find((x) => x.locale === 'kz')?.title?.trim() ?? '',
     );
     const [pending, setPending] = useState(false);
+    const [forceDialogOpen, setForceDialogOpen] = useState(false);
+    const [forceCount, setForceCount] = useState(0);
+    const [pendingPayload, setPendingPayload] = useState<UpsertAnswer | null>(null);
+    const [pendingToken, setPendingToken] = useState<string | null>(null);
 
     useEffect(() => {
         if (pending) return;
@@ -306,42 +356,84 @@ function OptionRow({ index, quizId, questionId, option }: OptionRowProps) {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            setPendingPayload(null);
+            setPendingToken(null);
+            setForceDialogOpen(false);
         },
     });
 
     const onBlur = async () => {
         const current = option.translations.find((x) => x.locale === 'kz')?.title?.trim() ?? '';
         if (title === current) return;
+        const payload: UpsertAnswer = {
+            id: option.id,
+            question_id: questionId,
+            parent_id: null,
+            match_target_id: null,
+            correct: false,
+            image: option.image ?? null,
+            translations: [{ locale: 'kz', title: title.length > 0 ? title : ' ' }],
+        };
         setPending(true);
         try {
-            await mutation.mutateAsync({
-                id: option.id,
-                question_id: questionId,
-                parent_id: null,
-                match_target_id: null,
-                correct: false,
-                image: option.image ?? null,
-                translations: [{ locale: 'kz', title: title.length > 0 ? title : ' ' }],
-            });
+            await mutation.mutateAsync(payload);
             toast.success(t('saved'));
         } catch (err) {
+            if (err instanceof ForceConfirmRequiredError) {
+                setPendingPayload(payload);
+                setPendingToken(err.force_confirm_token);
+                setForceCount(err.open_attempts_count);
+                setForceDialogOpen(true);
+                return;
+            }
             toast.error((err as Error).message ?? t('save_failed'));
         } finally {
             setPending(false);
         }
     };
 
+    const onForceConfirm = async () => {
+        if (!pendingPayload || !pendingToken) return;
+        setPending(true);
+        try {
+            await mutation.mutateAsync({ ...pendingPayload, force_confirm_token: pendingToken });
+            toast.success(t('saved'));
+        } catch (err) {
+            const msg = (err as Error).message ?? '';
+            if (msg.includes('force_confirm.token_already_used')) {
+                toast.error(t('force_confirm_token_already_used'));
+            } else if (msg.includes('force_confirm.payload_changed')) {
+                toast.error(t('force_confirm_payload_changed'));
+            } else if (msg.includes('force_confirm')) {
+                toast.error(t('force_confirm_invalid'));
+            } else {
+                toast.error(msg || t('save_failed'));
+            }
+        } finally {
+            setPending(false);
+        }
+    };
+
     return (
-        <div className='flex items-center gap-2 rounded-md border p-3'>
-            <span className='text-muted-foreground text-xs font-medium'>
-                {String.fromCharCode(64 + index)})
-            </span>
-            <Input
-                value={title}
-                placeholder={t('a_title_label')}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={onBlur}
+        <>
+            <div className='flex items-center gap-2 rounded-md border p-3'>
+                <span className='text-muted-foreground text-xs font-medium'>
+                    {String.fromCharCode(64 + index)})
+                </span>
+                <Input
+                    value={title}
+                    placeholder={t('a_title_label')}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={onBlur}
+                />
+            </div>
+            <ForceConfirmDialog
+                open={forceDialogOpen}
+                onOpenChange={setForceDialogOpen}
+                openAttemptsCount={forceCount}
+                onConfirm={onForceConfirm}
+                isPending={pending}
             />
-        </div>
+        </>
     );
 }
