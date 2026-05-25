@@ -361,13 +361,13 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                     {type === 'quiz' ? (
                         <div className='space-y-1.5'>
                             <Label>{t('item_quiz_id_label')}</Label>
-                            <EntitySearchPicker kind='quiz' value={fkId} onChange={setFkId} />
+                            <EntitySearchPicker kind='quiz' value={fkId} onChange={setFkId} courseId={courseId} />
                         </div>
                     ) : null}
                     {type === 'assignment' ? (
                         <div className='space-y-1.5'>
                             <Label>{t('item_assignment_id_label')}</Label>
-                            <EntitySearchPicker kind='assignment' value={fkId} onChange={setFkId} />
+                            <EntitySearchPicker kind='assignment' value={fkId} onChange={setFkId} courseId={courseId} />
                         </div>
                     ) : null}
 
