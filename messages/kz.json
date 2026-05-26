@@ -775,7 +775,7 @@
             "results_tab": "Нәтижелер",
             "status_label": "Күй",
             "category_label": "Санат",
-            "time_limit_label": "Уақыт шегі (сек)",
+            "time_limit_label": "Уақыт шегі (мин)",
             "time_limit_unlimited": "Шектеусіз",
             "pass_mark_label": "Өту балы",
             "attempt_label": "Әрекеттер саны",
