@@ -51,8 +51,9 @@ export function DeletePromocodeDialog({
         mutationFn: () => deletePromocode(promocode!.id),
         onSuccess: () => {
             toast.success(t('deleted_toast'));
-            qc.invalidateQueries({ queryKey: ['admin.promocodes.list'], exact: false });
             const id = promocode!.id;
+            qc.invalidateQueries({ queryKey: ['admin.promocodes.list'], exact: false });
+            qc.invalidateQueries({ queryKey: ['admin.promocodes.detail', id], exact: false });
             onOpenChange(false);
             onDeleted?.(id);
         },
