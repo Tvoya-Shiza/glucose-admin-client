@@ -140,6 +140,7 @@ export function QuizzesListClient() {
                 sort: sort as QuizSortField,
                 order: order as SortOrder,
             }),
+        staleTime: 0,
         placeholderData: (prev) => prev,
         enabled: !me.isLoading,
     });

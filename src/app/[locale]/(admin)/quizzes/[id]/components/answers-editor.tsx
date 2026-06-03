@@ -74,6 +74,7 @@ export function AnswersEditor({
             });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
             toast.success(t('saved'));
         } catch (err) {
             // CREATE answer is NOT destructive per D-11 — never expects 409.
@@ -172,6 +173,7 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
             setPendingPayload(null);
             setPendingToken(null);
             setForceDialogOpen(false);
@@ -186,6 +188,7 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
             toast.success(t('saved'));
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
             setPendingDelete(false);
             setForceDialogOpen(false);
             setPendingToken(null);

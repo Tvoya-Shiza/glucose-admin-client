@@ -101,6 +101,7 @@ export function IdentificativeEntEditor({
                 }
                 qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
                 qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+                qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
             } catch (err) {
                 toast.error((err as Error).message ?? t('save_failed'));
             } finally {
@@ -196,6 +197,7 @@ function PromptRow({ index, quizId, questionId, prompt, options }: PromptRowProp
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
             setPendingPayload(null);
             setPendingToken(null);
             setForceDialogOpen(false);
@@ -356,6 +358,7 @@ function OptionRow({ index, quizId, questionId, option }: OptionRowProps) {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
+            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
             setPendingPayload(null);
             setPendingToken(null);
             setForceDialogOpen(false);

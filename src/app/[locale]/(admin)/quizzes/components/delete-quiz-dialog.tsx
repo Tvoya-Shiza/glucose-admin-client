@@ -50,8 +50,9 @@ export function DeleteQuizDialog({
         mutationFn: () => deleteQuiz(quiz!.id),
         onSuccess: () => {
             toast.success(t('delete_success'));
-            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'], exact: false });
             const deletedId = quiz!.id;
+            qc.invalidateQueries({ queryKey: ['admin.quizzes.list'], exact: false });
+            qc.removeQueries({ queryKey: ['admin.quizzes.detail', deletedId] });
             onOpenChange(false);
             onDeleted?.(deletedId);
         },

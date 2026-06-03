@@ -58,7 +58,7 @@ export function OverviewTab({ quiz, role }: OverviewTabProps) {
     // Categories list (Plan 03) — used by the category select. Fetched once per detail
     // mount; cached by TanStack Query so revisits to the tab don't re-fetch.
     const categoriesQuery = useQuery({
-        queryKey: ['admin.quizzes.categories.list'],
+        queryKey: ['admin.quiz-categories.list'],
         queryFn: () => listCategories(),
         staleTime: 5 * 60 * 1000,
     });
