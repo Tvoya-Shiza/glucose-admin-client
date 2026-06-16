@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { UseBulkSelectionApi } from '@/hooks/use-bulk-selection';
 import { formatUnixDate, roleLabelKey, statusLabelKey } from '@/lib/users/format';
+import { formatPhoneDisplay } from '@/lib/users/phone';
 import type { UserRow } from '@/lib/users/types';
 
 export interface UsersTableProps {
@@ -80,7 +81,7 @@ export function UsersTable({ rows, loading, selection, skeletonRowCount = 10 }: 
                               <TableCell className='text-muted-foreground text-sm'>
                                   {r.email ?? '—'}
                               </TableCell>
-                              <TableCell className='font-mono text-xs'>{r.mobile ?? '—'}</TableCell>
+                              <TableCell className='font-mono text-xs'>{formatPhoneDisplay(r.mobile) || '—'}</TableCell>
                               <TableCell>
                                   <Badge variant='outline'>{t(roleLabelKey(r.role_name))}</Badge>
                               </TableCell>

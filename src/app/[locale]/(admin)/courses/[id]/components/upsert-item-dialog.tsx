@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -27,12 +28,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { upsertItem } from '@/lib/courses/api';
 import type { ChapterItem, ChapterItemType, UpsertItemPayload } from '@/lib/courses/types';
 import { parseVideoUrl } from '@/lib/uploads/parse-video-url';
+import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 
 type UpsertItemPayloadStorage = NonNullable<UpsertItemPayload['storage']>;
 import { EntitySearchPicker } from './entity-search-picker';
 import { TiptapEditor } from './tiptap-editor';
 
-type FileSubType = 'rich-text' | 'image' | 'video';
+type FileSubType = 'rich-text' | 'image' | 'video' | 'pdf';
+
+interface PdfEntry {
+    file_url: string;
+    name: string;
+    volume: string;
+}
 
 export interface UpsertItemDialogProps {
     courseId: number;
@@ -74,12 +82,17 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
 
     // Derive initial sub-type from existing file MIME prefix.
     const initialSubType: FileSubType = useMemo(() => {
-        if (!item || item.type !== 'file' || !item.file) return 'rich-text';
-        const mime = item.file.file_type ?? '';
+        if (!item || item.type !== 'file') return 'rich-text';
+        if (item.pdfs && item.pdfs.length > 0) return 'pdf';
+        const mime = item.file?.file_type ?? '';
+        if (mime === 'application/pdf') return 'pdf';
         if (mime.startsWith('image/')) return 'image';
         if (mime.startsWith('video/')) return 'video';
         return 'rich-text';
     }, [item]);
+
+    const initialPdfs = (): PdfEntry[] =>
+        item?.pdfs?.map((p) => ({ file_url: p.file, name: p.title, volume: p.volume })) ?? [];
 
     const [type, setType] = useState<ChapterItemType>(item?.type ?? 'file');
     const [subType, setSubType] = useState<FileSubType>(initialSubType);
@@ -97,6 +110,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     const [accessibility, setAccessibility] = useState<'free' | 'paid'>(
         item?.accessibility ?? item?.file?.accessibility ?? 'free',
     );
+    const [pdfs, setPdfs] = useState<PdfEntry[]>(initialPdfs);
     const [fkId, setFkId] = useState<string>(item && item.type !== 'file' ? String(item.item_id) : '');
     // Phase 16 — per-item "counts toward course completion" toggle. Defaults to true
     // for both new items and existing items that pre-date Phase 16 (the server backfills
@@ -115,6 +129,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
             setVolume(item?.file?.volume ?? '0');
             setStorage((item?.file?.storage as UpsertItemPayloadStorage | undefined) ?? 'upload');
             setAccessibility(item?.accessibility ?? item?.file?.accessibility ?? 'free');
+            setPdfs(initialPdfs());
             setFkId(item && item.type !== 'file' ? String(item.item_id) : '');
             setIsRequired(item?.is_required ?? true);
         }
@@ -135,10 +150,20 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                         { locale: 'kz' as const, title: kzTitle, description: subType === 'rich-text' ? kzHtml : undefined },
                     ],
                 };
-                const payload: UpsertItemPayload =
-                    subType === 'rich-text'
-                        ? { ...base, file_url: '', file_type: 'text/html', volume: '0', storage: 'upload' }
-                        : { ...base, file_url: fileUrl, file_type: fileType, volume, storage };
+                let payload: UpsertItemPayload;
+                if (subType === 'pdf') {
+                    if (pdfs.length === 0) {
+                        throw new Error(t('validation_failed'));
+                    }
+                    payload = {
+                        ...base,
+                        pdf_files: pdfs.map((p) => ({ file_url: p.file_url, name: p.name, volume: p.volume })),
+                    };
+                } else if (subType === 'rich-text') {
+                    payload = { ...base, file_url: '', file_type: 'text/html', volume: '0', storage: 'upload' };
+                } else {
+                    payload = { ...base, file_url: fileUrl, file_type: fileType, volume, storage };
+                }
                 return upsertItem(courseId, payload);
             }
             // quiz | assignment — numeric FK reference
@@ -211,6 +236,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                         <SelectItem value='rich-text'>{t('item_subtype_richtext')}</SelectItem>
                                         <SelectItem value='image'>{t('item_subtype_image')}</SelectItem>
                                         <SelectItem value='video'>{t('item_subtype_video')}</SelectItem>
+                                        <SelectItem value='pdf'>{t('item_subtype_pdf')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -315,7 +341,11 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                     />
                                 </TabsContent>
                                 <TabsContent value='url' className='space-y-2 pt-3'>
-                                    <Input
+                                    {/* Textarea (а не Input): длинный URL/<iframe…> сниппет
+                                        переносится и блок растёт по высоте (field-sizing-content),
+                                        не обрезая текст. parseVideoUrl-логика без изменений. */}
+                                    <Textarea
+                                        className='min-h-20 font-mono text-xs'
                                         value={fileUrl}
                                         onChange={(e) => {
                                             const raw = e.target.value;
@@ -355,6 +385,57 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                     ) : null}
                                 </TabsContent>
                             </Tabs>
+                        </div>
+                    ) : null}
+
+                    {type === 'file' && subType === 'pdf' ? (
+                        <div className='space-y-3 rounded border p-3'>
+                            <Label>{t('item_subtype_pdf')}</Label>
+                            {pdfs.length > 0 ? (
+                                <ul className='space-y-2'>
+                                    {pdfs.map((p, idx) => (
+                                        <li
+                                            key={`${p.file_url}-${idx}`}
+                                            className='flex items-center justify-between gap-2 rounded border bg-muted/30 px-3 py-2 text-sm'
+                                        >
+                                            <a
+                                                href={resolveAssetUrl(p.file_url)}
+                                                target='_blank'
+                                                rel='noopener noreferrer'
+                                                className='min-w-0 flex-1 truncate text-primary underline'
+                                            >
+                                                {p.name || p.file_url.split('/').pop()}
+                                            </a>
+                                            <Button
+                                                type='button'
+                                                variant='ghost'
+                                                size='sm'
+                                                onClick={() => setPdfs((prev) => prev.filter((_, i) => i !== idx))}
+                                            >
+                                                {t('item_pdf_remove')}
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className='text-xs text-muted-foreground'>{t('item_pdf_empty')}</p>
+                            )}
+                            <FileUploader
+                                kind='document'
+                                variant='inline'
+                                value=''
+                                onChange={(url, meta) => {
+                                    if (meta.mime !== 'application/pdf') {
+                                        toast.error(t('item_pdf_only'));
+                                        return;
+                                    }
+                                    setPdfs((prev) => [
+                                        ...prev,
+                                        { file_url: url, name: meta.original_name ?? '', volume: String(meta.size) },
+                                    ]);
+                                }}
+                            />
+                            <p className='text-xs text-muted-foreground'>{t('item_pdf_hint')}</p>
                         </div>
                     ) : null}
 

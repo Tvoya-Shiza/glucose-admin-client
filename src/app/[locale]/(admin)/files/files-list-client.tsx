@@ -36,6 +36,8 @@ import { useFileUpload } from '@/lib/uploads/use-file-upload';
 import { mapUploadErrorToI18nKey } from '@/lib/uploads/errors';
 import type { UploadAsset, UploadKind } from '@/lib/uploads/types';
 import { DeleteFileDialog } from './components/delete-file-dialog';
+import { RenameFileDialog } from './components/rename-file-dialog';
+import { ReplaceFileDialog } from './components/replace-file-dialog';
 import { FilesFilters } from './files-filters';
 import { FilesGrid } from './files-grid';
 
@@ -99,6 +101,8 @@ export function FilesListClient() {
     const total = data?.meta.total ?? 0;
 
     const [deleteAsset, setDeleteAsset] = useState<UploadAsset | null>(null);
+    const [renameAsset, setRenameAsset] = useState<UploadAsset | null>(null);
+    const [replaceAsset, setReplaceAsset] = useState<UploadAsset | null>(null);
     const [createFolderOpen, setCreateFolderOpen] = useState(false);
     const [renameOpen, setRenameOpen] = useState(false);
     const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
@@ -281,6 +285,8 @@ export function FilesListClient() {
                                 loading={isLoading}
                                 draggable
                                 onDelete={(asset) => setDeleteAsset(asset)}
+                                onRename={(asset) => setRenameAsset(asset)}
+                                onReplace={(asset) => setReplaceAsset(asset)}
                             />
                         )}
                     </div>
@@ -291,6 +297,20 @@ export function FilesListClient() {
                     open={deleteAsset !== null}
                     onOpenChange={(o) => {
                         if (!o) setDeleteAsset(null);
+                    }}
+                />
+                <RenameFileDialog
+                    asset={renameAsset}
+                    open={renameAsset !== null}
+                    onOpenChange={(o) => {
+                        if (!o) setRenameAsset(null);
+                    }}
+                />
+                <ReplaceFileDialog
+                    asset={replaceAsset}
+                    open={replaceAsset !== null}
+                    onOpenChange={(o) => {
+                        if (!o) setReplaceAsset(null);
                     }}
                 />
                 <CreateFolderDialog

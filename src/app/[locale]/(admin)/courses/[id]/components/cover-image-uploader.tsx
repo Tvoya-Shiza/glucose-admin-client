@@ -22,10 +22,14 @@ export function CoverImageUploader({ courseId, currentCoverUrl, onUploaded }: Co
     const t = useTranslations('admin.courses');
     const qc = useQueryClient();
 
+    // Webinar.image_cover is NOT NULL on schema — an empty string means "no cover".
+    // The admin-api mutations service writes `data.image_cover = dto.image_cover` for
+    // any string (incl. ''), so passing '' here clears the cover. One mutation serves
+    // both upload (url) and remove ('').
     const mutation = useMutation({
         mutationFn: (newUrl: string) => updateCourse(courseId, { image_cover: newUrl }),
-        onSuccess: (updated: CourseDetail) => {
-            toast.success(t('upload_succeeded'));
+        onSuccess: (updated: CourseDetail, newUrl: string) => {
+            toast.success(newUrl ? t('upload_succeeded') : t('cover_removed'));
             qc.setQueryData(['admin.courses.detail', courseId], updated);
             void qc.invalidateQueries({ queryKey: ['admin.courses.detail', courseId] });
             void qc.invalidateQueries({ queryKey: ['admin.courses.list'], exact: false });
@@ -43,6 +47,7 @@ export function CoverImageUploader({ courseId, currentCoverUrl, onUploaded }: Co
             previewSize='md'
             value={currentCoverUrl}
             onChange={(url) => mutation.mutate(url)}
+            onClear={() => mutation.mutate('')}
             pickFromLibrary
         />
     );

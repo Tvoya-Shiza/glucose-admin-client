@@ -3,8 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import type { Locale } from '@/lib/courses/types';
+import { TiptapEditor } from './tiptap-editor';
 
 /**
  * Translation form for ONE locale (CRS-02 + CONTEXT D-06).
@@ -67,15 +67,11 @@ export function TranslationForm({
             </div>
             <div className='space-y-1'>
                 <Label htmlFor={`description-${locale}`}>{t('description_label')}</Label>
-                <Textarea
-                    id={`description-${locale}`}
-                    value={description}
-                    placeholder={t('description_placeholder')}
-                    onChange={(e) => onDescriptionChange(e.target.value)}
-                    disabled={disabled}
-                    maxLength={65535}
-                    rows={5}
-                />
+                {/* Rich text (Tiptap) — the toolbar's link button inserts
+                    <a target="_blank" rel="noopener noreferrer">, so operators can
+                    point the description at external sources. Content is sanitized
+                    client-side on every change and again server-side on save. */}
+                <TiptapEditor initialHtml={description} onChange={onDescriptionChange} />
                 {descriptionError ? (
                     <p className='text-destructive text-xs'>{descriptionError}</p>
                 ) : null}

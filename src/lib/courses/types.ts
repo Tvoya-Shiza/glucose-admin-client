@@ -140,6 +140,15 @@ export interface ChapterItemFileRef {
     accessibility?: FileAccessibility;
 }
 
+/** Phase 29 — one PDF inside a multi-file PDF block. */
+export interface ChapterItemPdfRef {
+    id: number;
+    file: string;
+    volume: string;
+    /** KZ display label; '' when untitled. */
+    title: string;
+}
+
 export interface ChapterItemQuizRef {
     id: number;
     slug: string;
@@ -172,6 +181,11 @@ export interface ChapterItem {
     file: ChapterItemFileRef | null;
     quiz: ChapterItemQuizRef | null;
     assignment: ChapterItemAssignmentRef | null;
+    /**
+     * Phase 29 — non-empty when this file item is a multi-file PDF block.
+     * `file` still points at the first PDF (back-compat); this is the full list.
+     */
+    pdfs?: ChapterItemPdfRef[];
     /** Only present (non-empty) when type='file' — derived from FileTranslations join. */
     translations: Translation[];
 }
@@ -334,6 +348,12 @@ export interface UpsertItemPayload {
     /** Maps to Files.storage enum. 'upload' for binary uploads,
      *  'youtube' | 'vimeo' | 'iframe' for embedded video / external iframe targets. */
     storage?: 'upload' | 'youtube' | 'vimeo' | 'iframe' | 'external_link' | 'google_drive' | 'dropbox' | 's3' | 'upload_archive' | 'secure_host';
+    /**
+     * Phase 29 — when present (type='file'), the item is a multi-file PDF block.
+     * Each entry is an uploaded PDF; the server creates one Files row per entry
+     * (file_type='application/pdf') and links them ordered.
+     */
+    pdf_files?: { file_url: string; volume?: string; name?: string }[];
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

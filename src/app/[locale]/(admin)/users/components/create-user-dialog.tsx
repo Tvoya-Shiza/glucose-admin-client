@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createUser } from '@/lib/users/api';
 
@@ -33,7 +34,11 @@ const createUserSchema = z
     .object({
         full_name: z.string().max(255).optional(),
         email: z.string().email().max(255).optional().or(z.literal('')),
-        mobile: z.string().max(32).optional().or(z.literal('')),
+        mobile: z
+            .string()
+            .regex(/^\+7\d{10}$/, 'phone_invalid')
+            .optional()
+            .or(z.literal('')),
         password: z.string().min(6).max(72).optional().or(z.literal('')),
         role_name: z.enum(['admin', 'curator', 'teacher', 'student']),
         status: z.enum(['active', 'inactive', 'pending']),
@@ -154,7 +159,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                                     <FormItem>
                                         <FormLabel>{t('field_mobile')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder='+7XXXXXXXXXX' {...field} />
+                                            <PhoneInput value={field.value ?? ''} onChange={field.onChange} onBlur={field.onBlur} name={field.name} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

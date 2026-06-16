@@ -13,6 +13,10 @@ export interface FilesGridProps {
     loading?: boolean;
     onPick?: (asset: UploadAsset) => void;
     onDelete?: (asset: UploadAsset) => void;
+    /** Edit the display name. Omitted in picker mode. */
+    onRename?: (asset: UploadAsset) => void;
+    /** Replace the file content in place (same URL). Omitted in picker mode. */
+    onReplace?: (asset: UploadAsset) => void;
     /** Hide the delete action — used in picker mode where deletion is out of scope. */
     hideDelete?: boolean;
     /** Make each card draggable (used on /files for move-to-folder). Requires an
@@ -29,7 +33,7 @@ export interface FilesGridProps {
  *   - video         → <video src=file_url controls preload="metadata">
  *   - unknown       → name + mime placeholder
  */
-export function FilesGrid({ rows, loading, onPick, onDelete, hideDelete, draggable }: FilesGridProps) {
+export function FilesGrid({ rows, loading, onPick, onDelete, onRename, onReplace, hideDelete, draggable }: FilesGridProps) {
     const t = useTranslations('files');
     const tUpload = useTranslations('upload');
 
@@ -59,12 +63,16 @@ export function FilesGrid({ rows, loading, onPick, onDelete, hideDelete, draggab
                         asset={asset}
                         onPick={onPick}
                         onDelete={onDelete}
+                        onRename={onRename}
+                        onReplace={onReplace}
                         hideDelete={hideDelete}
                         copyUrl={copyUrl}
                         labelKind={asset.kind}
                         sizeLabel={t('size_mb', { mb: (asset.size / (1024 * 1024)).toFixed(1) })}
                         copyText={t('copy_url')}
                         deleteText={t('delete')}
+                        renameText={t('rename')}
+                        replaceText={t('replace')}
                     />
                 ) : (
                     <FileCardBody
@@ -72,11 +80,15 @@ export function FilesGrid({ rows, loading, onPick, onDelete, hideDelete, draggab
                         asset={asset}
                         onPick={onPick}
                         onDelete={onDelete}
+                        onRename={onRename}
+                        onReplace={onReplace}
                         hideDelete={hideDelete}
                         copyUrl={copyUrl}
                         sizeLabel={t('size_mb', { mb: (asset.size / (1024 * 1024)).toFixed(1) })}
                         copyText={t('copy_url')}
                         deleteText={t('delete')}
+                        renameText={t('rename')}
+                        replaceText={t('replace')}
                     />
                 ),
             )}
@@ -88,14 +100,31 @@ interface CardCommonProps {
     asset: UploadAsset;
     onPick?: (asset: UploadAsset) => void;
     onDelete?: (asset: UploadAsset) => void;
+    onRename?: (asset: UploadAsset) => void;
+    onReplace?: (asset: UploadAsset) => void;
     hideDelete?: boolean;
     copyUrl: (url: string) => Promise<void>;
     sizeLabel: string;
     copyText: string;
     deleteText: string;
+    renameText: string;
+    replaceText: string;
 }
 
-function FileCardBody({ asset, onPick, onDelete, hideDelete, copyUrl, sizeLabel, copyText, deleteText }: CardCommonProps) {
+function FileCardBody({
+    asset,
+    onPick,
+    onDelete,
+    onRename,
+    onReplace,
+    hideDelete,
+    copyUrl,
+    sizeLabel,
+    copyText,
+    deleteText,
+    renameText,
+    replaceText,
+}: CardCommonProps) {
     return (
         <div className='flex flex-col gap-2 rounded-lg border p-2 text-sm'>
             <div className='bg-muted text-muted-foreground flex h-32 w-full items-center justify-center overflow-hidden rounded'>
@@ -132,6 +161,16 @@ function FileCardBody({ asset, onPick, onDelete, hideDelete, copyUrl, sizeLabel,
                         {copyText}
                     </Button>
                 )}
+                {onRename ? (
+                    <Button type='button' variant='outline' size='sm' onClick={() => onRename(asset)}>
+                        {renameText}
+                    </Button>
+                ) : null}
+                {onReplace ? (
+                    <Button type='button' variant='outline' size='sm' onClick={() => onReplace(asset)}>
+                        {replaceText}
+                    </Button>
+                ) : null}
                 {!hideDelete && onDelete ? (
                     <Button type='button' variant='ghost' size='sm' onClick={() => onDelete(asset)}>
                         {deleteText}

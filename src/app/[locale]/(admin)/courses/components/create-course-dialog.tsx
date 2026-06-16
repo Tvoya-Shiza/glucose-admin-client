@@ -26,6 +26,7 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { TiptapEditor } from '../[id]/components/tiptap-editor';
 import {
     Select,
     SelectContent,
@@ -304,10 +305,11 @@ export function CreateCourseDialog({
                                     <FormItem>
                                         <FormLabel>{t('description_label')}</FormLabel>
                                         <FormControl>
-                                            <textarea
-                                                className='border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[100px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2'
-                                                placeholder={t('description_placeholder')}
-                                                {...field}
+                                            {/* Rich text + links (Tiptap). Emits sanitized
+                                                HTML; admin-api sanitizes again on save. */}
+                                            <TiptapEditor
+                                                initialHtml={field.value ?? ''}
+                                                onChange={field.onChange}
                                             />
                                         </FormControl>
                                         <FormMessage />

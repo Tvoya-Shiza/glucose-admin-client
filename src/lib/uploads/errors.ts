@@ -37,6 +37,12 @@ export function mapUploadErrorToI18nKey(message: string | undefined): string {
     if (message === 'upload.asset_not_found') {
         return 'upload.asset_not_found';
     }
+    if (message === 'upload.replace_type_mismatch') {
+        return 'upload.replace_type_mismatch';
+    }
+    if (message === 'upload.name_invalid') {
+        return 'upload.name_invalid';
+    }
 
     // Client-side codes (useFileUpload pre-flight + transport).
     if (message === 'upload_mime_not_allowed') {

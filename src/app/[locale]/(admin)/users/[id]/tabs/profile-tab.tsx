@@ -4,13 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { patchUserProfile } from '@/lib/users/api';
+import { formatPhoneDisplay } from '@/lib/users/phone';
 import type { UserDetail } from '@/lib/users/types';
 
 /**
@@ -75,7 +77,7 @@ export function ProfileTab({ user }: { user: UserDetail }) {
             <div className='space-y-3 pt-4'>
                 <Field label={t('col_name')} value={user.full_name ?? '—'} />
                 <Field label={t('col_email')} value={user.email ?? '—'} />
-                <Field label={t('col_mobile')} value={user.mobile ?? '—'} />
+                <Field label={t('col_mobile')} value={formatPhoneDisplay(user.mobile) || '—'} />
                 <Field label='About' value={user.about ?? '—'} />
                 <Field label={t('col_role')} value={user.role_name} />
                 <Field label={t('col_status')} value={user.status} />
@@ -96,7 +98,18 @@ export function ProfileTab({ user }: { user: UserDetail }) {
                 <Input type='email' {...form.register('email')} />
             </FormRow>
             <FormRow label={t('col_mobile')}>
-                <Input {...form.register('mobile')} placeholder='+7XXXXXXXXXX' />
+                <Controller
+                    control={form.control}
+                    name='mobile'
+                    render={({ field }) => (
+                        <PhoneInput
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                        />
+                    )}
+                />
             </FormRow>
             <FormRow label='About'>
                 <Input {...form.register('about')} />

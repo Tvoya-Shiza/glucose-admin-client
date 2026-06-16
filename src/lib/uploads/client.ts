@@ -23,8 +23,11 @@ import type {
     ListUploadsQuery,
     ListUploadsResponse,
     MoveFileRequest,
+    RenameFileRequest,
     UploadAsset,
+    UploadContentType,
     UploadFileResult,
+    UploadKind,
     UploadTokenRequest,
     UploadTokenResponse,
 } from '@shared/uploads';
@@ -178,6 +181,53 @@ export async function deleteUpload(id: string): Promise<void> {
         const msg = (json as { message?: string })?.message ?? `uploads_delete_failed_${res.status}`;
         throw new Error(msg);
     }
+}
+
+/**
+ * Rename — update only the display name (`original_name`). The ULID filename +
+ * file_url are immutable, so references keep working. Goes through the BFF.
+ */
+export async function renameUpload(id: string, body: RenameFileRequest): Promise<UploadAsset> {
+    const res = await fetchWithRefresh(`/api/proxy/v1/admin/uploads/${encodeURIComponent(id)}/rename`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `uploads_rename_failed_${res.status}`;
+        throw new Error(msg);
+    }
+    const json = await res.json();
+    return (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)
+        ? (json as { data: UploadAsset }).data
+        : (json as UploadAsset));
+}
+
+/**
+ * Replace an asset's content IN PLACE — same 2-step BFF-bypass as upload, but
+ * targets `/uploads/:id/replace`. The replacement MUST match the asset's
+ * kind+MIME (the server enforces this) so the file_url stays identical.
+ * Returns the updated asset (same id/file_url, new size).
+ */
+export async function replaceUpload(
+    asset: { id: string; kind: UploadKind; mime: UploadContentType },
+    file: File,
+    onProgress?: (pct: number) => void,
+): Promise<UploadAsset> {
+    if (file.type !== asset.mime) {
+        // Pre-flight: replacement must be the same type to keep the URL stable.
+        throw new Error('upload.replace_type_mismatch');
+    }
+    const token = await requestUploadToken({ kind: asset.kind, size: file.size, content_type: asset.mime });
+    const { promise } = uploadFileDirect(
+        `/admin-api/v1/admin/uploads/${encodeURIComponent(asset.id)}/replace`,
+        token.token,
+        file,
+        onProgress,
+    );
+    const result = (await promise) as unknown as UploadAsset;
+    return result;
 }
 
 /**
