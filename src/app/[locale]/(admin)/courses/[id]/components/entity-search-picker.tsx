@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
-import { fetchCoursePickerItems, type PickerItemKind } from '@/lib/courses/picker-items';
+import { fetchCoursePickerItems, type PickerItemKind, type PickerItemScope } from '@/lib/courses/picker-items';
 
 export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'curator' | 'user-group' | 'course';
 
@@ -40,12 +40,17 @@ interface ListResponse<T> {
     rows: T[];
 }
 
-async function searchEntities(kind: EntityKind, q: string, courseId?: number | null): Promise<EntitySearchOption[]> {
+async function searchEntities(
+    kind: EntityKind,
+    q: string,
+    courseId?: number | null,
+    quizScope: PickerItemScope = 'course',
+): Promise<EntitySearchOption[]> {
     const params = new URLSearchParams({ page_size: '20' });
     const needle = q.trim();
     if (needle.length > 0) params.set('q', needle);
 
-    // lesson / quiz / assignment / file — all course-scoped: one shared
+    // lesson / quiz / assignment / file — all go through the shared
     // /admin/courses/:id/picker-items endpoint, discriminated by kind.
     if (COURSE_SCOPED_KINDS.includes(kind)) {
         if (typeof courseId !== 'number' || courseId <= 0) {
@@ -54,7 +59,12 @@ async function searchEntities(kind: EntityKind, q: string, courseId?: number | n
             // than throw, so a misuse doesn't crash the form.
             return [];
         }
-        const json = await fetchCoursePickerItems(courseId, kind as PickerItemKind, needle);
+        // Quizzes are global (no course FK): the content editor attaches from the
+        // whole catalog (scope 'all'), the schedules editor picks already-attached
+        // ones (scope 'course'). Scope is ignored by the server for other kinds.
+        const json = await fetchCoursePickerItems(courseId, kind as PickerItemKind, needle, {
+            scope: kind === 'quiz' ? quizScope : undefined,
+        });
         return json.rows.map((r) => ({
             id: r.id,
             title: r.title_kz ?? r.title_ru ?? `#${r.id}`,
@@ -96,9 +106,15 @@ interface EntitySearchPickerProps {
     onChange: (id: string, option?: EntitySearchOption) => void;
     placeholder?: string;
     courseId?: number | null;
+    /**
+     * Quiz-only: 'all' searches the whole quiz catalog (attach flow in the
+     * content editor); 'course' (default) only quizzes already in the course
+     * (schedules editor). Ignored for non-quiz kinds.
+     */
+    quizScope?: PickerItemScope;
 }
 
-export function EntitySearchPicker({ kind, value, onChange, placeholder, courseId }: EntitySearchPickerProps) {
+export function EntitySearchPicker({ kind, value, onChange, placeholder, courseId, quizScope = 'course' }: EntitySearchPickerProps) {
     const t = useTranslations('admin.courses');
     const [query, setQuery] = useState('');
     const [debounced, setDebounced] = useState('');
@@ -126,8 +142,8 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
     const queryEnabled = open && (!isCourseScoped || typeof courseId === 'number');
 
     const { data, isFetching } = useQuery({
-        queryKey: ['admin.entity-search', kind, debounced, courseId ?? null],
-        queryFn: () => searchEntities(kind, debounced, courseId),
+        queryKey: ['admin.entity-search', kind, debounced, courseId ?? null, quizScope],
+        queryFn: () => searchEntities(kind, debounced, courseId, quizScope),
         enabled: queryEnabled,
         staleTime: 30_000,
         placeholderData: (prev) => prev,

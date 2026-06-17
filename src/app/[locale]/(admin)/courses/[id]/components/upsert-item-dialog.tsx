@@ -442,7 +442,15 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                     {type === 'quiz' ? (
                         <div className='space-y-1.5'>
                             <Label>{t('item_quiz_id_label')}</Label>
-                            <EntitySearchPicker kind='quiz' value={fkId} onChange={setFkId} courseId={courseId} />
+                            {/* Attaching a quiz: search the whole catalog, not just
+                                quizzes already in this course (quizzes have no course FK). */}
+                            <EntitySearchPicker
+                                kind='quiz'
+                                value={fkId}
+                                onChange={setFkId}
+                                courseId={courseId}
+                                quizScope='all'
+                            />
                         </div>
                     ) : null}
                     {type === 'assignment' ? (
