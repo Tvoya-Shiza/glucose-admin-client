@@ -646,6 +646,7 @@
             "item_assignment_id_label": "Тапсырма ID",
             "item_quiz_id_placeholder": "Бар тесттің сандық ID-ін енгізіңіз",
             "item_assignment_id_placeholder": "Бар тапсырманың сандық ID-ін енгізіңіз",
+            "item_already_linked": "басқа курсқа байланған",
             "save_item": "Элементті сақтау",
             "delete_item_confirm": "Бұл элементті жоюды растайсыз ба?",
             "delete_item_warning": "Байланысты файл базада қалады, элемент тараудан ғана айырылады.",

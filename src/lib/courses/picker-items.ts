@@ -21,6 +21,10 @@ export interface PickerItem {
     id: number;
     title_kz: string | null;
     title_ru: string | null;
+    /** assignment scope='all' only: item exists but is already bound to another course. */
+    disabled?: boolean;
+    /** the course this item is already bound to (alongside `disabled`). */
+    linked_course_id?: number | null;
 }
 
 export interface PickerItemsResponse {

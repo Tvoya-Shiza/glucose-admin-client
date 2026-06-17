@@ -17,7 +17,14 @@ const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignmen
 interface EntitySearchOption {
     id: number;
     title: string;
+    /** Not selectable — already bound to another course (assignment scope='all'). */
+    disabled?: boolean;
+    /** The course this item is already linked to (for the disabled hint). */
+    linkedCourseId?: number | null;
 }
+
+/** Catalog kinds whose `scope='all'` searches the whole catalog, not just this course. */
+const CATALOG_KINDS: readonly EntityKind[] = ['quiz', 'assignment'];
 
 interface CourseRow {
     id: number;
@@ -44,7 +51,7 @@ async function searchEntities(
     kind: EntityKind,
     q: string,
     courseId?: number | null,
-    quizScope: PickerItemScope = 'course',
+    scope: PickerItemScope = 'course',
 ): Promise<EntitySearchOption[]> {
     const params = new URLSearchParams({ page_size: '20' });
     const needle = q.trim();
@@ -59,15 +66,18 @@ async function searchEntities(
             // than throw, so a misuse doesn't crash the form.
             return [];
         }
-        // Quizzes are global (no course FK): the content editor attaches from the
-        // whole catalog (scope 'all'), the schedules editor picks already-attached
-        // ones (scope 'course'). Scope is ignored by the server for other kinds.
+        // The content editor attaches from the whole catalog (scope 'all'); the
+        // schedules editor picks already-in-course items (scope 'course'). Scope
+        // only applies to catalog kinds (quiz/assignment); the server ignores it
+        // for lesson/file, which always carry their own webinar_id.
         const json = await fetchCoursePickerItems(courseId, kind as PickerItemKind, needle, {
-            scope: kind === 'quiz' ? quizScope : undefined,
+            scope: CATALOG_KINDS.includes(kind) ? scope : undefined,
         });
         return json.rows.map((r) => ({
             id: r.id,
             title: r.title_kz ?? r.title_ru ?? `#${r.id}`,
+            disabled: r.disabled,
+            linkedCourseId: r.linked_course_id,
         }));
     }
 
@@ -107,14 +117,14 @@ interface EntitySearchPickerProps {
     placeholder?: string;
     courseId?: number | null;
     /**
-     * Quiz-only: 'all' searches the whole quiz catalog (attach flow in the
-     * content editor); 'course' (default) only quizzes already in the course
-     * (schedules editor). Ignored for non-quiz kinds.
+     * Catalog kinds (quiz/assignment): 'all' searches the whole catalog (attach
+     * flow in the content editor); 'course' (default) only items already in the
+     * course (schedules editor). Ignored for lesson/file.
      */
-    quizScope?: PickerItemScope;
+    scope?: PickerItemScope;
 }
 
-export function EntitySearchPicker({ kind, value, onChange, placeholder, courseId, quizScope = 'course' }: EntitySearchPickerProps) {
+export function EntitySearchPicker({ kind, value, onChange, placeholder, courseId, scope = 'course' }: EntitySearchPickerProps) {
     const t = useTranslations('admin.courses');
     const [query, setQuery] = useState('');
     const [debounced, setDebounced] = useState('');
@@ -142,8 +152,8 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
     const queryEnabled = open && (!isCourseScoped || typeof courseId === 'number');
 
     const { data, isFetching } = useQuery({
-        queryKey: ['admin.entity-search', kind, debounced, courseId ?? null, quizScope],
-        queryFn: () => searchEntities(kind, debounced, courseId, quizScope),
+        queryKey: ['admin.entity-search', kind, debounced, courseId ?? null, scope],
+        queryFn: () => searchEntities(kind, debounced, courseId, scope),
         enabled: queryEnabled,
         staleTime: 30_000,
         placeholderData: (prev) => prev,
@@ -209,22 +219,37 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
                                 <div className='p-3 text-sm text-muted-foreground'>—</div>
                             ) : (
                                 <ul>
-                                    {options.map((o) => (
-                                        <li key={o.id}>
-                                            <button
-                                                type='button'
-                                                className='flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent'
-                                                onClick={() => {
-                                                    onChange(String(o.id), o);
-                                                    setOpen(false);
-                                                    setQuery('');
-                                                }}
-                                            >
-                                                <span className='truncate'>{o.title}</span>
-                                                <span className='text-xs text-muted-foreground'>#{o.id}</span>
-                                            </button>
-                                        </li>
-                                    ))}
+                                    {options.map((o) =>
+                                        o.disabled ? (
+                                            <li key={o.id}>
+                                                <div
+                                                    className='flex w-full cursor-not-allowed items-center justify-between px-3 py-2 text-left text-sm opacity-50'
+                                                    title={t('item_already_linked')}
+                                                >
+                                                    <span className='truncate'>{o.title}</span>
+                                                    <span className='ml-2 shrink-0 text-xs text-muted-foreground'>
+                                                        {t('item_already_linked')}
+                                                        {o.linkedCourseId ? ` #${o.linkedCourseId}` : ''}
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        ) : (
+                                            <li key={o.id}>
+                                                <button
+                                                    type='button'
+                                                    className='flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent'
+                                                    onClick={() => {
+                                                        onChange(String(o.id), o);
+                                                        setOpen(false);
+                                                        setQuery('');
+                                                    }}
+                                                >
+                                                    <span className='truncate'>{o.title}</span>
+                                                    <span className='text-xs text-muted-foreground'>#{o.id}</span>
+                                                </button>
+                                            </li>
+                                        ),
+                                    )}
                                 </ul>
                             )}
                         </div>
