@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ForceConfirmRequiredError, upsertQuestion } from '@/lib/quizzes/api';
+import { ForceConfirmRequiredError, listQuestions, upsertQuestion } from '@/lib/quizzes/api';
 import type {
     QuestionDetail,
     QuizQuestionType,
@@ -80,7 +80,26 @@ export function UpsertQuestionDialog({
 }: UpsertQuestionDialogProps) {
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
-    const isEdit = !!question;
+
+    // After CREATE we keep the dialog open and switch it to edit mode so the answer
+    // editors (which need a real question_id) become available immediately, instead
+    // of forcing the admin to reopen the question. `createdQuestion` is the response
+    // snapshot; once the live list refetches we prefer its (answer-bearing) row.
+    const [createdQuestion, setCreatedQuestion] = useState<QuestionDetail | null>(null);
+
+    // Live questions list — same cache key as the questions tab, so this shares the
+    // existing cache (no duplicate fetch) and re-renders the open dialog when answers
+    // are added to the just-created question.
+    const { data: qData } = useQuery({
+        queryKey: ['admin.quizzes.questions', quizId],
+        queryFn: () => listQuestions(quizId),
+        enabled: open,
+    });
+
+    const effectiveQuestion: QuestionDetail | null =
+        question ??
+        (createdQuestion ? qData?.rows.find((r) => r.id === createdQuestion.id) ?? createdQuestion : null);
+    const isEdit = !!effectiveQuestion;
 
     const [type, setType] = useState<QuizQuestionType>(question?.type ?? 'single');
     const [grade, setGrade] = useState<string>(String(question?.grade ?? 1));
@@ -106,6 +125,7 @@ export function UpsertQuestionDialog({
     // Reset state on open / different question.
     useEffect(() => {
         if (!open) return;
+        setCreatedQuestion(null);
         setType(question?.type ?? 'single');
         setGrade(String(question?.grade ?? 1));
         setImageUrl(question?.image ?? null);
@@ -131,7 +151,7 @@ export function UpsertQuestionDialog({
             return null;
         }
         return {
-            id: question?.id,
+            id: effectiveQuestion?.id,
             grade: gradeNum,
             type,
             image: imageUrl ?? null,
@@ -150,11 +170,18 @@ export function UpsertQuestionDialog({
 
     const mutation = useMutation({
         mutationFn: (payload: UpsertQuestion) => upsertQuestion(quizId, payload),
-        onSuccess: () => {
-            toast.success(t('saved'));
+        onSuccess: (data, payload) => {
             qc.invalidateQueries({ queryKey: ['admin.quizzes.questions', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.detail', quizId] });
             qc.invalidateQueries({ queryKey: ['admin.quizzes.list'] });
+            // Just CREATED an answer-bearing question → stay open in edit mode so the
+            // admin can add options now. `descriptive` carries no options, so close it.
+            if (payload.id == null && payload.type !== 'descriptive') {
+                setCreatedQuestion(data.question);
+                toast.success(t('question_saved_add_answers'));
+                return;
+            }
+            toast.success(t('saved'));
             onOpenChange(false);
         },
     });
@@ -200,7 +227,7 @@ export function UpsertQuestionDialog({
         }
     };
 
-    const answersForChild = useMemo(() => question?.answers ?? [], [question?.answers]);
+    const answersForChild = useMemo(() => effectiveQuestion?.answers ?? [], [effectiveQuestion?.answers]);
 
     return (
         <>
@@ -306,13 +333,14 @@ export function UpsertQuestionDialog({
                             ) : null}
                         </div>
 
-                        {/* Answers section — gated by type, only shown in edit mode (need question.id) */}
-                        {isEdit && question ? (
+                        {/* Answers section — gated by type, shown once a question_id exists
+                            (edit mode, or right after create when the dialog stays open). */}
+                        {effectiveQuestion ? (
                             <div className='border-t pt-3'>
                                 {(type === 'single' || type === 'multiple') && (
                                     <AnswersEditor
                                         quizId={quizId}
-                                        questionId={question.id}
+                                        questionId={effectiveQuestion.id}
                                         questionType={type}
                                         answers={answersForChild}
                                     />
@@ -320,7 +348,7 @@ export function UpsertQuestionDialog({
                                 {type === 'identificative' && (
                                     <IdentificativeEntEditor
                                         quizId={quizId}
-                                        questionId={question.id}
+                                        questionId={effectiveQuestion.id}
                                         answers={answersForChild}
                                     />
                                 )}
@@ -341,7 +369,7 @@ export function UpsertQuestionDialog({
                             onClick={() => onOpenChange(false)}
                             disabled={mutation.isPending}
                         >
-                            {t('cancel')}
+                            {createdQuestion ? t('done') : t('cancel')}
                         </Button>
                         <Button
                             type='button'
