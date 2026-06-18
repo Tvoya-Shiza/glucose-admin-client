@@ -10,6 +10,8 @@ import type {
     ListGroupsQuery,
     MemberListResponse,
     MemberProgressResponse,
+    ResolveMembersResult,
+    ResolveRowInput,
     UpdateGroupBody,
 } from './types';
 
@@ -173,6 +175,27 @@ export async function bulkRemoveMembers(
     if (!res.ok) {
         const json = await res.json().catch(() => ({}) as Record<string, unknown>);
         const msg = (json as { message?: string })?.message ?? `bulkRemoveMembers failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    return res.json();
+}
+
+/**
+ * Resolve Excel-imported rows ({ name?, phone? }) into existing-student candidates
+ * (GRP-07). Read-only matching — the actual add still goes through bulkAddMembers.
+ */
+export async function resolveMembers(
+    id: number | string,
+    rows: ResolveRowInput[],
+): Promise<ResolveMembersResult> {
+    const res = await fetchWithRefresh(`${BASE}/${encodeURIComponent(String(id))}/members/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows }),
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `resolveMembers failed: ${res.status}`;
         throw new Error(msg);
     }
     return res.json();

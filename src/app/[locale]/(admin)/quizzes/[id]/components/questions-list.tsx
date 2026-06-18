@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Upload } from 'lucide-react';
 import {
     DndContext,
     PointerSensor,
@@ -19,9 +19,11 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
-import { reorderQuestions } from '@/lib/quizzes/api';
+import { Can } from '@/lib/access/can';
+import { downloadQuestionsTemplate, reorderQuestions, triggerXlsxDownload } from '@/lib/quizzes/api';
 import type { QuestionDetail } from '@/lib/quizzes/types';
 import { QuestionRow } from './question-row';
+import { QuestionsImportDialog } from './questions-import-dialog';
 import { UpsertQuestionDialog } from './upsert-question-dialog';
 
 /**
@@ -51,6 +53,16 @@ export function QuestionsList({ quizId, questions: incoming }: QuestionsListProp
     const [optimistic, setOptimistic] = useState<QuestionDetail[]>(incoming);
     const snapshotRef = useRef<QuestionDetail[] | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
+
+    const handleTemplate = async () => {
+        try {
+            const blob = await downloadQuestionsTemplate(quizId);
+            triggerXlsxDownload(blob, 'questions-template.xlsx');
+        } catch (err) {
+            toast.error((err as Error).message || t('save_failed'));
+        }
+    };
 
     useEffect(() => {
         setOptimistic(incoming);
@@ -99,10 +111,22 @@ export function QuestionsList({ quizId, questions: incoming }: QuestionsListProp
                 <div className='text-sm font-semibold'>
                     {t('questions_total', { count: optimistic.length })}
                 </div>
-                <Button type='button' size='sm' onClick={() => setCreateOpen(true)}>
-                    <Plus className='mr-1 h-4 w-4' />
-                    {t('add_question')}
-                </Button>
+                <div className='flex items-center gap-2'>
+                    <Can permission='quizzes.edit'>
+                        <Button type='button' size='sm' variant='outline' onClick={() => void handleTemplate()}>
+                            <Download className='mr-1 h-4 w-4' />
+                            {t('import.download_template')}
+                        </Button>
+                        <Button type='button' size='sm' variant='secondary' onClick={() => setImportOpen(true)}>
+                            <Upload className='mr-1 h-4 w-4' />
+                            {t('import.upload_excel')}
+                        </Button>
+                    </Can>
+                    <Button type='button' size='sm' onClick={() => setCreateOpen(true)}>
+                        <Plus className='mr-1 h-4 w-4' />
+                        {t('add_question')}
+                    </Button>
+                </div>
             </div>
 
             {optimistic.length === 0 ? (
@@ -128,6 +152,10 @@ export function QuestionsList({ quizId, questions: incoming }: QuestionsListProp
                     onOpenChange={setCreateOpen}
                     question={null}
                 />
+            ) : null}
+
+            {importOpen ? (
+                <QuestionsImportDialog quizId={quizId} open={importOpen} onOpenChange={setImportOpen} />
             ) : null}
         </div>
     );
