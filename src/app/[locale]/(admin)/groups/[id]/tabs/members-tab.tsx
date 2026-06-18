@@ -16,6 +16,7 @@ import { getMemberProgress, listGroupMembers } from '@/lib/groups/api';
 import type { ActivityWindow, MemberProgressRow, MemberRow } from '@/lib/groups/types';
 import { BulkAddMembersSheet } from '../components/bulk-add-members-sheet';
 import { BulkRemoveMembersButton } from '../components/bulk-remove-members-button';
+import { ImportMembersSheet } from '../components/import-members-sheet';
 import { MembersTable } from '../components/members-table';
 
 const ACTIVITY_WINDOWS: ActivityWindow[] = ['1d', '7d', '30d', 'all'];
@@ -60,6 +61,7 @@ export function MembersTab({ groupId }: { groupId: number }) {
         parseAsStringLiteral(ACTIVITY_WINDOWS).withDefault('7d'),
     );
     const [addSheetOpen, setAddSheetOpen] = useState(false);
+    const [importSheetOpen, setImportSheetOpen] = useState(false);
 
     const selection = useBulkSelection<number>();
 
@@ -133,16 +135,28 @@ export function MembersTab({ groupId }: { groupId: number }) {
             <div className='pt-4 space-y-3'>
                 <p className='text-sm text-muted-foreground'>{t('empty_admin')}</p>
                 {canMutate ? (
-                    <Button size='sm' onClick={() => setAddSheetOpen(true)}>
-                        {t('bulk_add_members')}
-                    </Button>
+                    <div className='flex flex-wrap gap-2'>
+                        <Button size='sm' onClick={() => setAddSheetOpen(true)}>
+                            {t('bulk_add_members')}
+                        </Button>
+                        <Button size='sm' variant='outline' onClick={() => setImportSheetOpen(true)}>
+                            {t('import.title')}
+                        </Button>
+                    </div>
                 ) : null}
                 {canMutate ? (
-                    <BulkAddMembersSheet
-                        open={addSheetOpen}
-                        onOpenChange={setAddSheetOpen}
-                        groupId={groupId}
-                    />
+                    <>
+                        <BulkAddMembersSheet
+                            open={addSheetOpen}
+                            onOpenChange={setAddSheetOpen}
+                            groupId={groupId}
+                        />
+                        <ImportMembersSheet
+                            open={importSheetOpen}
+                            onOpenChange={setImportSheetOpen}
+                            groupId={groupId}
+                        />
+                    </>
                 ) : null}
             </div>
         );
@@ -176,9 +190,14 @@ export function MembersTab({ groupId }: { groupId: number }) {
                     className='max-w-xs'
                 />
                 {canMutate ? (
-                    <Button size='sm' onClick={() => setAddSheetOpen(true)}>
-                        {t('bulk_add_members')}
-                    </Button>
+                    <>
+                        <Button size='sm' onClick={() => setAddSheetOpen(true)}>
+                            {t('bulk_add_members')}
+                        </Button>
+                        <Button size='sm' variant='outline' onClick={() => setImportSheetOpen(true)}>
+                            {t('import.title')}
+                        </Button>
+                    </>
                 ) : null}
             </div>
 
@@ -218,11 +237,18 @@ export function MembersTab({ groupId }: { groupId: number }) {
             </div>
 
             {canMutate ? (
-                <BulkAddMembersSheet
-                    open={addSheetOpen}
-                    onOpenChange={setAddSheetOpen}
-                    groupId={groupId}
-                />
+                <>
+                    <BulkAddMembersSheet
+                        open={addSheetOpen}
+                        onOpenChange={setAddSheetOpen}
+                        groupId={groupId}
+                    />
+                    <ImportMembersSheet
+                        open={importSheetOpen}
+                        onOpenChange={setImportSheetOpen}
+                        groupId={groupId}
+                    />
+                </>
             ) : null}
         </div>
     );

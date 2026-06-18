@@ -143,3 +143,44 @@ export interface BulkMembersResult {
     error: number;
     rows: BulkMembersResultRow[];
 }
+
+// --- Excel bulk-import resolution (GRP-07) ---
+// Mirrors admin-api dto/resolve-members.dto.ts.
+
+export interface ResolveRowInput {
+    name?: string;
+    phone?: string;
+}
+
+export interface StudentCandidate {
+    user_id: number;
+    full_name: string | null;
+    mobile: string | null;
+    email: string | null;
+    status: 'active' | 'inactive' | 'pending';
+    /** Whether the student is already a member of the target group. */
+    in_this_group: boolean;
+    /** Every group the student currently belongs to. */
+    groups: Array<{ id: number; name: string }>;
+}
+
+export type ResolveRowStatus = 'matched' | 'ambiguous' | 'unmatched' | 'invalid';
+
+export interface ResolveResultRow {
+    /** 0-based index of the data row in the uploaded sheet. */
+    index: number;
+    input: { name: string | null; phone: string | null };
+    status: ResolveRowStatus;
+    /** Set only when status='matched'. */
+    matched_user_id: number | null;
+    /** True when matched by phone but the supplied name disagrees. */
+    name_mismatch: boolean;
+    /** True when this row resolves to a user already matched by an earlier row. */
+    duplicate_in_file: boolean;
+    /** One for 'matched', many for 'ambiguous', empty otherwise. */
+    candidates: StudentCandidate[];
+}
+
+export interface ResolveMembersResult {
+    rows: ResolveResultRow[];
+}
