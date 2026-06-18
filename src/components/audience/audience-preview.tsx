@@ -6,6 +6,8 @@ import type { AudienceShape } from '@/lib/audience/types';
 
 interface Props {
     audience: AudienceShape;
+    /** Push surface only: show "will receive push: X / Y" + no-FCM warning. Mailings omit it. */
+    showFcm?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props {
  *   <AudienceSelector value={audience} onChange={setAudience} />
  *   <AudiencePreview audience={audience} />
  */
-export function AudiencePreview({ audience }: Props) {
+export function AudiencePreview({ audience, showFcm = false }: Props) {
     const t = useTranslations('admin.audience');
     const { data, isLoading, isError, error, debouncedAudience } = useAudiencePreview(audience);
 
@@ -57,6 +59,14 @@ export function AudiencePreview({ audience }: Props) {
                 )}
                 {data.cached && <Badge variant='secondary'>cache</Badge>}
             </div>
+            {showFcm && data.count > 0 && (
+                <div className='text-muted-foreground'>
+                    {t('preview_fcm', { withFcm: data.count_with_fcm, total: data.count })}
+                </div>
+            )}
+            {showFcm && data.count > 0 && data.count_with_fcm === 0 && (
+                <div className='text-destructive'>{t('preview_no_fcm_warning')}</div>
+            )}
             {data.sample.length > 0 && (
                 <div className='text-muted-foreground'>
                     {t('preview_sample', {

@@ -1,15 +1,16 @@
 'use client';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { listAudienceRoles } from '@/lib/audience/api';
 import type {
     AudienceFilter,
     AudienceKind,
-    AudienceRole,
     AudienceShape,
     CohortPredicate,
     RegionField,
@@ -58,7 +59,7 @@ export function AudienceSelector({ value, onChange }: Props) {
             kind === 'group'
                 ? { kind: 'group', group_ids: [] }
                 : kind === 'role'
-                  ? { kind: 'role', roles: ['student'] }
+                  ? { kind: 'role', roles: [] }
                   : kind === 'region'
                     ? { kind: 'region', field: 'province_id', region_ids: [] }
                     : { kind: 'cohort', predicate: { type: 'inactive_days', days: 7 } };
@@ -108,6 +109,10 @@ export function AudienceSelector({ value, onChange }: Props) {
                 </div>
             ))}
 
+            {value.filters.length > 1 && (
+                <p className='text-xs text-muted-foreground'>{t('filters_and_hint')}</p>
+            )}
+
             <div className='flex flex-col gap-2'>
                 <label className='flex items-center gap-2 text-sm'>
                     <Checkbox
@@ -133,23 +138,61 @@ export function AudienceSelector({ value, onChange }: Props) {
 function FilterRow({ filter, onChange }: { filter: AudienceFilter; onChange: (next: AudienceFilter) => void }) {
     const t = useTranslations('admin.audience');
 
+    // Data-driven role list: real `role_name` values + counts from the DB. Fetched
+    // only for role rows (enabled gate). Cached 5 min — the role set rarely changes.
+    const rolesQuery = useQuery({
+        queryKey: ['audience.roles'],
+        queryFn: listAudienceRoles,
+        staleTime: 5 * 60_000,
+        enabled: filter.kind === 'role',
+    });
+
+    // Friendly label for known roles; unknown role_names fall back to the raw value.
+    const roleLabel = (name: string): string => {
+        switch (name) {
+            case 'user':
+                return t('role_user');
+            case 'student':
+                return t('role_student');
+            case 'teacher':
+                return t('role_teacher');
+            case 'curator':
+                return t('role_curator');
+            case 'admin':
+                return t('role_admin');
+            default:
+                return name;
+        }
+    };
+
     if (filter.kind === 'role') {
         const roles = filter.roles;
-        const toggle = (r: AudienceRole) => {
+        const toggle = (r: string) => {
             const next = roles.includes(r) ? roles.filter((x) => x !== r) : [...roles, r];
             onChange({ kind: 'role', roles: next });
         };
+        const available = rolesQuery.data ?? [];
         return (
             <div className='flex flex-col gap-1'>
                 <Label>{t('role_picker_label')}</Label>
-                <div className='flex flex-wrap gap-3'>
-                    {(['student', 'teacher', 'curator', 'admin'] as AudienceRole[]).map((r) => (
-                        <label key={r} className='flex items-center gap-1 text-sm'>
-                            <Checkbox checked={roles.includes(r)} onCheckedChange={() => toggle(r)} />
-                            {t(`role_${r}`)}
-                        </label>
-                    ))}
-                </div>
+                {rolesQuery.isLoading ? (
+                    <p className='text-sm text-muted-foreground'>{t('role_picker_loading')}</p>
+                ) : (
+                    <div className='flex flex-wrap gap-3'>
+                        {available.map((r) => (
+                            <label key={r.role_name} className='flex items-center gap-1 text-sm'>
+                                <Checkbox
+                                    checked={roles.includes(r.role_name)}
+                                    onCheckedChange={() => toggle(r.role_name)}
+                                />
+                                <span>
+                                    {roleLabel(r.role_name)}{' '}
+                                    <span className='text-muted-foreground tabular-nums'>— {r.count}</span>
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                )}
             </div>
         );
     }
