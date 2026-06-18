@@ -25,6 +25,7 @@ import {
     KanbanSquare,
     Building2,
     Library,
+    Settings,
     type LucideIcon,
 } from 'lucide-react';
 import { useMe } from '@/lib/access/use-me';
@@ -106,7 +107,10 @@ const NAV_SECTIONS: NavSection[] = [
     },
     {
         titleKey: 'sections.admin',
-        items: [{ href: '/access/roles', labelKey: 'access', icon: ShieldCheck }],
+        items: [
+            { href: '/access/roles', labelKey: 'access', icon: ShieldCheck },
+            { href: '/settings', labelKey: 'settings', icon: Settings },
+        ],
     },
 ];
 
