@@ -117,7 +117,7 @@ export interface CreateUserPayload {
     email?: string;
     mobile?: string;
     password?: string;
-    role_name: 'admin' | 'curator' | 'teacher' | 'student';
+    role_name: 'admin' | 'curator' | 'teacher' | 'user';
     status?: UserStatus;
 }
 
