@@ -5,6 +5,7 @@ import type {
     CreateQuiz,
     ListQuizzesQuery,
     ListResultsQuery,
+    QuestionImportResult,
     QuizBadgeDetail,
     QuizBadgeItem,
     QuizBadgeRow,
@@ -277,6 +278,47 @@ export async function reorderQuestions(
     if (!res.ok) throw new Error(await readErrorMessage(res, `reorderQuestions failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<{ items: Array<{ id: number; order: number }> }>(json);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Excel bulk import of questions (Phase 26)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+/** GET the empty template (one sheet per question type + Инструкция) as a Blob. */
+export async function downloadQuestionsTemplate(quizId: number): Promise<Blob> {
+    const res = await fetchWithRefresh(
+        `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/import/template`,
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `downloadQuestionsTemplate failed: ${res.status}`));
+    return res.blob();
+}
+
+/** Upload a filled workbook (multipart) and return the per-row import result. */
+export async function importQuestionsExcel(quizId: number, file: File): Promise<QuestionImportResult> {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    const res = await fetchWithRefresh(
+        `${QUIZZES_API_BASE}/${encodeURIComponent(String(quizId))}/questions/import`,
+        { method: 'POST', body: fd },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `importQuestionsExcel failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<QuestionImportResult>(json);
+}
+
+/** Trigger a browser download for a Blob (forces the XLSX MIME if the proxy dropped it). */
+export function triggerXlsxDownload(blob: Blob, filename: string): void {
+    const out = blob.type.includes('spreadsheetml') ? blob : new Blob([blob], { type: XLSX_MIME });
+    const url = URL.createObjectURL(out);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

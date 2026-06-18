@@ -324,6 +324,31 @@ export interface UpsertAnswer {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Excel bulk import (mirrors quizzes-questions-import.service.ts QuestionImportResult)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface QuestionImportRow {
+    /** Russian sheet name the row came from. */
+    sheet: string;
+    /** Real spreadsheet row number (1-based). */
+    row: number;
+    type: QuizQuestionType;
+    title: string;
+    status: 'ok' | 'error';
+    /** Machine reason code on failure (localized client-side via the reason map). */
+    reason: string | null;
+    question_id: number | null;
+}
+
+export interface QuestionImportResult {
+    total: number;
+    succeeded: number;
+    failed: number;
+    imported_answers: number;
+    rows: QuestionImportRow[];
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Reorder (mirrors reorder-questions.dto.ts)
 // ──────────────────────────────────────────────────────────────────────────────
 
