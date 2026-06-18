@@ -40,7 +40,7 @@ const createUserSchema = z
             .optional()
             .or(z.literal('')),
         password: z.string().min(6).max(72).optional().or(z.literal('')),
-        role_name: z.enum(['admin', 'curator', 'teacher', 'student']),
+        role_name: z.enum(['admin', 'curator', 'teacher', 'user']),
         status: z.enum(['active', 'inactive', 'pending']),
     })
     .refine((v) => (v.email && v.email.length > 0) || (v.mobile && v.mobile.length > 0), {
@@ -68,7 +68,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             email: '',
             mobile: '',
             password: '',
-            role_name: 'student',
+            role_name: 'user',
             status: 'active',
         },
         mode: 'onSubmit',
@@ -81,7 +81,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                 email: '',
                 mobile: '',
                 password: '',
-                role_name: 'student',
+                role_name: 'user',
                 status: 'active',
             });
         }
@@ -184,7 +184,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                                                 <SelectItem value='admin'>{t('role_admin')}</SelectItem>
                                                 <SelectItem value='curator'>{t('role_curator')}</SelectItem>
                                                 <SelectItem value='teacher'>{t('role_teacher')}</SelectItem>
-                                                <SelectItem value='student'>{t('role_student')}</SelectItem>
+                                                <SelectItem value='user'>{t('role_student')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />

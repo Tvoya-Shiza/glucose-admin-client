@@ -2,19 +2,24 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GroupPicker } from '@/components/groups/group-picker';
 import { listAudienceRoles } from '@/lib/audience/api';
 import type {
     AudienceFilter,
     AudienceKind,
     AudienceShape,
     CohortPredicate,
+    GroupAudienceFilter,
     RegionField,
 } from '@/lib/audience/types';
+import type { GroupRow } from '@/lib/groups/types';
 
 interface Props {
     value: AudienceShape;
@@ -198,21 +203,7 @@ function FilterRow({ filter, onChange }: { filter: AudienceFilter; onChange: (ne
     }
 
     if (filter.kind === 'group') {
-        return (
-            <div className='flex flex-col gap-1'>
-                <Label>{t('group_picker_label')}</Label>
-                <Input
-                    placeholder={t('group_picker_placeholder')}
-                    value={filter.group_ids.join(',')}
-                    onChange={(e) =>
-                        onChange({
-                            kind: 'group',
-                            group_ids: parseIdList(e.target.value),
-                        })
-                    }
-                />
-            </div>
-        );
+        return <GroupFilterRow filter={filter} onChange={onChange} />;
     }
 
     if (filter.kind === 'region') {
@@ -345,6 +336,61 @@ function FilterRow({ filter, onChange }: { filter: AudienceFilter; onChange: (ne
                             <SelectItem value='inactive'>{t('cohort_status_inactive')}</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Group filter row — searchable multi-select.
+ *
+ * Replaces the v1 comma-separated ID <Input> (which forced admins to memorise
+ * numeric group IDs) with the shared <GroupPicker> (search-by-name) plus
+ * removable chips. The picker stays in "add" mode (value always null); each
+ * pick appends to group_ids. `labels` caches id→name so chips render the group
+ * name rather than just #id — the wire contract stays a plain number[].
+ */
+function GroupFilterRow({
+    filter,
+    onChange,
+}: {
+    filter: GroupAudienceFilter;
+    onChange: (next: AudienceFilter) => void;
+}) {
+    const t = useTranslations('admin.audience');
+    const [labels, setLabels] = useState<Record<number, string>>({});
+
+    const addGroup = (id: number | null, group: GroupRow | null) => {
+        if (id == null) return;
+        if (group?.name) setLabels((m) => ({ ...m, [id]: group.name }));
+        if (filter.group_ids.includes(id)) return;
+        onChange({ kind: 'group', group_ids: [...filter.group_ids, id] });
+    };
+
+    const removeGroup = (id: number) => {
+        onChange({ kind: 'group', group_ids: filter.group_ids.filter((g) => g !== id) });
+    };
+
+    return (
+        <div className='flex flex-col gap-2'>
+            <Label>{t('group_picker_label')}</Label>
+            <GroupPicker value={null} onChange={addGroup} placeholder={t('group_picker_placeholder')} />
+            {filter.group_ids.length > 0 && (
+                <div className='flex flex-wrap gap-2'>
+                    {filter.group_ids.map((id) => (
+                        <Badge key={id} variant='secondary' className='gap-1 pr-1'>
+                            <span className='max-w-[12rem] truncate'>{labels[id] ?? `#${id}`}</span>
+                            <button
+                                type='button'
+                                aria-label={t('remove_filter')}
+                                className='rounded-full p-0.5 hover:bg-black/10'
+                                onClick={() => removeGroup(id)}
+                            >
+                                <X className='size-3' />
+                            </button>
+                        </Badge>
+                    ))}
                 </div>
             )}
         </div>
