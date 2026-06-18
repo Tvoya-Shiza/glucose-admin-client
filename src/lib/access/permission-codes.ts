@@ -145,6 +145,9 @@ export const PERMISSION_CODES = [
     // progress overrides (Phase 18 — per-item content unlocks bypassing strict_progress)
     'progress_overrides.view',
     'progress_overrides.manage',
+    // settings (Phase 31 — global app settings, e.g. the ҰБТ exam date)
+    'settings.view',
+    'settings.edit',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
