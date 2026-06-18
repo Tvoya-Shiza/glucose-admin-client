@@ -246,7 +246,7 @@ export function PushComposeForm() {
                         <AudienceSelector value={field.value} onChange={field.onChange} />
                     )}
                 />
-                <AudiencePreview audience={audience} />
+                <AudiencePreview audience={audience} showFcm />
             </div>
 
             {/* Actions */}

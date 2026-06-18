@@ -15,9 +15,11 @@ import { Users as UsersIcon } from 'lucide-react';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { usePermission } from '@/lib/access/use-permission';
 import { listUsers } from '@/lib/users/api';
-import type { UserStatus } from '@/lib/users/types';
+import type { UserRow, UserStatus } from '@/lib/users/types';
 import { BulkGrantSheet } from './components/bulk-grant-sheet';
 import { CreateUserDialog } from './components/create-user-dialog';
+import { DeleteUserDialog } from './components/delete-user-dialog';
+import { EditUserStatusDialog } from './components/edit-user-status-dialog';
 import { ExportButton } from './components/export-button';
 import { UsersAnalyticsSection } from './components/users-analytics-section';
 import { UsersFilters } from './users-filters';
@@ -85,6 +87,8 @@ export function UsersListClient() {
     // query is invalidated (inside BulkGrantSheet) and selection is cleared here.
     const [bulkOpen, setBulkOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
+    const [editStatusUser, setEditStatusUser] = useState<UserRow | null>(null);
+    const [deleteUserRow, setDeleteUserRow] = useState<UserRow | null>(null);
     const selectedUserIds = useMemo(() => Array.from(selection.selected), [selection.selected]);
 
     return (
@@ -161,9 +165,25 @@ export function UsersListClient() {
                 ) : !isLoading && rows.length === 0 ? (
                     <EmptyState icon={UsersIcon} title={t(anyFilterActive ? 'empty' : 'empty_no_filters')} />
                 ) : (
-                    <UsersTable rows={rows} loading={isLoading} selection={selection} />
+                    <UsersTable
+                        rows={rows}
+                        loading={isLoading}
+                        selection={selection}
+                        onEditStatus={setEditStatusUser}
+                        onDelete={setDeleteUserRow}
+                    />
                 )}
             </Card>
+            <EditUserStatusDialog
+                open={editStatusUser !== null}
+                onOpenChange={(o) => !o && setEditStatusUser(null)}
+                user={editStatusUser}
+            />
+            <DeleteUserDialog
+                open={deleteUserRow !== null}
+                onOpenChange={(o) => !o && setDeleteUserRow(null)}
+                user={deleteUserRow}
+            />
         </PageShell>
     );
 }

@@ -62,6 +62,19 @@ export async function patchUserProfile(id: number | string, body: Record<string,
 }
 
 /**
+ * Soft-delete a user (admin-api stamps `deleted_at`; the row vanishes from lists).
+ * admin-api returns apiResponse-wrapped `{ id, deleted: true }`.
+ */
+export async function deleteUser(id: number | string): Promise<{ id: number; deleted: true }> {
+    const res = await fetchWithRefresh(`${BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(`deleteUser failed: ${res.status}`);
+    const json = await res.json();
+    return (json?.data ?? json) as { id: number; deleted: true };
+}
+
+/**
  * Plan 03 — paginated activity feed (AdminAuditLog rows scoped to entity='user' AND
  * entity_id=<id>). Lazy-loaded by the Activity tab so the audit-log query only runs
  * when the user clicks that tab (D-10).

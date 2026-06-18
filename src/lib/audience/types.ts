@@ -12,7 +12,15 @@
  */
 export type AudienceKind = 'group' | 'role' | 'region' | 'cohort';
 
-export type AudienceRole = 'student' | 'teacher' | 'curator' | 'admin';
+// Free-form: matched against the real `User.role_name` column (app users are 'user').
+// The role picker is data-driven from GET /push/roles, not a fixed enum.
+export type AudienceRole = string;
+
+/** One row of GET /push/roles — a real role_name and how many users have it. */
+export interface AudienceRoleCount {
+    role_name: string;
+    count: number;
+}
 
 export type RegionField = 'country_id' | 'province_id' | 'city_id' | 'district_id' | 'school_id';
 
@@ -62,6 +70,8 @@ export interface AudienceShape {
 
 export interface AudiencePreview {
     count: number;
+    /** How many of `count` have an active FCM token (will actually receive a push). */
+    count_with_fcm: number;
     sample: Array<{ id: number; full_name: string | null; email: string | null }>;
     /** sha256 of canonical JSON; reused as audit meta key (D-17). */
     audience_hash: string;
