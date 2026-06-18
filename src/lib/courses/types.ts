@@ -149,11 +149,11 @@ export interface ChapterItemPdfRef {
     title: string;
 }
 
-/** Phase 30 — optional lecture-notes attachment ("konspekt") on a content item. */
+/** Phase 30 — one lecture-notes attachment ("konspekt") on a content item. */
 export interface ChapterItemAttachmentRef {
     id: number;
     file: string;
-    /** Real uploaded MIME — 'application/pdf' previews, others download-only. */
+    /** Real uploaded MIME. */
     file_type: string;
     volume: string;
     /** KZ display label; '' when untitled. */
@@ -197,8 +197,8 @@ export interface ChapterItem {
      * `file` still points at the first PDF (back-compat); this is the full list.
      */
     pdfs?: ChapterItemPdfRef[];
-    /** Phase 30 — optional lecture-notes attachment; null/absent when none. */
-    attachment?: ChapterItemAttachmentRef | null;
+    /** Phase 30 — up to 3 lecture-notes attachments; empty/absent when none. */
+    attachments?: ChapterItemAttachmentRef[];
     /** Only present (non-empty) when type='file' — derived from FileTranslations join. */
     translations: Translation[];
 }
@@ -368,11 +368,11 @@ export interface UpsertItemPayload {
      */
     pdf_files?: { file_url: string; volume?: string; name?: string }[];
     /**
-     * Phase 30 — optional single lecture-notes attachment for a content item
-     * (video / image / rich-text). Tri-state: omit to leave as-is, `null` to
-     * detach, object to set/replace. Never affects item_id (the main file).
+     * Phase 30 — up to 3 lecture-notes attachments for a content item
+     * (video / image / rich-text). Tri-state: omit to leave as-is, `[]` to detach
+     * all, non-empty to replace. Never affects item_id (the main file).
      */
-    attachment?: { file_url: string; file_type: string; name?: string; volume?: string } | null;
+    attachments?: { file_url: string; file_type: string; name?: string; volume?: string }[];
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
