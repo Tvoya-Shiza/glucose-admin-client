@@ -100,7 +100,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         titleKey: 'sections.finance',
         items: [
-            { href: '/payments', labelKey: 'payments', icon: CreditCard },
+            // { href: '/payments', labelKey: 'payments', icon: CreditCard },
             { href: '/sales', labelKey: 'sales', icon: TrendingUp },
         ],
     },
@@ -137,10 +137,7 @@ export function AdminNav({ collapsed = false, onNavigate }: AdminNavProps) {
                         {Array.from({ length: sectionIdx === 0 ? 1 : 2 }).map((__, itemIdx) => (
                             <div
                                 key={itemIdx}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-md',
-                                    collapsed ? 'mx-auto h-10 w-10' : 'mx-2 h-9 px-3',
-                                )}
+                                className={cn('flex items-center gap-3 rounded-md', collapsed ? 'mx-auto h-10 w-10' : 'mx-2 h-9 px-3')}
                             >
                                 <div className='h-4 w-4 shrink-0 animate-pulse rounded bg-muted/60' />
                                 {!collapsed && <div className='h-3 flex-1 animate-pulse rounded bg-muted/40' />}
@@ -183,20 +180,17 @@ export function AdminNav({ collapsed = false, onNavigate }: AdminNavProps) {
                                         collapsed ? 'mx-auto h-10 w-10 justify-center' : 'px-3 py-2',
                                         isActive
                                             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+                                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
                                     )}
                                 >
                                     {isActive && !collapsed && (
-                                        <span
-                                            aria-hidden
-                                            className='absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-primary'
-                                        />
+                                        <span aria-hidden className='absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-primary' />
                                     )}
                                     <Icon
                                         size={18}
                                         className={cn(
                                             'shrink-0 transition-colors',
-                                            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
+                                            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                                         )}
                                     />
                                     {!collapsed && <span className='truncate'>{t(item.labelKey)}</span>}
