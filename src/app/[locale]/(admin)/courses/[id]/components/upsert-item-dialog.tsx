@@ -42,6 +42,14 @@ interface PdfEntry {
     volume: string;
 }
 
+/** Phase 30 — single optional lecture-notes attachment for a content item. */
+interface AttachmentEntry {
+    file_url: string;
+    file_type: string;
+    name: string;
+    volume: string;
+}
+
 export interface UpsertItemDialogProps {
     courseId: number;
     chapterId: number;
@@ -94,6 +102,16 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     const initialPdfs = (): PdfEntry[] =>
         item?.pdfs?.map((p) => ({ file_url: p.file, name: p.title, volume: p.volume })) ?? [];
 
+    const initialAttachment = (): AttachmentEntry | null =>
+        item?.attachment
+            ? {
+                  file_url: item.attachment.file,
+                  file_type: item.attachment.file_type,
+                  name: item.attachment.title,
+                  volume: item.attachment.volume,
+              }
+            : null;
+
     const [type, setType] = useState<ChapterItemType>(item?.type ?? 'file');
     const [subType, setSubType] = useState<FileSubType>(initialSubType);
     const [kzTitle, setKzTitle] = useState<string>(item?.translations?.find((tr) => tr.locale === 'kz')?.title ?? '');
@@ -111,6 +129,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
         item?.accessibility ?? item?.file?.accessibility ?? 'free',
     );
     const [pdfs, setPdfs] = useState<PdfEntry[]>(initialPdfs);
+    const [attachment, setAttachment] = useState<AttachmentEntry | null>(initialAttachment);
     const [fkId, setFkId] = useState<string>(item && item.type !== 'file' ? String(item.item_id) : '');
     // Phase 16 — per-item "counts toward course completion" toggle. Defaults to true
     // for both new items and existing items that pre-date Phase 16 (the server backfills
@@ -130,6 +149,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
             setStorage((item?.file?.storage as UpsertItemPayloadStorage | undefined) ?? 'upload');
             setAccessibility(item?.accessibility ?? item?.file?.accessibility ?? 'free');
             setPdfs(initialPdfs());
+            setAttachment(initialAttachment());
             setFkId(item && item.type !== 'file' ? String(item.item_id) : '');
             setIsRequired(item?.is_required ?? true);
         }
@@ -151,6 +171,12 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                     ],
                 };
                 let payload: UpsertItemPayload;
+                // Phase 30 — optional konspekt. Always sent for content sub-types
+                // (object or null) so detaching reaches the server. Not sent for the
+                // pdf block (its files ARE the content).
+                const attachmentField: UpsertItemPayload['attachment'] = attachment
+                    ? { file_url: attachment.file_url, file_type: attachment.file_type, name: attachment.name, volume: attachment.volume }
+                    : null;
                 if (subType === 'pdf') {
                     if (pdfs.length === 0) {
                         throw new Error(t('validation_failed'));
@@ -160,9 +186,9 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                         pdf_files: pdfs.map((p) => ({ file_url: p.file_url, name: p.name, volume: p.volume })),
                     };
                 } else if (subType === 'rich-text') {
-                    payload = { ...base, file_url: '', file_type: 'text/html', volume: '0', storage: 'upload' };
+                    payload = { ...base, file_url: '', file_type: 'text/html', volume: '0', storage: 'upload', attachment: attachmentField };
                 } else {
-                    payload = { ...base, file_url: fileUrl, file_type: fileType, volume, storage };
+                    payload = { ...base, file_url: fileUrl, file_type: fileType, volume, storage, attachment: attachmentField };
                 }
                 return upsertItem(courseId, payload);
             }
@@ -436,6 +462,49 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                 }}
                             />
                             <p className='text-xs text-muted-foreground'>{t('item_pdf_hint')}</p>
+                        </div>
+                    ) : null}
+
+                    {/* Phase 30 — optional lecture-notes attachment (konspekt) for
+                        content items (video / image / rich-text). Single, any document. */}
+                    {type === 'file' && subType !== 'pdf' ? (
+                        <div className='space-y-2 rounded border p-3'>
+                            <Label>{t('item_attachment_label')}</Label>
+                            <p className='text-xs text-muted-foreground'>{t('item_attachment_hint')}</p>
+                            {attachment ? (
+                                <div className='flex items-center justify-between gap-2 rounded border bg-muted/30 px-3 py-2 text-sm'>
+                                    <a
+                                        href={resolveAssetUrl(attachment.file_url)}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                        className='min-w-0 flex-1 truncate text-primary underline'
+                                    >
+                                        {attachment.name || attachment.file_url.split('/').pop()}
+                                    </a>
+                                    <Button
+                                        type='button'
+                                        variant='ghost'
+                                        size='sm'
+                                        onClick={() => setAttachment(null)}
+                                    >
+                                        {t('item_attachment_remove')}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <FileUploader
+                                    kind='document'
+                                    variant='inline'
+                                    value=''
+                                    onChange={(url, meta) => {
+                                        setAttachment({
+                                            file_url: url,
+                                            file_type: meta.mime,
+                                            name: meta.original_name ?? '',
+                                            volume: String(meta.size),
+                                        });
+                                    }}
+                                />
+                            )}
                         </div>
                     ) : null}
 

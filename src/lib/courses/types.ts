@@ -149,6 +149,17 @@ export interface ChapterItemPdfRef {
     title: string;
 }
 
+/** Phase 30 — optional lecture-notes attachment ("konspekt") on a content item. */
+export interface ChapterItemAttachmentRef {
+    id: number;
+    file: string;
+    /** Real uploaded MIME — 'application/pdf' previews, others download-only. */
+    file_type: string;
+    volume: string;
+    /** KZ display label; '' when untitled. */
+    title: string;
+}
+
 export interface ChapterItemQuizRef {
     id: number;
     slug: string;
@@ -186,6 +197,8 @@ export interface ChapterItem {
      * `file` still points at the first PDF (back-compat); this is the full list.
      */
     pdfs?: ChapterItemPdfRef[];
+    /** Phase 30 — optional lecture-notes attachment; null/absent when none. */
+    attachment?: ChapterItemAttachmentRef | null;
     /** Only present (non-empty) when type='file' — derived from FileTranslations join. */
     translations: Translation[];
 }
@@ -354,6 +367,12 @@ export interface UpsertItemPayload {
      * (file_type='application/pdf') and links them ordered.
      */
     pdf_files?: { file_url: string; volume?: string; name?: string }[];
+    /**
+     * Phase 30 — optional single lecture-notes attachment for a content item
+     * (video / image / rich-text). Tri-state: omit to leave as-is, `null` to
+     * detach, object to set/replace. Never affects item_id (the main file).
+     */
+    attachment?: { file_url: string; file_type: string; name?: string; volume?: string } | null;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
