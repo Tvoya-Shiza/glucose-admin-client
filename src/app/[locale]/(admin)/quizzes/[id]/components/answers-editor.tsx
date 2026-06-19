@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 import { Plus, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MathInput } from '@/components/ui/math-input';
 import {
     deleteAnswer,
     ForceConfirmRequiredError,
@@ -324,9 +324,9 @@ function AnswerRow({ quizId, questionId, questionType: _questionType, answer }: 
                     <Label className='text-muted-foreground text-xs'>
                         {t('kz_translation')}
                     </Label>
-                    <Input
+                    <MathInput
                         value={kzTitle}
-                        onChange={(e) => setKzTitle(e.target.value)}
+                        onChange={setKzTitle}
                         onBlur={handleBlurTitle}
                         placeholder={t('answer_title_placeholder')}
                         disabled={pending}

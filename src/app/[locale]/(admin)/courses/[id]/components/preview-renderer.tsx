@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RichMathContent } from '@/components/ui/rich-math-content';
 import { sanitizeTiptapHtml } from '@/lib/sanitize/sanitize-html';
 import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import type { CoursePreview, Locale, PreviewChapterItem } from '@/lib/courses/types';
@@ -176,12 +177,9 @@ function PreviewItem({ item, locale }: { item: PreviewChapterItem; locale: Local
                 <article className='space-y-2 rounded-md border p-3'>
                     {itemTitle ? <h3 className='font-medium'>{itemTitle}</h3> : null}
                     {itemDescription ? (
-                        <div
+                        <RichMathContent
                             className='prose prose-sm max-w-none'
-                            // eslint-disable-next-line react/no-danger
-                            dangerouslySetInnerHTML={{
-                                __html: sanitizeTiptapHtml(itemDescription),
-                            }}
+                            html={sanitizeTiptapHtml(itemDescription)}
                         />
                     ) : null}
                 </article>

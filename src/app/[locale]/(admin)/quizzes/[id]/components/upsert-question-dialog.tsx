@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { MathInput } from '@/components/ui/math-input';
 import { ForceConfirmRequiredError, listQuestions, upsertQuestion } from '@/lib/quizzes/api';
 import type {
     QuestionDetail,
@@ -305,9 +305,9 @@ export function UpsertQuestionDialog({
                         <div className='space-y-3'>
                             <div className='space-y-1.5'>
                                 <Label>{t('q_title_label')}</Label>
-                                <Input
+                                <MathInput
                                     value={kzTitle}
-                                    onChange={(e) => setKzTitle(e.target.value)}
+                                    onChange={setKzTitle}
                                     placeholder={t('q_title_placeholder')}
                                     maxLength={2000}
                                 />
@@ -322,9 +322,10 @@ export function UpsertQuestionDialog({
                             {type === 'descriptive' ? (
                                 <div className='space-y-1.5'>
                                     <Label>{t('descriptive_correct_label')}</Label>
-                                    <Textarea
+                                    <MathInput
+                                        multiline
                                         value={kzCorrect}
-                                        onChange={(e) => setKzCorrect(e.target.value)}
+                                        onChange={setKzCorrect}
                                         placeholder={t('descriptive_correct_placeholder')}
                                         rows={3}
                                         maxLength={5000}

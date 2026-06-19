@@ -17,6 +17,7 @@ import {
     Code as CodeIcon,
     Link as LinkIcon,
     Image as ImageIcon,
+    Sigma,
 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
@@ -42,9 +43,10 @@ import { FileLibraryPicker } from '@/components/ui/file-library-picker';
 
 export interface TiptapToolbarProps {
     editor: Editor;
+    onInsertFormula: () => void;
 }
 
-export function TiptapToolbar({ editor }: TiptapToolbarProps) {
+export function TiptapToolbar({ editor, onInsertFormula }: TiptapToolbarProps) {
     const t = useTranslations('admin.courses');
     const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -192,6 +194,16 @@ export function TiptapToolbar({ editor }: TiptapToolbarProps) {
                 title={t('tiptap_image')}
             >
                 <ImageIcon className='h-4 w-4' />
+            </Button>
+            <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={onInsertFormula}
+                aria-label={t('tiptap_formula')}
+                title={t('tiptap_formula')}
+            >
+                <Sigma className='h-4 w-4' />
             </Button>
             <FileLibraryPicker
                 open={pickerOpen}
