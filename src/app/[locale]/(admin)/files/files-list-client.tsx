@@ -141,9 +141,12 @@ export function FilesListClient() {
     });
 
     const handleUploadPick = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
+        // Copy out of the live FileList BEFORE resetting input.value — clearing the
+        // input empties event.target.files in place, so reading length afterwards
+        // would always see 0 and silently drop the picked files.
+        const files = Array.from(event.target.files ?? []);
         if (uploadInputRef.current) uploadInputRef.current.value = '';
-        if (!files || files.length === 0) return;
+        if (files.length === 0) return;
         enqueue(files);
     };
 
