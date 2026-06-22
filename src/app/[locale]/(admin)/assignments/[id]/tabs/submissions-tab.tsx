@@ -15,8 +15,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { GroupPicker } from '@/components/groups/group-picker';
 import { listSubmissions } from '@/lib/assignments/api';
 import type { SubmissionRow, SubmissionStatus } from '@/lib/assignments/types';
+import { useMe } from '@/lib/access/use-me';
 import { SubmissionDrawer } from '../components/submission-drawer';
 
 interface SubmissionsTabProps {
@@ -34,16 +36,22 @@ function formatDate(unix: string): string {
 export function SubmissionsTab({ assignmentId }: SubmissionsTabProps) {
     const t = useTranslations('admin.assignments');
 
-    const [{ page, page_size, status, q }, setQ] = useQueryStates({
+    // Teachers are scoped to their own webinars; the group (поток) filter is hidden for
+    // them, mirroring the quiz-results audit page.
+    const me = useMe();
+    const showGroupFilter = me.data?.role_name !== 'teacher';
+
+    const [{ page, page_size, status, group_id, q }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
         page_size: parseAsInteger.withDefault(50),
         status: parseAsString,
+        group_id: parseAsInteger,
         q: parseAsString,
     });
 
     const queryKey = useMemo(
-        () => ['admin.assignments.submissions', assignmentId, { page, page_size, status, q }] as const,
-        [assignmentId, page, page_size, status, q],
+        () => ['admin.assignments.submissions', assignmentId, { page, page_size, status, group_id, q }] as const,
+        [assignmentId, page, page_size, status, group_id, q],
     );
 
     const { data, isLoading, isFetching, error } = useQuery({
@@ -53,6 +61,7 @@ export function SubmissionsTab({ assignmentId }: SubmissionsTabProps) {
                 page,
                 page_size,
                 status: (status as SubmissionStatus | null) ?? undefined,
+                group_id: group_id ?? undefined,
                 q: q ?? undefined,
             }),
         placeholderData: (prev) => prev,
@@ -79,7 +88,7 @@ export function SubmissionsTab({ assignmentId }: SubmissionsTabProps) {
             </div>
 
             <Card className='p-4'>
-                <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                <div className={`grid grid-cols-1 gap-3 ${showGroupFilter ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                     <div className='space-y-1.5'>
                         <Label>{t('search_placeholder')}</Label>
                         <Input
@@ -108,6 +117,16 @@ export function SubmissionsTab({ assignmentId }: SubmissionsTabProps) {
                             </SelectContent>
                         </Select>
                     </div>
+                    {showGroupFilter ? (
+                        <div className='space-y-1.5'>
+                            <Label>{t('filter_group')}</Label>
+                            <GroupPicker
+                                value={group_id ?? null}
+                                onChange={(id) => setQ({ page: 1, group_id: id })}
+                                placeholder={t('filter_group_all')}
+                            />
+                        </div>
+                    ) : null}
                 </div>
             </Card>
 

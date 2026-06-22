@@ -130,6 +130,8 @@ export interface ListSubmissionsQuery {
     page?: number;
     page_size?: number;
     status?: SubmissionStatus;
+    /** Filter to submissions whose student belongs to this group (поток / ағым). */
+    group_id?: number;
     q?: string;
     sort?: 'created_at' | 'grade';
     order?: SortOrder;

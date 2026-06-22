@@ -1940,6 +1940,8 @@
             "search_placeholder": "Тапсырма атауын іздеу...",
             "filter_status": "Күй",
             "filter_status_all": "Барлығы",
+            "filter_group": "Ағым",
+            "filter_group_all": "Барлық ағымдар",
             "filter_webinar": "Курс",
             "filter_all": "Барлығы",
             "status_active": "Белсенді",
