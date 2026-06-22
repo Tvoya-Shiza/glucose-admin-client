@@ -56,7 +56,7 @@ export function DeleteFileDialog({ asset, open, onOpenChange }: DeleteFileDialog
                     <DialogDescription>{t('delete_confirm_body')}</DialogDescription>
                 </DialogHeader>
                 {asset ? (
-                    <div className='text-muted-foreground text-sm'>
+                    <div className='min-w-0 break-all text-muted-foreground text-sm'>
                         {asset.original_name ?? asset.filename}
                     </div>
                 ) : null}

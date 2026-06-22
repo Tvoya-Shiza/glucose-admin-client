@@ -68,7 +68,7 @@ export function ReplaceFileDialog({ asset, open, onOpenChange }: ReplaceFileDial
                     <DialogDescription>{t('replace_body')}</DialogDescription>
                 </DialogHeader>
                 {asset ? (
-                    <div className='text-muted-foreground text-sm'>
+                    <div className='min-w-0 break-all text-muted-foreground text-sm'>
                         {asset.original_name ?? asset.filename} · {asset.mime}
                     </div>
                 ) : null}
