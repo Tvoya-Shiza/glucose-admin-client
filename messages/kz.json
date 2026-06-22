@@ -254,7 +254,7 @@
             "range_from": "Бастап",
             "range_to": "Дейін",
             "kpi_total": "Барлық пайдаланушы",
-            "kpi_new_in_range": "Кезеңде жаңа",
+            "kpi_new_in_range": "Кезеңдегі жаңа тіркелулер",
             "kpi_active_30d": "Соңғы 30 күн белсенді",
             "kpi_pending": "Күтуде",
             "chart_registrations": "Тіркелулер",

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { getScheduleCalendar } from '@/lib/schedules/api';
 import type { Schedule } from '@/lib/schedules/types';
-import { formatScheduleTime } from '@/lib/schedules/format';
+import { formatScheduleTime, htmlToPlainText } from '@/lib/schedules/format';
 import type { ScheduleFiltersValue } from './schedules-filters';
 
 interface SchedulesCalendarProps {
@@ -162,7 +162,7 @@ export function SchedulesCalendar({ filters, canEdit, onEdit }: SchedulesCalenda
                                                 STATUS_COLOR[ev.status],
                                                 canEdit ? 'hover:opacity-80' : 'cursor-default',
                                             )}
-                                            title={ev.description ?? ev.group_name}
+                                            title={ev.description ? htmlToPlainText(ev.description) : ev.group_name}
                                         >
                                             <span className='mr-1 tabular-nums'>
                                                 {formatScheduleTime(ev.start_at, locale)}

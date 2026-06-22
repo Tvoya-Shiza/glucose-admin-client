@@ -13,6 +13,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { deleteSchedule } from '@/lib/schedules/api';
+import { htmlToPlainText } from '@/lib/schedules/format';
 import type { Schedule } from '@/lib/schedules/types';
 
 interface DeleteScheduleDialogProps {
@@ -53,7 +54,9 @@ export function DeleteScheduleDialog({ open, onOpenChange, schedule }: DeleteSch
                 {schedule ? (
                     <div className='rounded border bg-muted/30 p-3 text-sm'>
                         <div className='font-medium'>{schedule.group_name}</div>
-                        <div className='text-xs text-muted-foreground'>{schedule.description ?? '—'}</div>
+                        <div className='line-clamp-2 text-xs text-muted-foreground'>
+                            {schedule.description ? htmlToPlainText(schedule.description) : '—'}
+                        </div>
                     </div>
                 ) : null}
                 <DialogFooter>

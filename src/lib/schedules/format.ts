@@ -32,6 +32,26 @@ export function formatScheduleTime(unixSec: number, locale: string): string {
     return new Intl.DateTimeFormat(bcp47(locale), { hour: '2-digit', minute: '2-digit' }).format(new Date(unixSec * 1000));
 }
 
+/**
+ * Strip HTML tags from a (possibly rich-text) description down to plain text.
+ * Used for compact surfaces — table previews, calendar tooltips, delete
+ * confirmation — where rendered markup would be noise. The full rich content is
+ * shown in the editor (admin) and the student schedule card.
+ */
+export function htmlToPlainText(html: string | null | undefined): string {
+    if (!html) return '';
+    return html
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export function unixSecondsAtStartOfDay(year: number, month0: number, day: number): number {
     return Math.floor(new Date(year, month0, day, 0, 0, 0, 0).getTime() / 1000);
 }

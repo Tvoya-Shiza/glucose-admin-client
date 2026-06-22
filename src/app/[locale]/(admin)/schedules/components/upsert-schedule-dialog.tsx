@@ -18,11 +18,11 @@ import {
 } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useMe } from '@/lib/access/use-me';
 import { useIsSuper } from '@/lib/access/use-permission';
 import { EntitySearchPicker } from '@/app/[locale]/(admin)/courses/[id]/components/entity-search-picker';
+import { TiptapEditor } from '@/app/[locale]/(admin)/courses/[id]/components/tiptap-editor';
 import { createSchedule, updateSchedule } from '@/lib/schedules/api';
 import {
     datetimeLocalToUnix,
@@ -47,7 +47,10 @@ const upsertScheduleSchema = z
         course_id: z.string().min(1, 'field_course_required'),
         start_at_local: z.string().min(1, 'required'),
         end_at_local: z.string().min(1, 'required'),
-        description: z.string().max(2000),
+        // Holds sanitized rich-text HTML — markup eats into the budget, so the
+        // limit is higher than the old plain-text 2000 (DB column is TEXT; the
+        // admin-api DTO caps the same way).
+        description: z.string().max(10000),
         status: z.enum(SCHEDULE_STATUSES),
     })
     .refine(
@@ -357,7 +360,15 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                                 <FormItem>
                                     <FormLabel>{t('field_description')}</FormLabel>
                                     <FormControl>
-                                        <Textarea rows={3} {...field} />
+                                        {/* Rich-text (Tiptap). Seed from the stable `editing` value so the
+                                            editor's re-seed effect never fires mid-typing; `field.onChange`
+                                            receives client-sanitized HTML on every edit. The key remounts the
+                                            editor when switching between create and a specific schedule. */}
+                                        <TiptapEditor
+                                            key={editing?.id ?? 'create'}
+                                            initialHtml={editing?.description ?? ''}
+                                            onChange={field.onChange}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

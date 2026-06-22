@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatScheduleRange } from '@/lib/schedules/format';
+import { formatScheduleRange, htmlToPlainText } from '@/lib/schedules/format';
 import type { Schedule, ScheduleItem, ScheduleStatus } from '@/lib/schedules/types';
 
 export interface SchedulesTableProps {
@@ -66,7 +66,7 @@ export function SchedulesTable({ rows, loading, canEdit, canDelete, onEdit, onDe
                             {formatScheduleRange(row.start_at, row.end_at, locale)}
                             {row.description ? (
                                 <div className='mt-0.5 line-clamp-1 text-xs text-muted-foreground'>
-                                    {row.description}
+                                    {htmlToPlainText(row.description)}
                                 </div>
                             ) : null}
                         </TableCell>
