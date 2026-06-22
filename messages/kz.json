@@ -2029,6 +2029,7 @@
             "sub_drawer_curator_label": "Куратор",
             "sub_drawer_student_label": "Оқушы",
             "sub_drawer_download_file": "Жүктеп алу",
+            "sub_drawer_file_failed": "Файлды ашу мүмкін болмады",
             "grade_dialog_title": "Бағалау",
             "grade_dialog_status": "Күй",
             "grade_dialog_grade": "Балл",

@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { usePermission } from '@/lib/access/use-permission';
+import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { getSubmission, gradeSubmission, replyToSubmission } from '@/lib/assignments/api';
 import type { SubmissionDetail, SubmissionStatus } from '@/lib/assignments/types';
 
@@ -93,6 +94,28 @@ export function SubmissionDrawer({ assignmentId, historyId, onClose }: Submissio
             ? t('submission_status_not_passed')
             : t('submission_status_not_submitted');
 
+    // Download submission files through fetchWithRefresh (not a plain <a href>):
+    // the file route sits behind the BFF proxy + Bearer auth, and a direct anchor
+    // navigation bypasses refresh-on-401, so an expired 15-min access token left
+    // the new tab on a bare {"statusCode":401}. Fetching here refreshes the token
+    // first, then opens the resulting blob.
+    const openFile = async (fileUrl: string) => {
+        try {
+            const res = await fetchWithRefresh(`/api/proxy${fileUrl}`);
+            if (!res.ok) {
+                toast.error(t('sub_drawer_file_failed'));
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank', 'noopener');
+            // Give the new tab time to load the blob before revoking the object URL.
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        } catch {
+            toast.error(t('sub_drawer_file_failed'));
+        }
+    };
+
     return (
         <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
             <SheetContent className='w-full max-w-2xl overflow-y-auto sm:max-w-2xl'>
@@ -162,15 +185,14 @@ export function SubmissionDrawer({ assignmentId, historyId, onClose }: Submissio
                                                     <div className='whitespace-pre-wrap text-sm'>{m.message}</div>
                                                 ) : null}
                                                 {m.file_url ? (
-                                                    <a
-                                                        href={`/api/proxy${m.file_url}`}
-                                                        target='_blank'
-                                                        rel='noopener noreferrer'
+                                                    <button
+                                                        type='button'
+                                                        onClick={() => openFile(m.file_url!)}
                                                         className='mt-2 inline-flex items-center gap-1 text-xs underline'
                                                     >
                                                         <Download className='h-3 w-3' />
                                                         {m.file_title ?? t('sub_drawer_download_file')}
-                                                    </a>
+                                                    </button>
                                                 ) : null}
                                                 {m.curator_comment ? (
                                                     <div className='mt-2 rounded bg-background/60 p-2 text-xs italic text-muted-foreground'>
