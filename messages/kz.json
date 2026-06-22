@@ -2235,6 +2235,12 @@
         "or_paste_url_label": "Немесе сілтеме қойыңыз:",
         "apply_url": "Қолдану",
         "invalid_url": "Жарамсыз URL",
+        "upload_queue_title": "Файлдарды жүктеу",
+        "upload_queued": "Кезекте",
+        "upload_done": "Дайын",
+        "upload_dismiss": "Жабу",
+        "upload_summary_success": "{count} файл жүктелді",
+        "upload_summary_partial": "{ok} жүктелді, {failed} сәтсіз аяқталды",
         "folders": {
             "root": "Түбір",
             "new_folder": "Жаңа қалта",

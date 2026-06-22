@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { FolderOpen, FolderPlus, MoreHorizontal, Trash2, Pencil, Upload } from 'lucide-react';
+import { Check, FolderOpen, FolderPlus, MoreHorizontal, Trash2, Pencil, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { FileFolder } from '@shared/folders';
 import { EmptyState } from '@/components/admin/empty-state';
@@ -32,7 +32,7 @@ import {
     useFolderTree,
 } from '@/lib/folders/use-folder-tree';
 import { listUploads, moveUpload } from '@/lib/uploads/client';
-import { useFileUpload } from '@/lib/uploads/use-file-upload';
+import { useMultiFileUpload, type MultiUploadItem } from '@/lib/uploads/use-multi-file-upload';
 import { MIME_BY_KIND } from '@/lib/uploads/constants';
 import { mapUploadErrorToI18nKey } from '@/lib/uploads/errors';
 import type { UploadAsset, UploadKind } from '@/lib/uploads/types';
@@ -111,51 +111,40 @@ export function FilesListClient() {
 
     const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
-    const onUploadSuccess = () => {
-        toast.success(tUpload('succeeded'));
-        qc.invalidateQueries({ queryKey: ['admin.uploads.list'] });
-    };
-    const onUploadError = (i18nKey: string) => {
-        toast.error(tUpload(i18nKey.replace(/^upload\./, '')));
-    };
+    // Route each picked file to an upload kind. Mirrors the single-file rules:
+    // videos → video; PDF/Office/txt/zip → document (the image/cover whitelists
+    // would reject them); otherwise save as cover when browsing covers, else image.
+    const resolveKind = useCallback(
+        (file: File): UploadKind => {
+            if (file.type.startsWith('video/')) return 'video';
+            if ((MIME_BY_KIND.document as ReadonlyArray<string>).includes(file.type)) return 'document';
+            return kind === 'cover' ? 'cover' : 'image';
+        },
+        [kind],
+    );
 
-    const imageUploader = useFileUpload({ kind: 'image', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
-    const coverUploader = useFileUpload({ kind: 'cover', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
-    const videoUploader = useFileUpload({ kind: 'video', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
-    const documentUploader = useFileUpload({ kind: 'document', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
-
-    const inflightUploader =
-        videoUploader.state === 'requesting' || videoUploader.state === 'uploading'
-            ? videoUploader
-            : documentUploader.state === 'requesting' || documentUploader.state === 'uploading'
-              ? documentUploader
-              : coverUploader.state === 'requesting' || coverUploader.state === 'uploading'
-                ? coverUploader
-                : null;
-    const activeUploader = inflightUploader ?? imageUploader;
-    const uploading = inflightUploader !== null;
+    const { items, active: uploading, overallProgress, enqueue, clear: clearUploads } = useMultiFileUpload({
+        folderId,
+        resolveKind,
+        onSettled: (settled) => {
+            const ok = settled.filter((it) => it.state === 'done').length;
+            const failed = settled.filter((it) => it.state === 'error').length;
+            if (ok > 0) qc.invalidateQueries({ queryKey: ['admin.uploads.list'] });
+            if (failed === 0) {
+                toast.success(t('upload_summary_success', { count: ok }));
+            } else if (ok > 0) {
+                toast.error(t('upload_summary_partial', { ok, failed }));
+            } else {
+                toast.error(tUpload('failed'));
+            }
+        },
+    });
 
     const handleUploadPick = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+        const files = event.target.files;
         if (uploadInputRef.current) uploadInputRef.current.value = '';
-        if (!file) return;
-        if (file.type.startsWith('video/')) {
-            videoUploader.upload(file);
-            return;
-        }
-        // Documents (PDF / Office / txt / zip) route to the document uploader —
-        // the image/cover whitelists would otherwise reject them at pre-flight.
-        if ((MIME_BY_KIND.document as ReadonlyArray<string>).includes(file.type)) {
-            documentUploader.upload(file);
-            return;
-        }
-        // Respect the current kind filter for images: if user is browsing
-        // covers, save as cover. Otherwise default to image.
-        if (kind === 'cover') {
-            coverUploader.upload(file);
-        } else {
-            imageUploader.upload(file);
-        }
+        if (!files || files.length === 0) return;
+        enqueue(files);
     };
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -207,11 +196,12 @@ export function FilesListClient() {
                                     disabled={uploading}
                                 >
                                     <Upload className='mr-1 h-4 w-4' />
-                                    {uploading ? `${activeUploader.progress}%` : tFolders('upload_here')}
+                                    {uploading ? `${overallProgress}%` : tFolders('upload_here')}
                                 </Button>
                                 <input
                                     ref={uploadInputRef}
                                     type='file'
+                                    multiple
                                     accept={[
                                         ...(MIME_BY_KIND.image as ReadonlyArray<string>),
                                         ...(MIME_BY_KIND.video as ReadonlyArray<string>),
@@ -290,6 +280,10 @@ export function FilesListClient() {
                             />
                         </Card>
 
+                        {items.length > 0 ? (
+                            <UploadQueueCard items={items} active={uploading} onDismiss={clearUploads} />
+                        ) : null}
+
                         {error ? (
                             <EmptyState icon={FolderOpen} title={tUpload('failed')} subtitle={(error as Error).message} />
                         ) : !isLoading && rows.length === 0 ? (
@@ -343,5 +337,87 @@ export function FilesListClient() {
                 />
             </PageShell>
         </DndContext>
+    );
+}
+
+/**
+ * Compact progress panel for a batch upload. Shows one row per file with its
+ * live progress / final status. Dismiss is offered only once the batch has
+ * settled (no in-flight uploads), so completed results stay visible until the
+ * user clears them.
+ */
+function UploadQueueCard({
+    items,
+    active,
+    onDismiss,
+}: {
+    items: MultiUploadItem[];
+    active: boolean;
+    onDismiss: () => void;
+}) {
+    const t = useTranslations('files');
+    const tUpload = useTranslations('upload');
+    const done = items.filter((it) => it.state === 'done').length;
+
+    return (
+        <Card className='space-y-2 p-3'>
+            <div className='flex items-center justify-between gap-2'>
+                <span className='text-sm font-medium'>
+                    {t('upload_queue_title')} ({done}/{items.length})
+                </span>
+                {!active ? (
+                    <Button type='button' variant='ghost' size='sm' onClick={onDismiss}>
+                        <X className='mr-1 h-4 w-4' />
+                        {t('upload_dismiss')}
+                    </Button>
+                ) : null}
+            </div>
+            <ul className='space-y-1.5'>
+                {items.map((it) => (
+                    <li key={it.id} className='flex items-center gap-3 text-sm'>
+                        <span className='min-w-0 flex-1 truncate' title={it.file.name}>
+                            {it.file.name}
+                        </span>
+                        <div className='flex w-40 shrink-0 items-center justify-end gap-2'>
+                            {it.state === 'idle' ? (
+                                <span className='text-muted-foreground text-xs'>{t('upload_queued')}</span>
+                            ) : null}
+                            {it.state === 'requesting' || it.state === 'uploading' ? (
+                                <>
+                                    <div className='bg-muted h-2 w-24 overflow-hidden rounded'>
+                                        <div
+                                            className='bg-primary h-full transition-[width] duration-150'
+                                            style={{ width: `${it.progress}%` }}
+                                            role='progressbar'
+                                            aria-valuenow={it.progress}
+                                            aria-valuemin={0}
+                                            aria-valuemax={100}
+                                        />
+                                    </div>
+                                    <span className='text-muted-foreground w-9 text-right text-xs tabular-nums'>{it.progress}%</span>
+                                </>
+                            ) : null}
+                            {it.state === 'done' ? (
+                                <span className='flex items-center gap-1 text-xs text-emerald-600'>
+                                    <Check className='h-4 w-4' />
+                                    {t('upload_done')}
+                                </span>
+                            ) : null}
+                            {it.state === 'error' ? (
+                                <span
+                                    className='text-destructive flex items-center gap-1 text-right text-xs'
+                                    title={it.error ? tUpload(it.error.i18nKey.replace(/^upload\./, '')) : undefined}
+                                >
+                                    <X className='h-4 w-4 shrink-0' />
+                                    <span className='truncate'>
+                                        {it.error ? tUpload(it.error.i18nKey.replace(/^upload\./, '')) : tUpload('failed')}
+                                    </span>
+                                </span>
+                            ) : null}
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </Card>
     );
 }
