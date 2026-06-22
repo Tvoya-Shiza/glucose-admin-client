@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
+import { FileText as FileTextIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { resolveAssetUrl } from '@/lib/uploads/asset-url';
@@ -135,6 +136,15 @@ function FileCardBody({
                         preload='metadata'
                         muted
                     />
+                ) : asset.kind === 'document' ? (
+                    // Documents (PDF / Office / txt / zip) have no inline preview —
+                    // show a file icon + extension instead of a broken <img>.
+                    <div className='flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center'>
+                        <FileTextIcon className='h-8 w-8' />
+                        <span className='text-xs uppercase'>
+                            {(asset.original_name ?? asset.filename).split('.').pop()}
+                        </span>
+                    </div>
                 ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

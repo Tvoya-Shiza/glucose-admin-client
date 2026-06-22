@@ -33,6 +33,7 @@ import {
 } from '@/lib/folders/use-folder-tree';
 import { listUploads, moveUpload } from '@/lib/uploads/client';
 import { useFileUpload } from '@/lib/uploads/use-file-upload';
+import { MIME_BY_KIND } from '@/lib/uploads/constants';
 import { mapUploadErrorToI18nKey } from '@/lib/uploads/errors';
 import type { UploadAsset, UploadKind } from '@/lib/uploads/types';
 import { DeleteFileDialog } from './components/delete-file-dialog';
@@ -121,14 +122,18 @@ export function FilesListClient() {
     const imageUploader = useFileUpload({ kind: 'image', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
     const coverUploader = useFileUpload({ kind: 'cover', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
     const videoUploader = useFileUpload({ kind: 'video', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
+    const documentUploader = useFileUpload({ kind: 'document', folderId, onSuccess: onUploadSuccess, onError: onUploadError });
 
-    const activeUploader =
+    const inflightUploader =
         videoUploader.state === 'requesting' || videoUploader.state === 'uploading'
             ? videoUploader
-            : coverUploader.state === 'requesting' || coverUploader.state === 'uploading'
-              ? coverUploader
-              : imageUploader;
-    const uploading = activeUploader.state === 'requesting' || activeUploader.state === 'uploading';
+            : documentUploader.state === 'requesting' || documentUploader.state === 'uploading'
+              ? documentUploader
+              : coverUploader.state === 'requesting' || coverUploader.state === 'uploading'
+                ? coverUploader
+                : null;
+    const activeUploader = inflightUploader ?? imageUploader;
+    const uploading = inflightUploader !== null;
 
     const handleUploadPick = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -136,6 +141,12 @@ export function FilesListClient() {
         if (!file) return;
         if (file.type.startsWith('video/')) {
             videoUploader.upload(file);
+            return;
+        }
+        // Documents (PDF / Office / txt / zip) route to the document uploader —
+        // the image/cover whitelists would otherwise reject them at pre-flight.
+        if ((MIME_BY_KIND.document as ReadonlyArray<string>).includes(file.type)) {
+            documentUploader.upload(file);
             return;
         }
         // Respect the current kind filter for images: if user is browsing
@@ -201,7 +212,11 @@ export function FilesListClient() {
                                 <input
                                     ref={uploadInputRef}
                                     type='file'
-                                    accept='image/jpeg,image/png,image/webp,video/mp4,video/webm'
+                                    accept={[
+                                        ...(MIME_BY_KIND.image as ReadonlyArray<string>),
+                                        ...(MIME_BY_KIND.video as ReadonlyArray<string>),
+                                        ...(MIME_BY_KIND.document as ReadonlyArray<string>),
+                                    ].join(',')}
                                     className='hidden'
                                     onChange={handleUploadPick}
                                 />
