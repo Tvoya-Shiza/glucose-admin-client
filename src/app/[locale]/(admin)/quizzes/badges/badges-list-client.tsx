@@ -12,20 +12,8 @@ import { PageShell } from '@/components/admin/page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { deleteBadge, listBadges } from '@/lib/quizzes/api';
 import type { QuizBadgeRow } from '@/lib/quizzes/types';
 import { UpsertBadgeDialog } from './components/upsert-badge-dialog';
@@ -105,9 +93,7 @@ export function BadgesListClient() {
                             <Card key={row.id} className='flex flex-col'>
                                 <CardHeader className='space-y-2'>
                                     <div className='flex items-start justify-between gap-2'>
-                                        <CardTitle className='line-clamp-2 break-words text-base'>
-                                            {headerLabel}
-                                        </CardTitle>
+                                        <CardTitle className='line-clamp-2 break-words text-base'>{headerLabel}</CardTitle>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button
@@ -124,21 +110,14 @@ export function BadgesListClient() {
                                                     <Pencil className='mr-2 h-4 w-4' />
                                                     {t('edit_badge')}
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onSelect={() => setDeleteTarget(row)}
-                                                    className='text-destructive'
-                                                >
+                                                <DropdownMenuItem onSelect={() => setDeleteTarget(row)} className='text-destructive'>
                                                     <Trash className='mr-2 h-4 w-4' />
                                                     {t('delete_badge')}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
-                                    {kzTitle.length > 0 ? (
-                                        <p className='text-muted-foreground line-clamp-1 text-xs'>
-                                            {kzTitle}
-                                        </p>
-                                    ) : null}
+                                    {kzTitle.length > 0 ? <p className='text-muted-foreground line-clamp-1 text-xs'>{kzTitle}</p> : null}
                                 </CardHeader>
                                 <CardContent className='mt-auto space-y-3'>
                                     <div className='flex flex-wrap items-center gap-2'>
@@ -185,11 +164,7 @@ export function BadgesListClient() {
                 </div>
             )}
 
-            <UpsertBadgeDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
-                initial={undefined}
-            />
+            <UpsertBadgeDialog open={createOpen} onOpenChange={setCreateOpen} initial={undefined} />
 
             <UpsertBadgeDialog
                 open={editTarget != null}
@@ -221,17 +196,10 @@ export function BadgesListClient() {
                 <DialogContent className='sm:max-w-md'>
                     <DialogHeader>
                         <DialogTitle>{t('delete_badge_dialog_title')}</DialogTitle>
-                        <DialogDescription>
-                            {t('delete_badge_dialog_description')}
-                        </DialogDescription>
+                        <DialogDescription>{t('delete_badge_dialog_description')}</DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button
-                            type='button'
-                            variant='outline'
-                            onClick={() => setDeleteTarget(null)}
-                            disabled={deleteMutation.isPending}
-                        >
+                        <Button type='button' variant='outline' onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
                             {t('cancel')}
                         </Button>
                         <Button
@@ -240,9 +208,7 @@ export function BadgesListClient() {
                             disabled={deleteMutation.isPending}
                             onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
                         >
-                            {deleteMutation.isPending
-                                ? t('loading')
-                                : t('delete_badge')}
+                            {deleteMutation.isPending ? t('loading') : t('delete_badge')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
