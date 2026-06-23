@@ -18,8 +18,9 @@ export interface Schedule {
     id: number;
     curator_id: number;
     curator_name: string | null;
-    group_id: number;
-    group_name: string;
+    /** Phase 32 — null for a GENERAL schedule (applies to all students of the course). */
+    group_id: number | null;
+    group_name: string | null;
     course_id: number | null;
     course_title_ru: string | null;
     course_title_kz: string | null;
@@ -27,6 +28,9 @@ export interface Schedule {
     end_at: number;
     description: string | null;
     status: ScheduleStatus;
+    /** Phase 32 — independent access-gate toggles. */
+    block_before_start: boolean;
+    block_after_end: boolean;
     item_count: number;
     items: ScheduleItem[];
     created_by: number;
@@ -80,21 +84,27 @@ export interface ScheduleListFilters {
 
 export interface CreateSchedulePayload {
     curator_id: number;
-    group_id: number;
+    /** null = general schedule (applies to all students of the course). */
+    group_id: number | null;
     course_id: number;
     start_at: number;
     end_at: number;
     description?: string | null;
     status?: ScheduleStatus;
+    block_before_start?: boolean;
+    block_after_end?: boolean;
     items?: ScheduleItemInput[];
 }
 
 export interface UpdateSchedulePayload {
-    group_id?: number;
+    /** null converts a group schedule to general; omitted leaves it unchanged. */
+    group_id?: number | null;
     course_id?: number;
     start_at?: number;
     end_at?: number;
     description?: string | null;
     status?: ScheduleStatus;
+    block_before_start?: boolean;
+    block_after_end?: boolean;
     items?: ScheduleItemInput[];
 }

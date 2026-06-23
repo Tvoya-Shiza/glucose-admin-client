@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useMe } from '@/lib/access/use-me';
 import { useIsSuper } from '@/lib/access/use-permission';
@@ -40,7 +41,11 @@ import { ScheduleItemsEditor, type ScheduleItemDraft } from './schedule-items-ed
 const upsertScheduleSchema = z
     .object({
         curator_id: z.string().min(1, 'required'),
-        group_id: z.string().min(1, 'required'),
+        // Phase 32 — scope discriminator. 'general' = no group (applies to all
+        // students of the course); 'group' = scoped to the picked group.
+        scope: z.enum(['general', 'group']),
+        // Empty when scope='general'; a numeric-string group id when scope='group'.
+        group_id: z.string(),
         // course_id is now required: the items picker is scoped to the schedule's
         // bound course on the backend (CoursesPickerItemsService), and admin-api
         // CreateScheduleDto rejects writes without it.
@@ -52,6 +57,13 @@ const upsertScheduleSchema = z
         // admin-api DTO caps the same way).
         description: z.string().max(10000),
         status: z.enum(SCHEDULE_STATUSES),
+        // Phase 32 — independent access-gate toggles.
+        block_before_start: z.boolean(),
+        block_after_end: z.boolean(),
+    })
+    .refine((data) => data.scope === 'general' || data.group_id.trim().length > 0, {
+        path: ['group_id'],
+        message: 'group_required_when_specific',
     })
     .refine(
         (data) => {
@@ -77,9 +89,13 @@ function defaultValues(
     fallbackCuratorId: number | null,
     fallbackCourseId: number | null,
 ): UpsertScheduleValues {
+    const hasGroup = editing?.group_id != null;
     return {
         curator_id: editing?.curator_id != null ? String(editing.curator_id) : fallbackCuratorId ? String(fallbackCuratorId) : '',
-        group_id: editing?.group_id != null ? String(editing.group_id) : '',
+        // Existing general schedule → 'general'; existing group schedule or a new
+        // schedule → 'group' (group remains the default to preserve current flow).
+        scope: editing && !hasGroup ? 'general' : 'group',
+        group_id: hasGroup ? String(editing!.group_id) : '',
         course_id:
             editing?.course_id != null
                 ? String(editing.course_id)
@@ -90,6 +106,8 @@ function defaultValues(
         end_at_local: unixToDatetimeLocal(editing?.end_at ?? Math.floor(Date.now() / 1000) + 60 * 60),
         description: editing?.description ?? '',
         status: editing?.status ?? 'scheduled',
+        block_before_start: editing?.block_before_start ?? false,
+        block_after_end: editing?.block_after_end ?? false,
     };
 }
 
@@ -181,14 +199,19 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                 position: idx,
             }));
 
+            // Phase 32 — null group = general schedule.
+            const group_id = values.scope === 'general' ? null : Number(values.group_id);
+
             if (isEdit && editing) {
                 const payload: UpdateSchedulePayload = {
-                    group_id: Number(values.group_id),
+                    group_id,
                     course_id: Number(values.course_id),
                     start_at,
                     end_at,
                     description: values.description.length > 0 ? values.description : null,
                     status: values.status,
+                    block_before_start: values.block_before_start,
+                    block_after_end: values.block_after_end,
                     items: itemsPayload,
                 };
                 return updateSchedule(editing.id, payload);
@@ -196,12 +219,14 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
 
             const payload: CreateSchedulePayload = {
                 curator_id: Number(values.curator_id),
-                group_id: Number(values.group_id),
+                group_id,
                 course_id: Number(values.course_id),
                 start_at,
                 end_at,
                 description: values.description.length > 0 ? values.description : undefined,
                 status: values.status,
+                block_before_start: values.block_before_start,
+                block_after_end: values.block_after_end,
                 items: itemsPayload,
             };
             return createSchedule(payload);
@@ -278,13 +303,44 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>{t('field_group')}</FormLabel>
-                                        <FormControl>
-                                            <EntitySearchPicker
-                                                kind='user-group'
-                                                value={field.value}
-                                                onChange={(v) => field.onChange(v)}
-                                            />
-                                        </FormControl>
+                                        {/* Scope: General (no group) vs a specific group. */}
+                                        <Controller
+                                            control={form.control}
+                                            name='scope'
+                                            render={({ field: scopeField }) => (
+                                                <div role='radiogroup' className='mb-2 inline-flex flex-wrap gap-1 rounded-md border bg-muted/30 p-1'>
+                                                    {(['general', 'group'] as const).map((opt) => (
+                                                        <button
+                                                            key={opt}
+                                                            type='button'
+                                                            role='radio'
+                                                            aria-checked={scopeField.value === opt}
+                                                            onClick={() => {
+                                                                scopeField.onChange(opt);
+                                                                if (opt === 'general') field.onChange('');
+                                                            }}
+                                                            className={cn(
+                                                                'rounded px-3 py-1.5 text-sm font-medium transition-colors',
+                                                                scopeField.value === opt
+                                                                    ? 'bg-background text-foreground shadow-sm'
+                                                                    : 'text-muted-foreground hover:text-foreground',
+                                                            )}
+                                                        >
+                                                            {t(`scope_${opt}`)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        />
+                                        {form.watch('scope') === 'group' && (
+                                            <FormControl>
+                                                <EntitySearchPicker
+                                                    kind='user-group'
+                                                    value={field.value}
+                                                    onChange={(v) => field.onChange(v)}
+                                                />
+                                            </FormControl>
+                                        )}
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -319,6 +375,37 @@ export function UpsertScheduleDialog({ open, onOpenChange, editing, defaultCours
                                     </FormItem>
                                 )}
                             />
+                        </div>
+
+                        {/* Phase 32 — access-gate toggles. Off = informational event. */}
+                        <div className='space-y-2 rounded-md border border-dashed p-3'>
+                            <p className='text-xs text-muted-foreground'>{t('field_block_hint')}</p>
+                            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                                <FormField
+                                    control={form.control}
+                                    name='block_before_start'
+                                    render={({ field }) => (
+                                        <FormItem className='flex items-center gap-2 space-y-0'>
+                                            <FormControl>
+                                                <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(!!v)} />
+                                            </FormControl>
+                                            <FormLabel className='!mt-0 font-normal'>{t('field_block_before_start')}</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name='block_after_end'
+                                    render={({ field }) => (
+                                        <FormItem className='flex items-center gap-2 space-y-0'>
+                                            <FormControl>
+                                                <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(!!v)} />
+                                            </FormControl>
+                                            <FormLabel className='!mt-0 font-normal'>{t('field_block_after_end')}</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                         </div>
 
                         <FormField

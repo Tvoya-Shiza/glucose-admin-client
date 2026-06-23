@@ -53,7 +53,7 @@ export function DeleteScheduleDialog({ open, onOpenChange, schedule }: DeleteSch
                 </DialogHeader>
                 {schedule ? (
                     <div className='rounded border bg-muted/30 p-3 text-sm'>
-                        <div className='font-medium'>{schedule.group_name}</div>
+                        <div className='font-medium'>{schedule.group_name ?? t('group_general')}</div>
                         <div className='line-clamp-2 text-xs text-muted-foreground'>
                             {schedule.description ? htmlToPlainText(schedule.description) : '—'}
                         </div>

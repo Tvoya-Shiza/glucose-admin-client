@@ -71,7 +71,14 @@ export function SchedulesTable({ rows, loading, canEdit, canDelete, onEdit, onDe
                             ) : null}
                         </TableCell>
                         <TableCell>{row.curator_name ?? `#${row.curator_id}`}</TableCell>
-                        <TableCell>{row.group_name}</TableCell>
+                        <TableCell>
+                            {row.group_name ?? <Badge variant='outline'>{t('group_general')}</Badge>}
+                            {(row.block_before_start || row.block_after_end) && (
+                                <Badge variant='secondary' className='ml-1 text-xs' title={t('blocks_access')}>
+                                    {t('blocks_access')}
+                                </Badge>
+                            )}
+                        </TableCell>
                         <TableCell className='text-sm text-muted-foreground'>
                             {row.course_id
                                 ? (locale === 'kz' ? row.course_title_kz : row.course_title_ru) ?? `#${row.course_id}`

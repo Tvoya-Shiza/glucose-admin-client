@@ -162,13 +162,13 @@ export function SchedulesCalendar({ filters, canEdit, onEdit }: SchedulesCalenda
                                                 STATUS_COLOR[ev.status],
                                                 canEdit ? 'hover:opacity-80' : 'cursor-default',
                                             )}
-                                            title={ev.description ? htmlToPlainText(ev.description) : ev.group_name}
+                                            title={ev.description ? htmlToPlainText(ev.description) : ev.group_name ?? t('group_general')}
                                         >
                                             <span className='mr-1 tabular-nums'>
                                                 {formatScheduleTime(ev.start_at, locale)}
                                             </span>
                                             <span className='truncate'>
-                                                {ev.group_name}
+                                                {ev.group_name ?? t('group_general')}
                                                 {ev.items.length > 0
                                                     ? ` · ${ev.items.length} ${t('items_short')}`
                                                     : ''}
