@@ -67,6 +67,27 @@ export interface ScheduleItemInput {
     position?: number;
 }
 
+// ---- Phase 32 — per-course schedule grid (modules → lessons, inline windows) ----
+
+export interface ScheduleGridNode {
+    /** Existing single-item schedule row id backing this node; omit to create. */
+    id?: number;
+    kind: ScheduleItemKind;
+    ref_id: number;
+    start_at: number;
+    end_at: number;
+    block_before_start?: boolean;
+    block_after_end?: boolean;
+}
+
+export interface SaveScheduleGridPayload {
+    /** Scope for new rows: null = general schedule (all students of the course). */
+    group_id?: number | null;
+    upserts: ScheduleGridNode[];
+    /** Schedule row ids whose node was cleared. */
+    deletes?: number[];
+}
+
 export interface ScheduleListFilters {
     page?: number;
     page_size?: number;

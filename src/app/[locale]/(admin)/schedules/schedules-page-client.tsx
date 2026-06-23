@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { CalendarDays, ListChecks, BarChart3 } from 'lucide-react';
+import { CalendarDays, ListChecks, BarChart3, GraduationCap } from 'lucide-react';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
 import { Button } from '@/components/ui/button';
@@ -11,14 +11,16 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermission } from '@/lib/access/use-permission';
 import type { Schedule, ScheduleItemKind, ScheduleStatus } from '@/lib/schedules/types';
+import { EntitySearchPicker } from '@/app/[locale]/(admin)/courses/[id]/components/entity-search-picker';
 import { SchedulesCalendar } from './schedules-calendar';
 import { SchedulesList } from './schedules-list-client';
 import { SchedulesAnalytics } from './schedules-analytics';
 import { SchedulesFilters, type ScheduleFiltersValue } from './schedules-filters';
 import { UpsertScheduleDialog } from './components/upsert-schedule-dialog';
 import { DeleteScheduleDialog } from './components/delete-schedule-dialog';
+import { CourseScheduleGrid } from './components/course-schedule-grid';
 
-type View = 'calendar' | 'list' | 'analytics';
+type View = 'calendar' | 'list' | 'analytics' | 'course';
 
 export function SchedulesPageClient() {
     const t = useTranslations('admin.schedules');
@@ -73,7 +75,8 @@ export function SchedulesPageClient() {
 
     const onDeleteSchedule = (s: Schedule) => setDeleting(s);
 
-    const showWindowInputs = (view ?? 'calendar') !== 'calendar';
+    const currentView = (view ?? 'calendar') as View;
+    const showWindowInputs = currentView !== 'calendar' && currentView !== 'course';
 
     return (
         <PageShell
@@ -112,16 +115,22 @@ export function SchedulesPageClient() {
                             <BarChart3 className='h-4 w-4' />
                             <span className='ml-1.5'>{t('tab_analytics')}</span>
                         </TabsTrigger>
+                        <TabsTrigger value='course'>
+                            <GraduationCap className='h-4 w-4' />
+                            <span className='ml-1.5'>{t('tab_course_grid')}</span>
+                        </TabsTrigger>
                     </TabsList>
                 </div>
 
-                <Card className='p-4'>
-                    <SchedulesFilters
-                        value={filtersValue}
-                        onChange={handleFiltersChange}
-                        showWindowInputs={showWindowInputs}
-                    />
-                </Card>
+                {currentView !== 'course' ? (
+                    <Card className='p-4'>
+                        <SchedulesFilters
+                            value={filtersValue}
+                            onChange={handleFiltersChange}
+                            showWindowInputs={showWindowInputs}
+                        />
+                    </Card>
+                ) : null}
 
                 <TabsContent value='calendar' className='space-y-4'>
                     <SchedulesCalendar
@@ -145,6 +154,26 @@ export function SchedulesPageClient() {
 
                 <TabsContent value='analytics' className='space-y-4'>
                     <SchedulesAnalytics filters={filtersValue} />
+                </TabsContent>
+
+                <TabsContent value='course' className='space-y-4'>
+                    <Card className='flex flex-wrap items-center gap-3 p-4'>
+                        <span className='text-sm font-medium'>{t('field_course')}:</span>
+                        <div className='w-72'>
+                            <EntitySearchPicker
+                                kind='course'
+                                value={course_id != null ? String(course_id) : ''}
+                                onChange={(v) => setQ({ course_id: v && v.length > 0 ? Number(v) : null })}
+                            />
+                        </div>
+                    </Card>
+                    {course_id != null ? (
+                        <CourseScheduleGrid courseId={course_id} canEdit={canEdit || canCreate} />
+                    ) : (
+                        <p className='text-muted-foreground rounded border border-dashed p-6 text-center text-sm'>
+                            {t('grid_pick_course')}
+                        </p>
+                    )}
                 </TabsContent>
             </Tabs>
 

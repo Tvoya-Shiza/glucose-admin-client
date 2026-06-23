@@ -1,6 +1,7 @@
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import type {
     CreateSchedulePayload,
+    SaveScheduleGridPayload,
     Schedule,
     ScheduleAnalytics,
     ScheduleCalendarResponse,
@@ -10,6 +11,7 @@ import type {
 } from './types';
 
 const BASE = '/api/proxy/v1/admin/schedules';
+const COURSES_BASE = '/api/proxy/v1/admin/courses';
 
 function qs(params: Record<string, string | number | undefined | null>): string {
     const sp = new URLSearchParams();
@@ -84,4 +86,21 @@ export async function deleteSchedule(id: number): Promise<{ id: number; deleted:
     const res = await fetchWithRefresh(`${BASE}/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`delete failed: ${res.status}`);
     return (await res.json()) as { id: number; deleted: boolean };
+}
+
+/** Phase 32 — bulk-save the per-course access-window grid. */
+export async function saveScheduleGrid(
+    courseId: number,
+    payload: SaveScheduleGridPayload,
+): Promise<{ ok: boolean; upserted: number; deleted: number }> {
+    const res = await fetchWithRefresh(`${COURSES_BASE}/${courseId}/schedule-grid`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { trans?: string; message?: string };
+        throw new Error(err.trans ?? err.message ?? `grid save failed: ${res.status}`);
+    }
+    return (await res.json()) as { ok: boolean; upserted: number; deleted: number };
 }
