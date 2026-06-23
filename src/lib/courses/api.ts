@@ -214,6 +214,23 @@ export async function deleteCourse(id: number): Promise<{ id: number; deleted: t
     return unwrapData<{ id: number; deleted: true }>(json);
 }
 
+/**
+ * Deep-duplicate a course (POST /admin-api/v1/admin/courses/:id/duplicate). Returns the
+ * new course's full detail (server forces status='is_draft', appends a copy marker, and
+ * gives the slug a `-copy` suffix). Mirrors `duplicateQuiz`. The response carries extra
+ * duplicate-stats fields (source_course_id, chapters_copied, …) which `unwrapData` keeps
+ * on the object but `CourseDetail` consumers ignore.
+ */
+export async function duplicateCourse(id: number): Promise<CourseDetail> {
+    const res = await fetchWithRefresh(`${COURSES_API_BASE}/${encodeURIComponent(String(id))}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `duplicateCourse failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<CourseDetail>(json);
+}
+
 export async function changeCourseTeacher(id: number, payload: ChangeTeacherPayload): Promise<CourseDetail> {
     const res = await fetchWithRefresh(`${COURSES_API_BASE}/${encodeURIComponent(String(id))}/teacher`, {
         method: 'PATCH',

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { formatUnixSecondsOrDash, statusBadgeVariant } from '@/lib/courses/format';
 import type { CourseRow } from '@/lib/courses/types';
+import { DuplicateCourseButton } from './components/duplicate-course-button';
 
 export interface CoursesTableProps {
     rows: CourseRow[];
@@ -122,6 +123,7 @@ export function CoursesTable({
                                                       {t('view_detail')}
                                                   </Link>
                                               </DropdownMenuItem>
+                                              <DuplicateCourseButton courseId={r.id} asMenuItem />
                                               <DropdownMenuItem
                                                   onClick={() => onDelete(r)}
                                                   className='text-destructive'

@@ -19,6 +19,7 @@ import { statusBadgeVariant } from '@/lib/courses/format';
 import type { CourseDetail, CourseRow } from '@/lib/courses/types';
 import { TranslationCompletenessBadge } from '../components/translation-completeness-badge';
 import { DeleteCourseDialog } from '../components/delete-course-dialog';
+import { DuplicateCourseButton } from '../components/duplicate-course-button';
 import { TeacherChangeDialog } from './components/teacher-change-dialog';
 import { AccessorsTab } from './tabs/accessors-tab';
 import { OverviewTab } from './tabs/overview-tab';
@@ -182,6 +183,7 @@ export function CourseDetailClient({ courseId }: { courseId: number }) {
                         }
                         actions={
                             <>
+                                <DuplicateCourseButton courseId={data.id} />
                                 {canEdit ? (
                                     <Button variant='outline' onClick={() => setTeacherOpen(true)}>
                                         {t('change_teacher')}

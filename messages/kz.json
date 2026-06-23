@@ -678,6 +678,8 @@
             "delete_dialog_description": "Бұл әрекетті болдырмауға болмайды",
             "delete_success": "Курс жойылды",
             "delete_error": "Курсты жою мүмкін болмады",
+            "duplicate": "Көшіру",
+            "duplicate_success": "Курс көшірілді (жоба ретінде)",
             "created_success": "Курс құрылды",
             "created_error": "Курсты құру мүмкін болмады",
             "teacher_change_title": "Оқытушыны ауыстыру",
