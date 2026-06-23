@@ -57,13 +57,20 @@ async function handle(req: NextRequest, params: { path: string[] }): Promise<Nex
     // upstream Set-Cookie (the BFF owns cookie management; auth routes are the
     // only places cookies can be set/cleared) and never reflect Authorization.
     //
-    // Content-Disposition + Content-Length are needed for binary downloads
-    // (e.g. submission file attachments served by AssignmentsSubmissionFilesController):
-    // the browser uses Content-Disposition to pick the suggested filename and
-    // distinguish inline vs attachment. Cache-Control is forwarded so admin-api
-    // can mark sensitive responses (student work) as `private, no-store`.
+    // Content-Disposition is needed for binary downloads (e.g. submission file
+    // attachments served by AssignmentsSubmissionFilesController): the browser
+    // uses it to pick the suggested filename and distinguish inline vs attachment.
+    // Cache-Control is forwarded so admin-api can mark sensitive responses
+    // (student work) as `private, no-store`.
+    //
+    // Content-Length is deliberately NOT forwarded. undici (Node fetch) may
+    // transparently decompress `upstream.body`, but upstream.headers still report
+    // the ORIGINAL (compressed) length; re-streaming the decompressed body with
+    // that stale length makes the browser truncate binary downloads at the wrong
+    // offset — a valid PDF arrives corrupt ("failed to load PDF document"). Let
+    // the runtime frame the re-streamed body itself (chunked transfer-encoding).
     const resHeaders = new Headers();
-    const passthrough = ['content-type', 'content-disposition', 'content-length', 'cache-control'];
+    const passthrough = ['content-type', 'content-disposition', 'cache-control'];
     for (const name of passthrough) {
         const value = upstream.headers.get(name);
         if (value) resHeaders.set(name, value);
