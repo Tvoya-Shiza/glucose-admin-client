@@ -31,8 +31,10 @@ import { parseVideoUrl } from '@/lib/uploads/parse-video-url';
 import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 
 type UpsertItemPayloadStorage = NonNullable<UpsertItemPayload['storage']>;
+import { usePermission } from '@/lib/access/use-permission';
 import { EntitySearchPicker } from './entity-search-picker';
 import { TiptapEditor } from './tiptap-editor';
+import { GroupWhitelistField } from './group-whitelist-field';
 
 type FileSubType = 'rich-text' | 'image' | 'video' | 'pdf';
 
@@ -133,6 +135,9 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     // for both new items and existing items that pre-date Phase 16 (the server backfills
     // `is_required=1` for all legacy rows via the column default).
     const [isRequired, setIsRequired] = useState<boolean>(item?.is_required ?? true);
+    // Phase 33 — per-lesson group whitelist. Empty = visible to all groups.
+    const [allowedGroupIds, setAllowedGroupIds] = useState<number[]>(item?.allowed_group_ids ?? []);
+    const canEdit = usePermission('courses.edit');
 
     // Reset state when dialog opens on a different item.
     useEffect(() => {
@@ -150,6 +155,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
             setAttachments(initialAttachments());
             setFkId(item && item.type !== 'file' ? String(item.item_id) : '');
             setIsRequired(item?.is_required ?? true);
+            setAllowedGroupIds(item?.allowed_group_ids ?? []);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, item?.id]);
@@ -164,6 +170,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                     item_id: item?.file?.id ?? 0,
                     accessibility,
                     is_required: isRequired,
+                    allowed_group_ids: allowedGroupIds,
                     translations: [
                         { locale: 'kz' as const, title: kzTitle, description: subType === 'rich-text' ? kzHtml : undefined },
                     ],
@@ -205,6 +212,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                 item_id: fkNumeric,
                 is_required: isRequired,
                 accessibility,
+                allowed_group_ids: allowedGroupIds,
             });
         },
         onSuccess: () => {
@@ -559,6 +567,11 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                             onChange={(e) => setIsRequired(e.target.checked)}
                             className='h-5 w-5 cursor-pointer'
                         />
+                    </div>
+
+                    {/* Phase 33 — per-lesson group access whitelist. */}
+                    <div className='rounded border bg-muted/30 p-3'>
+                        <GroupWhitelistField value={allowedGroupIds} onChange={setAllowedGroupIds} disabled={!canEdit} />
                     </div>
                 </div>
 

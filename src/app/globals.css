@@ -118,10 +118,10 @@
 
     /* Chart palette — brand teal + complementary tones */
     --chart-1: var(--brand-500);
-    --chart-2: oklch(0.7 0.15 75);     /* amber */
-    --chart-3: oklch(0.55 0.18 290);   /* violet */
-    --chart-4: oklch(0.65 0.12 220);   /* steel blue */
-    --chart-5: oklch(0.6 0.02 240);    /* neutral */
+    --chart-2: oklch(0.7 0.15 75); /* amber */
+    --chart-3: oklch(0.55 0.18 290); /* violet */
+    --chart-4: oklch(0.65 0.12 220); /* steel blue */
+    --chart-5: oklch(0.6 0.02 240); /* neutral */
 }
 
 .dark {

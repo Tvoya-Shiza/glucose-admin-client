@@ -201,6 +201,12 @@ export interface ChapterItem {
     attachments?: ChapterItemAttachmentRef[];
     /** Only present (non-empty) when type='file' — derived from FileTranslations join. */
     translations: Translation[];
+    /**
+     * Phase 33 — group access whitelist for THIS lesson. Empty = visible to all
+     * groups; non-empty = only members of these groups see the lesson. Edited in
+     * the lesson dialog; read-only "no access" indicator in the schedule grid.
+     */
+    allowed_group_ids: number[];
 }
 
 export interface Chapter {
@@ -209,6 +215,11 @@ export interface Chapter {
     status: ChapterStatus;
     translations: Translation[];
     items: ChapterItem[];
+    /**
+     * Phase 33 — group access whitelist for the WHOLE module. Empty = visible to
+     * all; non-empty = only these groups see the module (and all its lessons).
+     */
+    allowed_group_ids: number[];
 }
 
 export interface CourseCounts {
@@ -333,6 +344,11 @@ export interface UpsertChapterPayload {
     status?: ChapterStatus;
     /** Chapter title only — description is ignored on this path (schema has no column). */
     translations?: Translation[];
+    /**
+     * Phase 33 — module group whitelist. Tri-state: omit = leave as-is; `[]` = clear
+     * (visible to all); non-empty = restrict to these groups.
+     */
+    allowed_group_ids?: number[];
 }
 
 export interface UpsertItemPayload {
@@ -373,6 +389,11 @@ export interface UpsertItemPayload {
      * all, non-empty to replace. Never affects item_id (the main file).
      */
     attachments?: { file_url: string; file_type: string; name?: string; volume?: string }[];
+    /**
+     * Phase 33 — lesson group whitelist. Tri-state: omit = leave as-is; `[]` = clear
+     * (visible to all); non-empty = restrict to these groups.
+     */
+    allowed_group_ids?: number[];
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -34,6 +34,8 @@ import {
 } from '@/components/ui/select';
 import { upsertChapter } from '@/lib/courses/api';
 import type { Chapter, ChapterStatus, Translation } from '@/lib/courses/types';
+import { usePermission } from '@/lib/access/use-permission';
+import { GroupWhitelistField } from './group-whitelist-field';
 
 /**
  * UpsertChapterDialog — create or edit a WebinarChapter (CRS-03).
@@ -65,6 +67,10 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
     const qc = useQueryClient();
     const isEdit = !!chapter;
 
+    // Phase 33 — module group whitelist (number[], empty = visible to all).
+    const [allowedGroupIds, setAllowedGroupIds] = useState<number[]>(chapter?.allowed_group_ids ?? []);
+    const canEdit = usePermission('courses.edit');
+
     const form = useForm<ChapterFormValues>({
         resolver: zodResolver(chapterSchema),
         defaultValues: {
@@ -80,6 +86,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                 status: (chapter?.status as ChapterStatus) ?? 'active',
                 title: pickTitle(chapter?.translations, 'kz'),
             });
+            setAllowedGroupIds(chapter?.allowed_group_ids ?? []);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, chapter?.id]);
@@ -90,6 +97,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                 id: chapter?.id,
                 status: values.status,
                 translations: [{ locale: 'kz', title: values.title }],
+                allowed_group_ids: allowedGroupIds,
             });
         },
         onSuccess: () => {
@@ -152,6 +160,10 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                                 </FormItem>
                             )}
                         />
+                        {/* Phase 33 — module-level group access whitelist. */}
+                        <div className='rounded border bg-muted/30 p-3'>
+                            <GroupWhitelistField value={allowedGroupIds} onChange={setAllowedGroupIds} disabled={!canEdit} />
+                        </div>
                         <DialogFooter>
                             <Button type='button' variant='outline' onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
                                 {t('cancel')}

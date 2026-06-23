@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -55,6 +56,15 @@ function itemLabel(item: ChapterItem, locale: string): string {
 }
 
 const nodeKey = (kind: ScheduleItemKind, ref: number) => `${kind}:${ref}`;
+
+/**
+ * Phase 33 — read-only indicator: a node whose whitelist is non-empty AND excludes
+ * the currently-scoped group has NO student access for that group. `gid=null`
+ * (general scope or no group picked) → never flagged.
+ */
+function noAccessForGroup(allowed: number[] | undefined, gid: number | null): boolean {
+    return gid != null && !!allowed && allowed.length > 0 && !allowed.includes(gid);
+}
 
 /**
  * Phase 32 — per-course schedule GRID. Renders the course as modules → lessons
@@ -187,6 +197,8 @@ export function CourseScheduleGrid({ courseId, canEdit }: { courseId: number; ca
     });
 
     const saveDisabled = !canEdit || mutation.isPending || (scope === 'group' && !groupId);
+    // Phase 33 — the group whose access we're indicating (null in general scope).
+    const selectedGid = scope === 'group' && groupId ? Number(groupId) : null;
 
     if (courseLoading || schedLoading) {
         return (
@@ -243,6 +255,7 @@ export function CourseScheduleGrid({ courseId, canEdit }: { courseId: number; ca
                         nodes={nodes}
                         setNode={setNode}
                         disabled={!canEdit}
+                        selectedGid={selectedGid}
                         t={t}
                     />
                 ))}
@@ -262,6 +275,7 @@ function ChapterRow({
     nodes,
     setNode,
     disabled,
+    selectedGid,
     t,
 }: {
     chapter: Chapter;
@@ -271,12 +285,15 @@ function ChapterRow({
     nodes: Record<string, NodeState>;
     setNode: (key: string, patch: Partial<NodeState>) => void;
     disabled: boolean;
+    selectedGid: number | null;
     t: ReturnType<typeof useTranslations>;
 }) {
     const key = nodeKey('lesson', chapter.id);
     const title = pickTitle(chapter.translations, locale) || `#${chapter.id}`;
     const moduleState = nodes[key] ?? EMPTY_NODE;
     const moduleHasWindow = !!moduleState.start && !!moduleState.end;
+    // Phase 33 — module hidden for the scoped group hides all its lessons too.
+    const moduleNoAccess = noAccessForGroup(chapter.allowed_group_ids, selectedGid);
 
     return (
         <Card className='overflow-hidden'>
@@ -285,6 +302,15 @@ function ChapterRow({
                     {expanded ? <ChevronDown className='size-4' /> : <ChevronRight className='size-4' />}
                 </button>
                 <span className='min-w-40 flex-1 truncate text-sm font-semibold'>{title}</span>
+                {moduleNoAccess ? (
+                    <Badge
+                        variant='outline'
+                        className='border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                        title={t('grid_group_no_access_hint')}
+                    >
+                        {t('grid_group_no_access')}
+                    </Badge>
+                ) : null}
                 <span className='text-muted-foreground text-xs'>
                     {chapter.items.length} {t('items_short')}
                 </span>
@@ -304,6 +330,15 @@ function ChapterRow({
                                 <div className='mb-1.5 flex items-center gap-2'>
                                     <span className='bg-muted rounded px-1.5 py-0.5 text-[10px] tracking-wide uppercase'>{kind}</span>
                                     <span className='flex-1 truncate text-sm'>{itemLabel(it, locale)}</span>
+                                    {moduleNoAccess || noAccessForGroup(it.allowed_group_ids, selectedGid) ? (
+                                        <Badge
+                                            variant='outline'
+                                            className='border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                            title={t('grid_group_no_access_hint')}
+                                        >
+                                            {t('grid_group_no_access')}
+                                        </Badge>
+                                    ) : null}
                                     {!st.start && !st.end && moduleHasWindow ? (
                                         <span className='text-muted-foreground text-[11px]'>{t('grid_inherits_module')}</span>
                                     ) : null}
