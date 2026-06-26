@@ -14,6 +14,15 @@ export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'curator' |
 
 const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignment', 'file'];
 
+/**
+ * How many rows the picker pulls in one shot. 100 = the admin-api
+ * ListPickerItemsDto cap; the dropdown has no pagination, so this is the most it
+ * can show at once. Was 20 — too low: longer catalogs looked truncated ("not all
+ * tasks shown"). Past 100, the curator narrows the list by typing a name, which
+ * the server matches server-side (`contains` over the title).
+ */
+const PICKER_PAGE_SIZE = 100;
+
 interface EntitySearchOption {
     id: number;
     title: string;
@@ -53,7 +62,7 @@ async function searchEntities(
     courseId?: number | null,
     scope: PickerItemScope = 'course',
 ): Promise<EntitySearchOption[]> {
-    const params = new URLSearchParams({ page_size: '20' });
+    const params = new URLSearchParams({ page_size: String(PICKER_PAGE_SIZE) });
     const needle = q.trim();
     if (needle.length > 0) params.set('q', needle);
 
@@ -71,6 +80,7 @@ async function searchEntities(
         // only applies to catalog kinds (quiz/assignment); the server ignores it
         // for lesson/file, which always carry their own webinar_id.
         const json = await fetchCoursePickerItems(courseId, kind as PickerItemKind, needle, {
+            page_size: PICKER_PAGE_SIZE,
             scope: CATALOG_KINDS.includes(kind) ? scope : undefined,
         });
         return json.rows.map((r) => ({
@@ -122,9 +132,16 @@ interface EntitySearchPickerProps {
      * course (schedules editor). Ignored for lesson/file.
      */
     scope?: PickerItemScope;
+    /**
+     * Known display name for the already-selected `value` (edit mode). The picker
+     * only fetches when its dropdown opens, so on first render the selected option
+     * isn't in the loaded list — without this the chip would fall back to a bare
+     * id. Pass the linked entity's title so the chip reads as a name.
+     */
+    selectedLabel?: string;
 }
 
-export function EntitySearchPicker({ kind, value, onChange, placeholder, courseId, scope = 'course' }: EntitySearchPickerProps) {
+export function EntitySearchPicker({ kind, value, onChange, placeholder, courseId, scope = 'course', selectedLabel }: EntitySearchPickerProps) {
     const t = useTranslations('admin.courses');
     const [query, setQuery] = useState('');
     const [debounced, setDebounced] = useState('');
@@ -176,8 +193,7 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
                 <div className='flex items-center justify-between rounded border px-3 py-2'>
                     <div className='flex items-center gap-2'>
                         <Check className='h-4 w-4 text-emerald-600' />
-                        <span className='font-medium'>{selected?.title ?? `#${selectedId}`}</span>
-                        <span className='text-xs text-muted-foreground'>id: {selectedId}</span>
+                        <span className='font-medium'>{selected?.title ?? selectedLabel ?? `#${selectedId}`}</span>
                     </div>
                     <Button
                         type='button'
@@ -237,7 +253,7 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
                                             <li key={o.id}>
                                                 <button
                                                     type='button'
-                                                    className='flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent'
+                                                    className='flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent'
                                                     onClick={() => {
                                                         onChange(String(o.id), o);
                                                         setOpen(false);
@@ -245,7 +261,6 @@ export function EntitySearchPicker({ kind, value, onChange, placeholder, courseI
                                                     }}
                                                 >
                                                     <span className='truncate'>{o.title}</span>
-                                                    <span className='text-xs text-muted-foreground'>#{o.id}</span>
                                                 </button>
                                             </li>
                                         ),
