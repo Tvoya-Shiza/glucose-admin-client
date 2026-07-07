@@ -13,6 +13,9 @@
 
 export type JournalSourceKind = 'module_quiz' | 'module_assignment' | 'attendance' | 'credit' | 'custom';
 
+/** Student account status (mirrors admin-api UserStatus) — drives the roster status filter. */
+export type StudentStatus = 'active' | 'pending' | 'inactive';
+
 export interface JournalColumn {
     id: string;
     title: string;
@@ -37,6 +40,8 @@ export interface JournalCell {
 export interface JournalRow {
     student_id: number;
     full_name: string | null;
+    /** Account status (active/pending/inactive) — used by the roster status filter. */
+    status: StudentStatus;
     /** Keyed by column id (string). */
     cells: Record<string, JournalCell>;
     total: number;

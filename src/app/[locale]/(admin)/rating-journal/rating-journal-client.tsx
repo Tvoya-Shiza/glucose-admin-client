@@ -11,13 +11,17 @@ import { PageShell } from '@/components/admin/page-shell';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CoursePicker } from '@/components/courses/course-picker';
 import { GroupPicker } from '@/components/groups/group-picker';
 import { Can } from '@/lib/access/can';
 import { usePermission } from '@/lib/access/use-permission';
 import { getJournalGrid, syncJournal } from '@/lib/rating-journal/api';
-import type { JournalColumn, JournalGrid as JournalGridData } from '@/lib/rating-journal/types';
+import type { JournalColumn, JournalGrid as JournalGridData, StudentStatus } from '@/lib/rating-journal/types';
+
+const STATUS_ALL = 'all';
+type StatusFilter = StudentStatus | typeof STATUS_ALL;
 import { CellHistoryDialog, type CellHistoryTarget } from './components/cell-history-dialog';
 import { CreateColumnDialog } from './components/create-column-dialog';
 import { EditColumnDialog } from './components/edit-column-dialog';
@@ -73,17 +77,21 @@ export function RatingJournalClient() {
     const [editColumn, setEditColumn] = useState<JournalColumn | null>(null);
     const [historyTarget, setHistoryTarget] = useState<CellHistoryTarget | null>(null);
     const [search, setSearch] = useState('');
+    const [status, setStatus] = useState<StatusFilter>(STATUS_ALL);
 
-    // Client-side ФИО filter over the loaded group roster (class-sized, always
-    // fully loaded) — instant, no refetch, no re-sync per keystroke. Optimistic
-    // cell/column mutations still target the full grid via gridQueryKey, so
-    // filtering rows here can't clobber the cache.
+    // Client-side ФИО + status filter over the loaded group roster (class-sized,
+    // always fully loaded) — instant, no refetch, no re-sync per keystroke.
+    // Optimistic cell/column mutations still target the full grid via
+    // gridQueryKey, so filtering rows here can't clobber the cache.
     const displayGrid = useMemo(() => {
         if (!grid) return grid;
         const q = search.trim().toLowerCase();
-        if (!q) return grid;
-        return { ...grid, rows: grid.rows.filter((r) => (r.full_name ?? '').toLowerCase().includes(q)) };
-    }, [grid, search]);
+        if (!q && status === STATUS_ALL) return grid;
+        const rows = grid.rows.filter(
+            (r) => (status === STATUS_ALL || r.status === status) && (!q || (r.full_name ?? '').toLowerCase().includes(q)),
+        );
+        return { ...grid, rows };
+    }, [grid, search, status]);
 
     const nextPosition = useMemo(() => (grid ? grid.columns.reduce((max, c) => Math.max(max, c.position), 0) + 1 : 1), [grid]);
 
@@ -171,6 +179,20 @@ export function RatingJournalClient() {
                             ) : null}
                         </div>
                     </div>
+                    <div className='w-44'>
+                        <label className='text-muted-foreground mb-1 block text-xs font-medium'>{t('status_label')}</label>
+                        <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)} disabled={!ready}>
+                            <SelectTrigger className='w-full'>
+                                <SelectValue placeholder={t('status_all')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={STATUS_ALL}>{t('status_all')}</SelectItem>
+                                <SelectItem value='active'>{t('status_active')}</SelectItem>
+                                <SelectItem value='pending'>{t('status_pending')}</SelectItem>
+                                <SelectItem value='inactive'>{t('status_inactive')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </Card>
 
@@ -187,7 +209,10 @@ export function RatingJournalClient() {
             ) : !grid || grid.rows.length === 0 ? (
                 <EmptyState icon={ClipboardCheck} title={t('empty_grid')} />
             ) : !displayGrid || displayGrid.rows.length === 0 ? (
-                <EmptyState icon={Search} title={t('no_search_results', { query: search.trim() })} />
+                <EmptyState
+                    icon={Search}
+                    title={search.trim() ? t('no_search_results', { query: search.trim() }) : t('no_filter_results')}
+                />
             ) : (
                 <Card className='overflow-hidden p-0'>
                     <div className={isFetching ? 'opacity-70 transition-opacity' : ''}>

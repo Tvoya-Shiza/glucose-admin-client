@@ -2542,7 +2542,13 @@
             "search_label": "Аты-жөні бойынша іздеу",
             "search_placeholder": "Студенттің аты-жөні",
             "search_clear": "Тазалау",
-            "no_search_results": "«{query}» бойынша студент табылмады"
+            "no_search_results": "«{query}» бойынша студент табылмады",
+            "status_label": "Мәртебесі",
+            "status_all": "Барлығы",
+            "status_active": "Белсенді",
+            "status_pending": "Күтуде",
+            "status_inactive": "Белсенді емес",
+            "no_filter_results": "Таңдалған сүзгі бойынша студент табылмады"
         }
     },
     "dashboard": {
