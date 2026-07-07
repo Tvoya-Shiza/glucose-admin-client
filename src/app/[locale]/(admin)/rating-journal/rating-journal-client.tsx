@@ -4,12 +4,13 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, useQueryStates } from 'nuqs';
-import { ClipboardCheck, Plus, RefreshCw } from 'lucide-react';
+import { ClipboardCheck, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CoursePicker } from '@/components/courses/course-picker';
 import { GroupPicker } from '@/components/groups/group-picker';
@@ -71,6 +72,18 @@ export function RatingJournalClient() {
     const [createOpen, setCreateOpen] = useState(false);
     const [editColumn, setEditColumn] = useState<JournalColumn | null>(null);
     const [historyTarget, setHistoryTarget] = useState<CellHistoryTarget | null>(null);
+    const [search, setSearch] = useState('');
+
+    // Client-side ФИО filter over the loaded group roster (class-sized, always
+    // fully loaded) — instant, no refetch, no re-sync per keystroke. Optimistic
+    // cell/column mutations still target the full grid via gridQueryKey, so
+    // filtering rows here can't clobber the cache.
+    const displayGrid = useMemo(() => {
+        if (!grid) return grid;
+        const q = search.trim().toLowerCase();
+        if (!q) return grid;
+        return { ...grid, rows: grid.rows.filter((r) => (r.full_name ?? '').toLowerCase().includes(q)) };
+    }, [grid, search]);
 
     const nextPosition = useMemo(() => (grid ? grid.columns.reduce((max, c) => Math.max(max, c.position), 0) + 1 : 1), [grid]);
 
@@ -135,6 +148,29 @@ export function RatingJournalClient() {
                             placeholder={t('course_placeholder')}
                         />
                     </div>
+                    <div className='w-64'>
+                        <label className='text-muted-foreground mb-1 block text-xs font-medium'>{t('search_label')}</label>
+                        <div className='relative'>
+                            <Search className='text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2' />
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                disabled={!ready}
+                                placeholder={t('search_placeholder')}
+                                className='px-8'
+                            />
+                            {search ? (
+                                <button
+                                    type='button'
+                                    onClick={() => setSearch('')}
+                                    aria-label={t('search_clear')}
+                                    className='text-muted-foreground hover:text-foreground absolute right-2.5 top-1/2 -translate-y-1/2'
+                                >
+                                    <X className='h-4 w-4' />
+                                </button>
+                            ) : null}
+                        </div>
+                    </div>
                 </div>
             </Card>
 
@@ -150,11 +186,13 @@ export function RatingJournalClient() {
                 </Card>
             ) : !grid || grid.rows.length === 0 ? (
                 <EmptyState icon={ClipboardCheck} title={t('empty_grid')} />
+            ) : !displayGrid || displayGrid.rows.length === 0 ? (
+                <EmptyState icon={Search} title={t('no_search_results', { query: search.trim() })} />
             ) : (
                 <Card className='overflow-hidden p-0'>
                     <div className={isFetching ? 'opacity-70 transition-opacity' : ''}>
                         <JournalGrid
-                            grid={grid}
+                            grid={displayGrid}
                             gridQueryKey={gridQueryKey}
                             canEdit={canEdit}
                             canManage={canManage}

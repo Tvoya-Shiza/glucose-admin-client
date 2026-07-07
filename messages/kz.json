@@ -2538,7 +2538,11 @@
             "history_col_source": "Дереккөз",
             "history_empty": "Өзгерістер жоқ",
             "history_system": "Жүйе",
-            "value_dash": "—"
+            "value_dash": "—",
+            "search_label": "Аты-жөні бойынша іздеу",
+            "search_placeholder": "Студенттің аты-жөні",
+            "search_clear": "Тазалау",
+            "no_search_results": "«{query}» бойынша студент табылмады"
         }
     },
     "dashboard": {
