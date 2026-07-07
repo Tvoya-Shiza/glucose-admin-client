@@ -41,6 +41,7 @@ export const ROUTE_PERMISSIONS = {
     '/credits/questions': 'credits.questions_manage',
     '/credits/questions/topics': 'credits.topics_manage',
     '/credits/result-texts': 'credits.texts_manage',
+    '/rating-journal': 'rating_journal.view',
 } as const satisfies Record<string, PermissionCode>;
 
 // Matches the configured locales from src/i18n/routing.ts. Keep in sync if

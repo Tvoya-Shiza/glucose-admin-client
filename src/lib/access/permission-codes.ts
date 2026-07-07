@@ -158,6 +158,12 @@ export const PERMISSION_CODES = [
     'credits.conduct',
     'credits.results_view',
     'credits.texts_manage',
+    // rating journal (Рейтинг-журнал — per-group gradebook: columns, cells, sync, export, edit-log)
+    'rating_journal.view',
+    'rating_journal.edit',
+    'rating_journal.columns_manage',
+    'rating_journal.export',
+    'rating_journal.history_view',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
