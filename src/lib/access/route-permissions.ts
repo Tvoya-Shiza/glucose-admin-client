@@ -37,6 +37,10 @@ export const ROUTE_PERMISSIONS = {
     '/universities/specialties': 'specialties.view',
     '/universities/import': 'universities.import',
     '/settings': 'settings.view',
+    '/credits': 'credits.view',
+    '/credits/questions': 'credits.questions_manage',
+    '/credits/questions/topics': 'credits.topics_manage',
+    '/credits/result-texts': 'credits.texts_manage',
 } as const satisfies Record<string, PermissionCode>;
 
 // Matches the configured locales from src/i18n/routing.ts. Keep in sync if

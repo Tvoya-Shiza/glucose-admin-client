@@ -148,6 +148,16 @@ export const PERMISSION_CODES = [
     // settings (Phase 31 — global app settings, e.g. the ҰБТ exam date)
     'settings.view',
     'settings.edit',
+    // credits (Phase 34 — oral «Зачёт» exams: bank of topics/questions, launches, conduct console)
+    'credits.view',
+    'credits.create',
+    'credits.edit',
+    'credits.delete',
+    'credits.topics_manage',
+    'credits.questions_manage',
+    'credits.conduct',
+    'credits.results_view',
+    'credits.texts_manage',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
