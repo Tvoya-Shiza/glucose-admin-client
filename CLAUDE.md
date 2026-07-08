@@ -101,9 +101,13 @@ Prettier config (`.prettierrc`):
 
 Cross-repo TypeScript types live in `glucose-api/shared-types/` (canonical).
 A vendored copy lives at `vendor/shared-types/` here, populated by
-`scripts/sync-shared-types.sh` from the project root.
+`glucose-infrastructure/scripts/sync-shared-types.sh`.
 
 Import via the path alias `@shared/*` configured in `tsconfig.json`.
+
+The vendored copy is **gitignored** — a fresh checkout / prod box has an EMPTY
+`vendor/shared-types/`, and `next build` then fails with `Cannot find module
+'@shared/...'` (e.g. `@shared/credits`). Run the sync script before building.
 
 Workflow + CI: same as glucose-admin-api. See `glucose-api/shared-types/README.md`.
 
