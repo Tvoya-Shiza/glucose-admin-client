@@ -84,6 +84,12 @@ export interface CreditTopic {
     status: CreditBankStatus;
     question_count: number;
     child_count: number;
+    /**
+     * Phase 36 — set when this topic mirrors a course lesson (a chapter item);
+     * both null for free-form custom topics («Тақырыптар»).
+     */
+    course_id: number | null;
+    chapter_item_id: number | null;
 }
 
 export interface CreateCreditTopicPayload {
@@ -106,6 +112,9 @@ export interface UpdateCreditTopicPayload {
 export interface CreditQuestionTopicRef {
     id: string;
     name: string;
+    /** Phase 36 — present when the question is tagged to a course lesson (else null). */
+    course_id: number | null;
+    chapter_item_id: number | null;
 }
 
 export interface CreditQuestionRow {
@@ -136,8 +145,14 @@ export interface CreditQuestionListResponse {
     pageCount: number;
 }
 
+/**
+ * Supply EXACTLY ONE tag: `topic_id` (an existing custom topic) or
+ * `chapter_item_id` (a course lesson — admin-api lazily materializes its
+ * lesson-topic). The server enforces the XOR.
+ */
 export interface CreateCreditQuestionPayload {
-    topic_id: string;
+    topic_id?: string;
+    chapter_item_id?: number;
     difficulty: CreditDifficulty;
     question: string;
     answer: string;
@@ -145,7 +160,9 @@ export interface CreateCreditQuestionPayload {
 }
 
 export interface UpdateCreditQuestionPayload {
+    /** Re-tag with EITHER topic_id OR chapter_item_id (never both); omit both to keep. */
     topic_id?: string;
+    chapter_item_id?: number;
     difficulty?: CreditDifficulty;
     question?: string;
     answer?: string;
