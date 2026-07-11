@@ -68,6 +68,7 @@ const NAV_SECTIONS: NavSection[] = [
             { href: '/quizzes/results', labelKey: 'results', icon: Award },
             { href: '/credits', labelKey: 'credits', icon: BookOpenCheck },
             { href: '/credits/questions', labelKey: 'creditQuestions', icon: FileQuestion },
+            { href: '/credits/results', labelKey: 'creditResults', icon: ListChecks },
             { href: '/rating-journal', labelKey: 'ratingJournal', icon: ClipboardCheck },
             { href: '/assignments', labelKey: 'assignments', icon: ListChecks },
             { href: '/schedules', labelKey: 'schedules', icon: CalendarDays },

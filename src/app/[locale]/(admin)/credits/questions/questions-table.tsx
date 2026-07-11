@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontalIcon } from 'lucide-react';
+import { ImageIcon, MoreHorizontalIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DifficultyBadge } from '@/components/credits/difficulty-badge';
 import type { CreditQuestionRow } from '@/lib/credits/types';
+
+/** Strip Tiptap HTML to a plain-text preview for the table cell. */
+function htmlToPlainText(html: string): string {
+    return html
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
 
 export interface QuestionsTableProps {
     rows: CreditQuestionRow[];
@@ -68,7 +80,12 @@ export function QuestionsTable({
                                   <DifficultyBadge difficulty={r.difficulty} />
                               </TableCell>
                               <TableCell className='max-w-md'>
-                                  <span className='line-clamp-2 text-sm'>{r.question}</span>
+                                  <div className='flex items-start gap-2'>
+                                      {r.question_image ? (
+                                          <ImageIcon className='text-muted-foreground mt-0.5 h-4 w-4 shrink-0' aria-label={t('has_photo')} />
+                                      ) : null}
+                                      <span className='line-clamp-2 text-sm'>{htmlToPlainText(r.question)}</span>
+                                  </div>
                               </TableCell>
                               <TableCell className='tabular-nums text-sm'>{r.score}</TableCell>
                               <TableCell>

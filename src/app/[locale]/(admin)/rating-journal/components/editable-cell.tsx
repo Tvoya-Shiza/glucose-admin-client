@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TableCell } from '@/components/ui/table';
 import { updateCell } from '@/lib/rating-journal/api';
 import type { JournalCell, JournalColumn, JournalGrid } from '@/lib/rating-journal/types';
@@ -19,10 +21,11 @@ export interface EditableCellProps {
 }
 
 /**
- * Inline-editable number cell (0..max_score). Debounced autosave (300ms) with an
- * optimistic queryClient.setQueryData update and snapshot-in-ref rollback on
- * error. Cells carrying is_manual_override render a subtle ring + dot marker.
- * Auto columns stay editable (the edit becomes a manual override server-side).
+ * Inline-editable number cell (0..max). Every value CHANGE is confirmed before it
+ * is saved (item 6 — «доп подтверждение на всякий случай»): editing stages the
+ * value, a dialog shows было→стало, and only on confirm is the optimistic update +
+ * updateCell fired (snapshot-in-ref rollback on error). Cancel reverts the input.
+ * Cells carrying is_manual_override render a subtle ring + dot marker.
  */
 export function EditableCell({
     gridQueryKey,
@@ -38,23 +41,20 @@ export function EditableCell({
 
     const serverValue = cell?.value ?? null;
     const [local, setLocal] = useState<string>(serverValue != null ? String(serverValue) : '');
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [pending, setPending] = useState<number | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const snapshotRef = useRef<JournalGrid | undefined>(undefined);
+    // True while the user is actively editing this input (focused / confirm pending).
+    // Guards the re-sync effect so a concurrent grid refetch can't clobber an
+    // in-progress value — before blur (dialog not yet open) as well as during it.
+    const editingRef = useRef(false);
 
     // Re-sync local when the authoritative server value changes (e.g. after sync /
-    // invalidate) — but not while the user is mid-edit (debounce pending).
+    // invalidate) — but never while the user is mid-edit.
     useEffect(() => {
-        if (debounceRef.current == null) {
-            setLocal(serverValue != null ? String(serverValue) : '');
-        }
+        if (!confirmOpen && !editingRef.current) setLocal(serverValue != null ? String(serverValue) : '');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serverValue]);
-
-    useEffect(() => {
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
-    }, []);
 
     /** Recompute a row's total from its cells against the current column max set. */
     function applyOptimistic(nextValue: number | null): void {
@@ -84,38 +84,54 @@ export function EditableCell({
         }
     }
 
-    function commit(raw: string): void {
+    function revertLocal(): void {
+        setLocal(serverValue != null ? String(serverValue) : '');
+    }
+
+    /** Validate the staged raw value; open the confirm dialog when it changes. */
+    function requestCommit(raw: string): void {
         const trimmed = raw.trim();
         const parsed = trimmed === '' ? null : Number(trimmed);
         if (parsed != null && (Number.isNaN(parsed) || parsed < 0 || parsed > column.max_score)) {
-            // Out of range — revert the input to the last server value, no request.
-            setLocal(serverValue != null ? String(serverValue) : '');
+            revertLocal(); // out of range — no request, no dialog
+            editingRef.current = false;
             return;
         }
-        if (parsed === serverValue) return;
+        if (parsed === serverValue) {
+            editingRef.current = false;
+            return; // unchanged
+        }
+        setPending(parsed);
+        setConfirmOpen(true); // editing stays "active" until confirm/cancel
+    }
 
-        applyOptimistic(parsed);
-        updateCell({ column_id: column.id, student_id: studentId, value: parsed })
+    function confirmCommit(): void {
+        const value = pending;
+        editingRef.current = false;
+        setConfirmOpen(false);
+        applyOptimistic(value);
+        updateCell({ column_id: column.id, student_id: studentId, value })
             .then(() => {
                 snapshotRef.current = undefined;
                 qc.invalidateQueries({ queryKey: gridQueryKey });
             })
             .catch((err: unknown) => {
                 rollback();
-                setLocal(serverValue != null ? String(serverValue) : '');
+                revertLocal();
                 toast.error(err instanceof Error && err.message ? err.message : t('generic_error'));
             });
     }
 
-    function scheduleCommit(raw: string): void {
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            debounceRef.current = null;
-            commit(raw);
-        }, 300);
+    function cancelCommit(): void {
+        editingRef.current = false;
+        setConfirmOpen(false);
+        revertLocal();
     }
 
     const isOverride = cell?.is_manual_override ?? false;
+    const oldLabel = serverValue != null ? String(serverValue) : '—';
+    const newLabel = pending != null ? String(pending) : '—';
+    const isOverwrite = serverValue != null;
 
     return (
         <TableCell className='p-1 text-center'>
@@ -127,16 +143,13 @@ export function EditableCell({
                     max={column.max_score}
                     disabled={!canEdit}
                     value={local}
-                    onChange={(e) => {
-                        setLocal(e.target.value);
-                        scheduleCommit(e.target.value);
+                    onFocus={() => {
+                        editingRef.current = true;
                     }}
-                    onBlur={(e) => {
-                        if (debounceRef.current) {
-                            clearTimeout(debounceRef.current);
-                            debounceRef.current = null;
-                        }
-                        commit(e.target.value);
+                    onChange={(e) => setLocal(e.target.value)}
+                    onBlur={(e) => requestCommit(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                     }}
                     onDoubleClick={() => {
                         if (canViewHistory) onOpenHistory(column.id, studentId);
@@ -154,6 +167,31 @@ export function EditableCell({
                     />
                 ) : null}
             </div>
+
+            <Dialog
+                open={confirmOpen}
+                onOpenChange={(o) => {
+                    if (!o) cancelCommit();
+                }}
+            >
+                <DialogContent className='sm:max-w-md'>
+                    <DialogHeader>
+                        <DialogTitle>{t('edit_confirm_title')}</DialogTitle>
+                        <DialogDescription>
+                            {t('edit_confirm_description', { column: column.title, old: oldLabel, new: newLabel })}
+                            {isOverwrite ? ` ${t('edit_confirm_overwrite')}` : ''}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button type='button' variant='outline' onClick={cancelCommit}>
+                            {t('cancel')}
+                        </Button>
+                        <Button type='button' onClick={confirmCommit}>
+                            {t('confirm')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </TableCell>
     );
 }

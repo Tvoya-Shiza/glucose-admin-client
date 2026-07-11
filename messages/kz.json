@@ -71,7 +71,8 @@
             },
             "credits": "Зачёттар",
             "creditQuestions": "Сұрақтар базасы",
-            "ratingJournal": "Рейтинг-журнал"
+            "ratingJournal": "Рейтинг-журнал",
+            "creditResults": "Зачет нәтижелері"
         },
         "settings": {
             "title": "Баптаулар",
@@ -2397,7 +2398,8 @@
             "result_texts_ru_toggle": "Орысша нұсқасы (міндетті емес)",
             "result_texts_ru_label": "Мәтін (орысша)",
             "result_texts_required": "Мәтін бос болмауы керек",
-            "result_texts_saved": "Сақталды"
+            "result_texts_saved": "Сақталды",
+            "session_status_completed": "Аяқталды"
         },
         "credit_questions": {
             "list_title": "Сұрақтар базасы",
@@ -2477,6 +2479,43 @@
                 "delete_dialog_title": "Тақырыпты жою",
                 "delete_dialog_description": "«{name}» тақырыбын жоюды растаңыз.",
                 "delete_conflict": "Ішкі тақырыптары немесе сұрақтары бар тақырыпты жою мүмкін емес"
+            },
+            "has_photo": "Фото бар",
+            "question_image_label": "Сұрақ суреті (міндетті емес)",
+            "answer_image_label": "Жауап суреті (міндетті емес)",
+            "import_button": "Excel импорт",
+            "import": {
+                "dialog_title": "Сұрақтарды Excel-ден импорттау",
+                "dialog_description": "Толтырылған үлгіні жүктеңіз. Барлық сұрақтар таңдалған тақырыпқа қосылады.",
+                "target_notice": "Импорт тақырыбы: {topic}",
+                "select_topic_first": "Алдымен сүзгіде тақырыпты таңдаңыз — импорт сол тақырыпқа жасалады.",
+                "download_template": "Үлгіні жүктеу",
+                "select_file": "Файлды таңдау",
+                "upload": "Импорттау",
+                "uploading": "Импортталуда…",
+                "reset": "Тазарту",
+                "close": "Жабу",
+                "no_file": "Файл таңдалмаған",
+                "no_topic": "Тақырып таңдалмаған",
+                "error_too_large": "Файл тым үлкен (5 МБ-тан аспауы керек)",
+                "done_toast": "Импортталды: {succeeded}, қате: {failed}",
+                "none_imported_toast": "Ешбір жол импортталмады (қате: {failed})",
+                "all_ok": "Барлық жолдар сәтті импортталды.",
+                "summary_total": "Барлығы",
+                "summary_succeeded": "Сәтті",
+                "summary_failed": "Қате",
+                "col_row": "Жол",
+                "col_reason": "Себебі",
+                "reasons": {
+                    "difficulty_required": "Деңгейі көрсетілмеген",
+                    "difficulty_invalid": "Деңгейі A/B/C емес",
+                    "question_empty": "Сұрақ бос",
+                    "question_too_long": "Сұрақ тым ұзын",
+                    "answer_empty": "Жауап бос",
+                    "answer_too_long": "Жауап тым ұзын",
+                    "score_not_int": "Балл бүтін сан ≥ 1 болуы керек",
+                    "db_error": "Дерекқорға сақтау қатесі"
+                }
             }
         },
         "ratingJournal": {
@@ -2557,7 +2596,41 @@
             "status_active": "Белсенді",
             "status_pending": "Күтуде",
             "status_inactive": "Белсенді емес",
-            "no_filter_results": "Таңдалған сүзгі бойынша студент табылмады"
+            "no_filter_results": "Таңдалған сүзгі бойынша студент табылмады",
+            "confirm": "Растау",
+            "edit_confirm_title": "Бағаны өзгертуді растау",
+            "edit_confirm_description": "«{column}» бағанындағы бағаны {old} → {new} өзгерту керек пе?",
+            "edit_confirm_overwrite": "Ағымдағы мән қайта жазылады.",
+            "date_from_label": "Күні (бастап)",
+            "date_to_label": "Күні (дейін)",
+            "date_clear": "Күнді тазарту"
+        },
+        "creditResults": {
+            "list_title": "Зачет нәтижелері",
+            "list_subtitle": "Барлық зачеттер бойынша студенттердің нәтижелері",
+            "search_label": "Іздеу",
+            "search_placeholder": "ФИО немесе телефон",
+            "search_clear": "Тазарту",
+            "group_label": "Топ",
+            "group_placeholder": "Барлық топтар",
+            "status_label": "Күйі",
+            "status_all": "Барлығы",
+            "status_finished": "Аяқталды",
+            "status_expired": "Уақыт бітті",
+            "status_in_progress": "Жүріп жатыр",
+            "status_pending": "Күтуде",
+            "status_cancelled": "Бас тартылды",
+            "col_student": "Студент",
+            "col_phone": "Телефон",
+            "col_credit": "Зачет",
+            "col_group": "Топ",
+            "col_date": "Күні",
+            "col_score": "Балл",
+            "col_status": "Нәтиже",
+            "col_attempt": "Әрекет",
+            "generic_error": "Қате шықты",
+            "empty": "Әзірге нәтижелер жоқ",
+            "empty_no_results": "Сүзгі бойынша нәтиже табылмады"
         }
     },
     "dashboard": {

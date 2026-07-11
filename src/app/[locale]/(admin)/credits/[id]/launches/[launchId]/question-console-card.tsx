@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { DifficultyBadge } from '@/components/credits/difficulty-badge';
+import { RichMathContent } from '@/components/ui/rich-math-content';
+import { sanitizeTiptapHtml } from '@/lib/sanitize/sanitize-html';
+import { resolveAssetUrl } from '@/lib/uploads/asset-url';
 import type { CreditSessionQuestionDetail } from '@/lib/credits/types';
 
 export interface QuestionConsoleCardProps {
@@ -43,12 +46,28 @@ export function QuestionConsoleCard({ question, total, revealed, onReveal, onMar
                 ) : null}
             </CardHeader>
             <CardContent className='space-y-4 px-4 py-4'>
-                <p className='text-base leading-relaxed whitespace-pre-wrap'>{question.question}</p>
+                <RichMathContent className='text-base leading-relaxed' html={sanitizeTiptapHtml(question.question)} />
+                {question.question_image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={resolveAssetUrl(question.question_image)}
+                        alt=''
+                        className='max-h-80 w-auto rounded-md border object-contain'
+                    />
+                ) : null}
 
                 {answerVisible ? (
                     <div className='rounded-md border border-brand-200 bg-brand-50 p-3 dark:border-brand-200/30 dark:bg-brand-50/10'>
                         <p className='text-muted-foreground mb-1 text-xs font-semibold tracking-wider uppercase'>{t('reference_answer')}</p>
-                        <p className='text-sm leading-relaxed whitespace-pre-wrap'>{question.answer}</p>
+                        <RichMathContent className='text-sm leading-relaxed' html={sanitizeTiptapHtml(question.answer)} />
+                        {question.answer_image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={resolveAssetUrl(question.answer_image)}
+                                alt=''
+                                className='mt-2 max-h-80 w-auto rounded-md border object-contain'
+                            />
+                        ) : null}
                     </div>
                 ) : (
                     <Button type='button' variant='outline' onClick={onReveal} disabled={busy}>

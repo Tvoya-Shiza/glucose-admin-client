@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { toast } from 'sonner';
-import { FileQuestion, FolderTree } from 'lucide-react';
+import { FileQuestion, FolderTree, Upload } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
@@ -19,6 +19,7 @@ import { deleteCreditQuestion, updateCreditQuestion } from '@/lib/credits/api';
 import { listCreditQuestions } from '@/lib/credits/api';
 import type { CreditBankStatus, CreditDifficulty, CreditQuestionRow } from '@/lib/credits/types';
 import { UpsertQuestionDialog } from './components/upsert-question-dialog';
+import { QuestionsImportDialog } from './components/questions-import-dialog';
 import { QuestionsFilters } from './questions-filters';
 import { QuestionsTable } from './questions-table';
 
@@ -72,8 +73,13 @@ export function QuestionsListClient() {
     const anyFilterActive = Boolean(topic_id || difficulty || status || (search && search.trim().length > 0));
 
     const [upsertOpen, setUpsertOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
     const [editRow, setEditRow] = useState<CreditQuestionRow | null>(null);
     const [deleteRow, setDeleteRow] = useState<CreditQuestionRow | null>(null);
+
+    // The import target is whatever topic the list is currently filtered to
+    // (credit_topics.id — a custom topic OR a lesson-topic both work).
+    const importTopicName = useMemo(() => rows.find((r) => r.topic?.id === topic_id)?.topic?.name ?? null, [rows, topic_id]);
 
     const invalidate = () => {
         qc.invalidateQueries({ queryKey: ['admin.credit-questions.list'], exact: false });
@@ -121,14 +127,20 @@ export function QuestionsListClient() {
                                 </Link>
                             </Button>
                             {canManage ? (
-                                <Button
-                                    onClick={() => {
-                                        setEditRow(null);
-                                        setUpsertOpen(true);
-                                    }}
-                                >
-                                    {t('create')}
-                                </Button>
+                                <>
+                                    <Button variant='outline' size='sm' onClick={() => setImportOpen(true)}>
+                                        <Upload className='mr-2 h-4 w-4' />
+                                        {t('import_button')}
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            setEditRow(null);
+                                            setUpsertOpen(true);
+                                        }}
+                                    >
+                                        {t('create')}
+                                    </Button>
+                                </>
                             ) : null}
                         </>
                     }
@@ -202,6 +214,10 @@ export function QuestionsListClient() {
                     initial={editRow}
                     defaultTopicId={topic_id}
                 />
+            ) : null}
+
+            {canManage ? (
+                <QuestionsImportDialog open={importOpen} onOpenChange={setImportOpen} topicId={topic_id} topicName={importTopicName} />
             ) : null}
 
             <Dialog

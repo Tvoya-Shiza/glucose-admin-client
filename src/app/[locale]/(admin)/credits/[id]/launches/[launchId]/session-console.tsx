@@ -319,6 +319,12 @@ export function SessionConsole({
                         </div>
                     </dl>
                 ) : null}
+                {/* Per-student motivational message for the completion screen (item 4). */}
+                {data.result?.motivational_text ? (
+                    <div className='rounded-md border border-brand-200 bg-brand-50 p-3 text-sm leading-relaxed dark:border-brand-200/30 dark:bg-brand-50/10'>
+                        {data.result.motivational_text}
+                    </div>
+                ) : null}
                 {nextPendingSessionId ? (
                     <Button onClick={() => onSelectSession(nextPendingSessionId)}>
                         <ArrowRight className='mr-2 h-4 w-4' />

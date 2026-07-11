@@ -120,8 +120,14 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 // ──────────────────────────────────────────────────────────────────────────────
 
 /** RAW JournalGrid for a (group, course) pair. */
-export async function getJournalGrid(args: { group_id: number; course_id: number }): Promise<JournalGrid> {
-    const res = await fetchWithRefresh(`${RATING_JOURNAL_API_BASE}/grid${buildQuery(args)}`);
+export async function getJournalGrid(args: {
+    group_id: number;
+    course_id: number;
+    /** Optional calendar filter (item 5) — unix seconds, inclusive. */
+    date_from?: number;
+    date_to?: number;
+}): Promise<JournalGrid> {
+    const res = await fetchWithRefresh(`${RATING_JOURNAL_API_BASE}/grid${buildQuery(args as Record<string, unknown>)}`);
     if (!res.ok) return throwApiError(res, `getJournalGrid failed: ${res.status}`);
     return (await res.json()) as JournalGrid;
 }

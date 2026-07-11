@@ -12,6 +12,12 @@ export interface SessionListPanelProps {
     onSelect: (id: string) => void;
 }
 
+/**
+ * Neutral status chip — deliberately does NOT reveal the score or pass/fail so a
+ * curator conducting one student can't see everyone's results at a glance (item
+ * 2). A finished/expired session shows a neutral «завершён» badge; the full
+ * result is seen only inside the opened session console.
+ */
 function StatusChip({ session }: { session: CreditLaunchSessionSummary }) {
     const t = useTranslations('admin.credits');
     const status: CreditSessionStatus = session.status;
@@ -23,19 +29,16 @@ function StatusChip({ session }: { session: CreditLaunchSessionSummary }) {
         );
     }
     if (status === 'finished' || status === 'expired') {
-        return session.passed ? (
-            <Badge variant='success'>{t('result_passed')}</Badge>
-        ) : (
-            <Badge variant='destructive'>{t('result_failed')}</Badge>
-        );
+        return <Badge variant='muted'>{t('session_status_completed')}</Badge>;
     }
     if (status === 'cancelled') return <Badge variant='muted'>{t('session_status_cancelled')}</Badge>;
     return <Badge variant='outline'>{t('session_status_pending')}</Badge>;
 }
 
 /**
- * LEFT console pane — one row per session (student, live status chip,
- * answered/total, running score). Selection is lifted to nuqs `?session=`.
+ * LEFT console pane — one row per session (student name + NEUTRAL status only).
+ * Scores / answered counts / pass-fail are intentionally hidden here (item 2) and
+ * shown only in the opened session console. Selection is lifted to nuqs `?session=`.
  */
 export function SessionListPanel({ sessions, selectedId, onSelect }: SessionListPanelProps) {
     const t = useTranslations('admin.credits');
@@ -62,10 +65,6 @@ export function SessionListPanel({ sessions, selectedId, onSelect }: SessionList
                             <span className='flex items-center justify-between gap-2'>
                                 <span className='truncate text-sm font-medium'>{s.student.full_name}</span>
                                 <StatusChip session={s} />
-                            </span>
-                            <span className='text-muted-foreground mt-1 flex items-center justify-between gap-2 text-xs tabular-nums'>
-                                <span>{t('answered_of', { answered: s.answered_count, total: s.question_count })}</span>
-                                <span>{t('points_of', { score: s.score_so_far, max: s.max_score })}</span>
                             </span>
                         </button>
                     ))

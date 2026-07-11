@@ -12,9 +12,11 @@ import type {
     CreditLaunchListResponse,
     CreditListResponse,
     CreditQuestionDeficit,
+    CreditQuestionImportResult,
     CreditQuestionListResponse,
     CreditQuestionRow,
     CreditQuestionMark,
+    CreditResultsListResponse,
     CreditResultTextRange,
     CreditSessionDetail,
     CreditTopic,
@@ -22,6 +24,7 @@ import type {
     ListCreditHistoryQuery,
     ListCreditLaunchesQuery,
     ListCreditQuestionsQuery,
+    ListCreditResultsQuery,
     ListCreditsQuery,
     UpdateCreditPayload,
     UpdateCreditQuestionPayload,
@@ -51,6 +54,9 @@ export const CREDIT_TOPICS_API_BASE = '/api/proxy/v1/admin/credit-topics';
 export const CREDIT_QUESTIONS_API_BASE = '/api/proxy/v1/admin/credit-questions';
 export const CREDIT_SESSIONS_API_BASE = '/api/proxy/v1/admin/credit-sessions';
 export const CREDIT_SETTINGS_API_BASE = '/api/proxy/v1/admin/credit-settings';
+export const CREDIT_RESULTS_API_BASE = '/api/proxy/v1/admin/credit-results';
+
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 function buildQuery(query: Record<string, unknown> | undefined): string {
     if (!query) return '';
@@ -298,6 +304,58 @@ export async function deleteCreditQuestion(id: string): Promise<{ id: string; de
     const res = await fetchWithRefresh(`${CREDIT_QUESTIONS_API_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!res.ok) return throwApiError(res, `deleteCreditQuestion failed: ${res.status}`);
     return unwrapData<{ id: string; deleted: true }>(await res.json());
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Excel bulk import of bank questions (item 1)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** GET the empty import template (one «Вопросы» sheet + Инструкция) as a Blob. */
+export async function downloadCreditQuestionsTemplate(): Promise<Blob> {
+    const res = await fetchWithRefresh(`${CREDIT_QUESTIONS_API_BASE}/import/template`);
+    if (!res.ok) return throwApiError(res, `downloadCreditQuestionsTemplate failed: ${res.status}`);
+    return res.blob();
+}
+
+/**
+ * Upload a filled workbook (multipart) tagged to ONE target (topic_id XOR
+ * chapter_item_id) and return the per-row import result.
+ */
+export async function importCreditQuestionsExcel(
+    target: { topic_id?: string; chapter_item_id?: number },
+    file: File,
+): Promise<CreditQuestionImportResult> {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    const res = await fetchWithRefresh(`${CREDIT_QUESTIONS_API_BASE}/import${buildQuery(target)}`, {
+        method: 'POST',
+        body: fd,
+    });
+    if (!res.ok) return throwApiError(res, `importCreditQuestionsExcel failed: ${res.status}`);
+    return unwrapData<CreditQuestionImportResult>(await res.json());
+}
+
+/** Trigger a browser download for a Blob (forces the XLSX MIME if the proxy dropped it). */
+export function triggerXlsxDownload(blob: Blob, filename: string): void {
+    const out = blob.type.includes('spreadsheetml') ? blob : new Blob([blob], { type: XLSX_MIME });
+    const url = URL.createObjectURL(out);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Cross-credit results (item 9)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listCreditResults(query?: ListCreditResultsQuery): Promise<CreditResultsListResponse> {
+    const res = await fetchWithRefresh(`${CREDIT_RESULTS_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
+    if (!res.ok) return throwApiError(res, `listCreditResults failed: ${res.status}`);
+    return unwrapData<CreditResultsListResponse>(await res.json());
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { FileUploader } from '@/components/ui/file-uploader';
+import { TiptapEditor } from '@/app/[locale]/(admin)/courses/[id]/components/tiptap-editor';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CoursePicker } from '@/components/courses/course-picker';
@@ -46,6 +47,8 @@ function buildSchema(t: (key: string) => string) {
         difficulty: z.enum(['A', 'B', 'C']),
         question: z.string().min(1, t('validation_required')),
         answer: z.string().min(1, t('validation_required')),
+        question_image: z.string(),
+        answer_image: z.string(),
         score: z.number().int(t('validation_number')).min(1, t('validation_number')),
     });
 }
@@ -66,6 +69,8 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
         difficulty: 'A',
         question: '',
         answer: '',
+        question_image: '',
+        answer_image: '',
         score: 1,
     };
 
@@ -113,6 +118,8 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                 difficulty: initial.difficulty,
                 question: initial.question,
                 answer: initial.answer,
+                question_image: initial.question_image ?? '',
+                answer_image: initial.answer_image ?? '',
                 score: initial.score,
             });
         } else {
@@ -141,6 +148,8 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                 difficulty: values.difficulty as CreditDifficulty,
                 question: values.question.trim(),
                 answer: values.answer.trim(),
+                question_image: values.question_image,
+                answer_image: values.answer_image,
                 score: values.score,
             };
             return initial ? updateCreditQuestion(initial.id, payload) : createCreditQuestion(payload);
@@ -298,6 +307,7 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                             />
                         </div>
 
+                        {/* Question — rich text (bold/italic/…) + optional photo. */}
                         <FormField
                             control={form.control}
                             name='question'
@@ -305,7 +315,7 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                                 <FormItem>
                                     <FormLabel>{t('question_label')}</FormLabel>
                                     <FormControl>
-                                        <Textarea rows={3} {...field} />
+                                        <TiptapEditor initialHtml={initial?.question ?? ''} onChange={field.onChange} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -314,12 +324,57 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
 
                         <FormField
                             control={form.control}
+                            name='question_image'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('question_image_label')}</FormLabel>
+                                    <FormControl>
+                                        <FileUploader
+                                            kind='image'
+                                            variant='thumb'
+                                            previewSize='md'
+                                            value={field.value || null}
+                                            onChange={(url) => field.onChange(url)}
+                                            onClear={() => field.onChange('')}
+                                            pickFromLibrary
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Reference answer — rich text + optional photo (curator-only). */}
+                        <FormField
+                            control={form.control}
                             name='answer'
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>{t('answer_label')}</FormLabel>
                                     <FormControl>
-                                        <Textarea rows={4} {...field} />
+                                        <TiptapEditor initialHtml={initial?.answer ?? ''} onChange={field.onChange} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name='answer_image'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('answer_image_label')}</FormLabel>
+                                    <FormControl>
+                                        <FileUploader
+                                            kind='image'
+                                            variant='thumb'
+                                            previewSize='md'
+                                            value={field.value || null}
+                                            onChange={(url) => field.onChange(url)}
+                                            onClear={() => field.onChange('')}
+                                            pickFromLibrary
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

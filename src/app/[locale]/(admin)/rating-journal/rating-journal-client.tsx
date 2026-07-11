@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { parseAsInteger, useQueryStates } from 'nuqs';
+import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { ClipboardCheck, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
@@ -22,6 +22,14 @@ import type { JournalColumn, JournalGrid as JournalGridData, StudentStatus } fro
 
 const STATUS_ALL = 'all';
 type StatusFilter = StudentStatus | typeof STATUS_ALL;
+
+/** 'YYYY-MM-DD' → unix seconds (local). endOfDay pins 23:59:59 for inclusive upper bounds. */
+function dayToUnix(day: string | null, endOfDay: boolean): number | undefined {
+    if (!day) return undefined;
+    const d = new Date(`${day}T${endOfDay ? '23:59:59' : '00:00:00'}`);
+    const ms = d.getTime();
+    return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
+}
 import { CellHistoryDialog, type CellHistoryTarget } from './components/cell-history-dialog';
 import { CreateColumnDialog } from './components/create-column-dialog';
 import { EditColumnDialog } from './components/edit-column-dialog';
@@ -38,9 +46,12 @@ export function RatingJournalClient() {
     const t = useTranslations('admin.ratingJournal');
     const qc = useQueryClient();
 
-    const [{ group_id, course_id }, setSel] = useQueryStates({
+    const [{ group_id, course_id, date_from, date_to }, setSel] = useQueryStates({
         group_id: parseAsInteger,
         course_id: parseAsInteger,
+        // Calendar filter (item 5) — YYYY-MM-DD strings; converted to unix at query time.
+        date_from: parseAsString,
+        date_to: parseAsString,
     });
 
     const canEdit = usePermission('rating_journal.edit');
@@ -49,11 +60,24 @@ export function RatingJournalClient() {
 
     const ready = group_id != null && course_id != null;
 
-    const gridQueryKey = useMemo(() => ['admin.rating-journal.grid', { group_id, course_id }] as const, [group_id, course_id]);
+    // date_from → start of its day; date_to → end of its day (inclusive).
+    const dateFromUnix = useMemo(() => dayToUnix(date_from, false), [date_from]);
+    const dateToUnix = useMemo(() => dayToUnix(date_to, true), [date_to]);
+
+    const gridQueryKey = useMemo(
+        () => ['admin.rating-journal.grid', { group_id, course_id, date_from, date_to }] as const,
+        [group_id, course_id, date_from, date_to],
+    );
 
     const { data: grid, isLoading, isFetching, error } = useQuery({
         queryKey: gridQueryKey,
-        queryFn: () => getJournalGrid({ group_id: group_id as number, course_id: course_id as number }),
+        queryFn: () =>
+            getJournalGrid({
+                group_id: group_id as number,
+                course_id: course_id as number,
+                date_from: dateFromUnix,
+                date_to: dateToUnix,
+            }),
         enabled: ready,
         staleTime: 0,
     });
@@ -64,8 +88,15 @@ export function RatingJournalClient() {
             return syncJournal(grid.journal.id);
         },
         onSuccess: (fresh: JournalGridData) => {
-            qc.setQueryData(gridQueryKey, fresh);
-            // fire-and-forget correctness refresh
+            // The sync endpoint returns the FULL (unfiltered) grid. When a date
+            // filter is active, writing it straight into the cache would show
+            // out-of-range cells + inflated totals — so refetch to re-apply the
+            // filter instead. Without a filter, the fresh grid is authoritative.
+            if (date_from || date_to) {
+                qc.invalidateQueries({ queryKey: gridQueryKey });
+            } else {
+                qc.setQueryData(gridQueryKey, fresh);
+            }
         },
         onError: (err: Error) => {
             // eslint-disable-next-line no-console
@@ -193,6 +224,40 @@ export function RatingJournalClient() {
                             </SelectContent>
                         </Select>
                     </div>
+                    {/* Calendar filter (item 5): show only grades entered within the range. */}
+                    <div>
+                        <label className='text-muted-foreground mb-1 block text-xs font-medium'>{t('date_from_label')}</label>
+                        <Input
+                            type='date'
+                            value={date_from ?? ''}
+                            max={date_to ?? undefined}
+                            onChange={(e) => setSel({ date_from: e.target.value || null })}
+                            disabled={!ready}
+                            className='w-40'
+                        />
+                    </div>
+                    <div>
+                        <label className='text-muted-foreground mb-1 block text-xs font-medium'>{t('date_to_label')}</label>
+                        <Input
+                            type='date'
+                            value={date_to ?? ''}
+                            min={date_from ?? undefined}
+                            onChange={(e) => setSel({ date_to: e.target.value || null })}
+                            disabled={!ready}
+                            className='w-40'
+                        />
+                    </div>
+                    {date_from || date_to ? (
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => setSel({ date_from: null, date_to: null })}
+                            disabled={!ready}
+                        >
+                            <X className='mr-1 h-4 w-4' />
+                            {t('date_clear')}
+                        </Button>
+                    ) : null}
                 </div>
             </Card>
 

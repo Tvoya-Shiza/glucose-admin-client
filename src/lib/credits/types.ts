@@ -121,8 +121,12 @@ export interface CreditQuestionRow {
     id: string;
     topic: CreditQuestionTopicRef;
     difficulty: CreditDifficulty;
+    /** Sanitized Tiptap HTML. */
     question: string;
     answer: string;
+    /** Optional relative upload URLs (null when no photo). answer_image is curator-only. */
+    question_image: string | null;
+    answer_image: string | null;
     score: number;
     status: CreditBankStatus;
     created_at: number;
@@ -156,6 +160,9 @@ export interface CreateCreditQuestionPayload {
     difficulty: CreditDifficulty;
     question: string;
     answer: string;
+    /** Relative upload URLs; omit or '' for none. answer_image is curator-only. */
+    question_image?: string;
+    answer_image?: string;
     score?: number;
 }
 
@@ -166,8 +173,29 @@ export interface UpdateCreditQuestionPayload {
     difficulty?: CreditDifficulty;
     question?: string;
     answer?: string;
+    /** '' clears the photo; omit to leave unchanged. */
+    question_image?: string;
+    answer_image?: string;
     score?: number;
     status?: CreditBankStatus;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Excel bulk import (item 1)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface CreditQuestionImportRow {
+    row: number;
+    status: 'ok' | 'error';
+    reason: string | null;
+    question_id: string | null;
+}
+
+export interface CreditQuestionImportResult {
+    total: number;
+    succeeded: number;
+    failed: number;
+    rows: CreditQuestionImportRow[];
 }
 
 /** Per-topic active-question counts by difficulty (wizard availability check). */
@@ -383,8 +411,12 @@ export interface CreditSessionQuestionDetail {
     position: number;
     difficulty: CreditDifficulty;
     score: number;
+    /** Sanitized Tiptap HTML. */
     question: string;
     answer: string;
+    /** Optional relative upload URLs (null when no photo). answer_image is curator-only. */
+    question_image: string | null;
+    answer_image: string | null;
     mark: CreditQuestionMark;
     marked_at: number | null;
 }
@@ -396,6 +428,47 @@ export interface CreditSessionResultDetail {
     passed: boolean;
     pass_threshold: number;
     finish_reason: CreditFinishReason;
+    /** Admin-editable motivational message for the % range (item 4); '' if unset. */
+    motivational_text: string;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Cross-credit results page (item 9)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface CreditResultRow {
+    session_id: string;
+    launch_id: string;
+    credit: { id: string; title: string; course: CreditCourseRef; group: CreditGroupRef };
+    student: { id: number; full_name: string | null; mobile: string | null };
+    attempt_number: number;
+    started_at: number | null;
+    finished_at: number | null;
+    score: number | null;
+    max_score: number;
+    percent: number | null;
+    status: CreditSessionStatus;
+    passed: boolean | null;
+    retake_at: number | null;
+}
+
+export interface ListCreditResultsQuery {
+    search?: string;
+    status?: CreditSessionStatus;
+    course_id?: number;
+    group_id?: number;
+    /** 'true' | 'false' */
+    passed?: string;
+    date_from?: number;
+    date_to?: number;
+    page?: number;
+    page_size?: number;
+}
+
+export interface CreditResultsListResponse {
+    rows: CreditResultRow[];
+    total: number;
+    pageCount: number;
 }
 
 export interface CreditSessionDetail {
