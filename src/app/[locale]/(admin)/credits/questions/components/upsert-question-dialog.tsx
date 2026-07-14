@@ -106,6 +106,29 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
     const chapters = useMemo(() => courseDetail.data?.chapters ?? [], [courseDetail.data]);
     const selectedChapter = useMemo(() => chapters.find((ch) => ch.id === chapterId) ?? null, [chapters, chapterId]);
 
+    // #6 — the «Курс сабақтары» group lists only content lessons (video / PDF /
+    // rich-text / image); tests (quiz) and assignments are hidden. The currently
+    // selected item is always kept, so editing a question tagged to a non-content
+    // item never blanks the select.
+    const lessonItems = useMemo(() => {
+        if (!selectedChapter) return [];
+        const selectedLessonId = target.startsWith(LESSON_PREFIX) ? Number(target.slice(LESSON_PREFIX.length)) : null;
+        return selectedChapter.items.filter((it) => it.type === 'file' || it.id === selectedLessonId);
+    }, [selectedChapter, target]);
+
+    // #7 — persisted topics split into course-based (mirror a course lesson) and
+    // custom («Тақырыптар»). Course-based topics already shown as live lessons of
+    // the selected module are de-duplicated out so the same lesson isn't offered
+    // twice with two different value encodings.
+    const shownLessonIds = useMemo(() => new Set(lessonItems.map((it) => it.id)), [lessonItems]);
+    const courseTopicsFlat = useMemo(
+        () =>
+            flattenCreditTopicTree(
+                buildCreditTopicTree(topics.filter((tp) => tp.chapter_item_id != null && !shownLessonIds.has(tp.chapter_item_id)))
+            ),
+        [topics, shownLessonIds]
+    );
+
     useEffect(() => {
         if (!open) return;
         if (initial) {
@@ -202,7 +225,7 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                                 control={form.control}
                                 name='chapter_id'
                                 render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className='min-w-0'>
                                         <FormLabel>{t('module_label')}</FormLabel>
                                         <Select
                                             value={field.value != null ? String(field.value) : ''}
@@ -213,7 +236,7 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                                             disabled={courseId == null}
                                         >
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className='w-full'>
                                                     <SelectValue
                                                         placeholder={courseId == null ? t('select_course_first') : t('module_placeholder')}
                                                     />
@@ -245,28 +268,39 @@ export function UpsertQuestionDialog({ open, onOpenChange, initial, defaultTopic
                                 control={form.control}
                                 name='target'
                                 render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className='min-w-0'>
                                         <FormLabel>{t('topic_label')}</FormLabel>
                                         <Select value={field.value || undefined} onValueChange={field.onChange}>
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className='w-full'>
                                                     <SelectValue placeholder={t('topic_or_lesson_placeholder')} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {selectedChapter && selectedChapter.items.length > 0 ? (
+                                                {lessonItems.length > 0 ? (
                                                     <SelectGroup>
                                                         <SelectLabel>{t('group_lessons')}</SelectLabel>
-                                                        {selectedChapter.items.map((item) => (
+                                                        {lessonItems.map((item) => (
                                                             <SelectItem key={`l${item.id}`} value={`${LESSON_PREFIX}${item.id}`}>
                                                                 {chapterItemDisplayTitle(item)}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectGroup>
                                                 ) : null}
+                                                {courseTopicsFlat.length > 0 ? (
+                                                    <SelectGroup>
+                                                        <SelectLabel>{t('group_course_topics')}</SelectLabel>
+                                                        {courseTopicsFlat.map(({ node, depth }) => (
+                                                            <SelectItem key={`c${node.id}`} value={`${TOPIC_PREFIX}${node.id}`}>
+                                                                {' '.repeat(depth * 3)}
+                                                                {node.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                ) : null}
                                                 {customFlat.length > 0 ? (
                                                     <SelectGroup>
-                                                        <SelectLabel>{t('group_topics')}</SelectLabel>
+                                                        <SelectLabel>{t('group_custom_topics')}</SelectLabel>
                                                         {customFlat.map(({ node, depth }) => (
                                                             <SelectItem key={`t${node.id}`} value={`${TOPIC_PREFIX}${node.id}`}>
                                                                 {' '.repeat(depth * 3)}

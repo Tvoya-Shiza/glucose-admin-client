@@ -77,10 +77,6 @@ export function QuestionsListClient() {
     const [editRow, setEditRow] = useState<CreditQuestionRow | null>(null);
     const [deleteRow, setDeleteRow] = useState<CreditQuestionRow | null>(null);
 
-    // The import target is whatever topic the list is currently filtered to
-    // (credit_topics.id — a custom topic OR a lesson-topic both work).
-    const importTopicName = useMemo(() => rows.find((r) => r.topic?.id === topic_id)?.topic?.name ?? null, [rows, topic_id]);
-
     const invalidate = () => {
         qc.invalidateQueries({ queryKey: ['admin.credit-questions.list'], exact: false });
         qc.invalidateQueries({ queryKey: ['admin.credits.topics'], exact: false });
@@ -217,7 +213,7 @@ export function QuestionsListClient() {
             ) : null}
 
             {canManage ? (
-                <QuestionsImportDialog open={importOpen} onOpenChange={setImportOpen} topicId={topic_id} topicName={importTopicName} />
+                <QuestionsImportDialog open={importOpen} onOpenChange={setImportOpen} />
             ) : null}
 
             <Dialog
