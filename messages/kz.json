@@ -941,7 +941,14 @@
             "results_col_score": "Балл",
             "results_col_breakdown": "Дұрыс · Қате · Өткізіп жіберілген",
             "results_col_elapsed": "Уақыт",
-            "results_col_finished": "Аяқталды"
+            "results_col_finished": "Аяқталды",
+            "results_course_label": "Курс",
+            "results_course_placeholder": "Барлық курстар",
+            "results_sort_label": "Сұрыптау",
+            "results_sort_date_desc": "Күні: жаңадан ескіге",
+            "results_sort_date_asc": "Күні: ескіден жаңаға",
+            "results_sort_score_desc": "Ұпай: көптен азға",
+            "results_sort_score_asc": "Ұпай: аздан көпке"
         },
         "ebooks": {
             "list_title": "Электронды кітаптар",
@@ -1391,7 +1398,8 @@
                 "cascade_force_warning": "Тесттер «Санатсыз» санатына көшірілетінін, ал ішкі санаттар жойылатын санаттың аталығына көшірілетінін түсінемін. Тесттер мен ішкі санаттардың өздері сақталып қалады.",
                 "confirm_force_delete": "Жою және тәуелді нысандарды көшіру",
                 "deleted_with_repoint": "Санат жойылды. Көшірілді: тесттер {quizzes}, ішкі санаттар {children}.",
-                "generic_error": "Қате орын алды"
+                "generic_error": "Қате орын алды",
+                "background_image": "Санат фоны (жаттықтырғыш)"
             }
         },
         "stories": {

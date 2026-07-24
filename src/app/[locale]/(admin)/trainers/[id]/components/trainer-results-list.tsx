@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermission } from '@/lib/access/use-permission';
-import { formatUnixSecondsOrDash } from '@/lib/courses/format';
+
 import { exportTrainerResults, getTrainerResultsStats, listTrainerResults } from '@/lib/trainers/api';
-import { formatElapsed } from '@/lib/trainers/datetime';
-import type { ExportTrainerResults, TrainerAttemptStatus, TrainerResultRow } from '@/lib/trainers/types';
+import { formatUnixDateTimeOrDash, formatElapsed } from '@/lib/trainers/datetime';
+import type { ExportTrainerResults, TrainerAttemptStatus, TrainerResultRow, TrainerResultsSortField } from '@/lib/trainers/types';
 import { TrainerResultsFilters, type TrainerResultsFiltersValue } from './trainer-results-filters';
 
 function statusVariant(status: TrainerAttemptStatus): 'success' | 'secondary' | 'outline' | 'muted' {
@@ -48,29 +48,36 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
     const locale = useLocale();
     const canExport = usePermission('trainers.export');
 
-    const [{ page, page_size, group_id, date_from, date_to, status }, setQ] = useQueryStates({
+    const [{ page, page_size, group_id, course_id, date_from, date_to, status, sort, order }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
         page_size: parseAsInteger.withDefault(50),
         group_id: parseAsInteger,
+        course_id: parseAsInteger,
         date_from: parseAsInteger,
         date_to: parseAsInteger,
         status: parseAsString,
+        sort: parseAsString,
+        order: parseAsString,
     });
 
     const filters = useMemo(
         () => ({
             trainer_id: trainerId,
             group_id: group_id ?? undefined,
+            course_id: course_id ?? undefined,
             date_from: date_from ?? undefined,
             date_to: date_to ?? undefined,
             status: (status as TrainerAttemptStatus | null) ?? undefined,
+            sort: (sort as TrainerResultsSortField | null) ?? undefined,
+            order: (order as 'asc' | 'desc' | null) ?? undefined,
         }),
-        [trainerId, group_id, date_from, date_to, status]
+        [trainerId, group_id, course_id, date_from, date_to, status, sort, order]
     );
 
     const { data, isLoading, isFetching, error } = useQuery({
         queryKey: ['admin.trainer-results.list', { ...filters, page, page_size }],
-        queryFn: () => listTrainerResults({ ...filters, page, page_size, sort: 'started_at', order: 'desc' }),
+        queryFn: () =>
+            listTrainerResults({ ...filters, page, page_size, sort: filters.sort ?? 'started_at', order: filters.order ?? 'desc' }),
         placeholderData: (prev) => prev,
     });
 
@@ -94,9 +101,12 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
 
     const filtersValue: TrainerResultsFiltersValue = {
         group_id: group_id ?? undefined,
+        course_id: course_id ?? undefined,
         date_from: date_from ?? undefined,
         date_to: date_to ?? undefined,
         status: (status as TrainerAttemptStatus | null) ?? undefined,
+        sort: (sort as TrainerResultsSortField | null) ?? undefined,
+        order: (order as 'asc' | 'desc' | null) ?? undefined,
     };
 
     return (
@@ -131,9 +141,12 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
                     setQ({
                         page: 1,
                         group_id: next.group_id ?? null,
+                        course_id: next.course_id ?? null,
                         date_from: next.date_from ?? null,
                         date_to: next.date_to ?? null,
                         status: next.status ?? null,
+                        sort: next.sort ?? null,
+                        order: next.order ?? null,
                     })
                 }
             />
@@ -195,7 +208,7 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
                                               <span className='text-muted-foreground'> · {r.skipped_count}</span>
                                           </TableCell>
                                           <TableCell className='tabular-nums text-sm'>{formatElapsed(r.elapsed_sec)}</TableCell>
-                                          <TableCell className='text-sm'>{formatUnixSecondsOrDash(r.finished_at, locale)}</TableCell>
+                                          <TableCell className='text-sm'>{formatUnixDateTimeOrDash(r.finished_at, locale)}</TableCell>
                                       </TableRow>
                                   );
                               })}

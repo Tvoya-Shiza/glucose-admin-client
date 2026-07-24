@@ -32,3 +32,18 @@ export function formatElapsed(totalSeconds: number | null | undefined): string {
     const ss = s % 60;
     return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 }
+
+/**
+ * Unix seconds → localized date **and time**, or '—' when null.
+ *
+ * ТЗ 5.6 requires «дата и время прохождения» on every attempt row; the shared
+ * `formatUnixSecondsOrDash` (lib/courses/format.ts) is date-only and is left
+ * alone so the course tables that rely on it keep their formatting.
+ */
+export function formatUnixDateTimeOrDash(value: number | null | undefined, locale: string): string {
+    if (value == null) return '—';
+    const d = new Date(value * 1000);
+    if (Number.isNaN(d.getTime())) return '—';
+    const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
+    return new Intl.DateTimeFormat(lang, { dateStyle: 'short', timeStyle: 'short' }).format(d);
+}

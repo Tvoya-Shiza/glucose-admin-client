@@ -8,23 +8,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { FileUploader } from '@/components/ui/file-uploader';
 import { upsertCategory } from '@/lib/quizzes/api';
 import type { UpsertCategory } from '@/lib/quizzes/types';
 
@@ -40,6 +27,8 @@ import type { UpsertCategory } from '@/lib/quizzes/types';
  */
 const schema = z.object({
     kz_title: z.string().min(1).max(255),
+    /** Фон карточки категории тренажёра (ТЗ 5.2.3). */
+    background_image: z.string().max(512).nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -52,6 +41,7 @@ export interface UpsertCategoryDialogProps {
         id: number;
         parent_id: number | null;
         kz_title: string;
+        background_image?: string | null;
     };
     /** Required in create mode; ignored in edit mode (stays from initial). */
     parentIdForCreate?: number | null;
@@ -59,13 +49,7 @@ export interface UpsertCategoryDialogProps {
     onCreated?: (row: import('@/lib/quizzes/types').QuizCategory) => void;
 }
 
-export function UpsertCategoryDialog({
-    open,
-    onOpenChange,
-    initial,
-    parentIdForCreate,
-    onCreated,
-}: UpsertCategoryDialogProps) {
+export function UpsertCategoryDialog({ open, onOpenChange, initial, parentIdForCreate, onCreated }: UpsertCategoryDialogProps) {
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
     const isEdit = typeof initial?.id === 'number';
@@ -74,6 +58,7 @@ export function UpsertCategoryDialog({
         resolver: zodResolver(schema),
         defaultValues: {
             kz_title: initial?.kz_title ?? '',
+            background_image: initial?.background_image ?? null,
         },
         mode: 'onSubmit',
     });
@@ -82,6 +67,7 @@ export function UpsertCategoryDialog({
         if (open) {
             form.reset({
                 kz_title: initial?.kz_title ?? '',
+                background_image: initial?.background_image ?? null,
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,6 +79,7 @@ export function UpsertCategoryDialog({
                 ...(isEdit ? { id: initial!.id } : {}),
                 parent_id: isEdit ? (initial!.parent_id ?? null) : (parentIdForCreate ?? null),
                 translations: [{ locale: 'kz', title: values.kz_title }],
+                background_image: values.background_image,
             };
             return upsertCategory(payload);
         },
@@ -122,10 +109,7 @@ export function UpsertCategoryDialog({
                     <DialogDescription>{t('categories.dialog_description')}</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form
-                        onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-                        className='space-y-4'
-                    >
+                    <form onSubmit={form.handleSubmit((values) => mutation.mutate(values))} className='space-y-4'>
                         <FormField
                             control={form.control}
                             name='kz_title'
@@ -140,13 +124,27 @@ export function UpsertCategoryDialog({
                             )}
                         />
 
+                        <FormField
+                            control={form.control}
+                            name='background_image'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('categories.background_image')}</FormLabel>
+                                    <FormControl>
+                                        <FileUploader
+                                            kind='cover'
+                                            value={field.value ?? null}
+                                            onChange={(url) => field.onChange(url)}
+                                            onClear={() => field.onChange(null)}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         <DialogFooter>
-                            <Button
-                                type='button'
-                                variant='outline'
-                                onClick={() => onOpenChange(false)}
-                                disabled={mutation.isPending}
-                            >
+                            <Button type='button' variant='outline' onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
                                 {t('cancel')}
                             </Button>
                             <Button type='submit' disabled={mutation.isPending}>

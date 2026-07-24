@@ -5,17 +5,23 @@ import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CoursePicker } from '@/components/courses/course-picker';
 import { GroupPicker } from '@/components/groups/group-picker';
-import type { TrainerAttemptStatus } from '@/lib/trainers/types';
+import type { TrainerAttemptStatus, TrainerResultsSortField } from '@/lib/trainers/types';
 
 export interface TrainerResultsFiltersValue {
     q?: string;
     group_id?: number;
+    /** ТЗ 5.6 — фильтр по курсу (через trainer_courses). */
+    course_id?: number;
     status?: TrainerAttemptStatus;
     /** Unix seconds (on finished_at). */
     date_from?: number;
     /** Unix seconds (on finished_at). */
     date_to?: number;
+    /** ТЗ 5.6 — сортировка выдачи. */
+    sort?: TrainerResultsSortField;
+    order?: 'asc' | 'desc';
 }
 
 export interface TrainerResultsFiltersProps {
@@ -84,6 +90,38 @@ export function TrainerResultsFilters({ value, onChange }: TrainerResultsFilters
                         placeholder={t('results_group_placeholder')}
                     />
                 </div>
+            </div>
+
+            <div className='flex flex-col gap-1'>
+                <Label className='text-xs'>{t('results_course_label')}</Label>
+                <div className='w-56'>
+                    <CoursePicker
+                        value={value.course_id ?? null}
+                        onChange={(id) => onChange({ ...value, course_id: id ?? undefined })}
+                        placeholder={t('results_course_placeholder')}
+                    />
+                </div>
+            </div>
+
+            <div className='flex flex-col gap-1'>
+                <Label className='text-xs'>{t('results_sort_label')}</Label>
+                <Select
+                    value={`${value.sort ?? 'started_at'}:${value.order ?? 'desc'}`}
+                    onValueChange={(v) => {
+                        const [sort, order] = v.split(':') as [TrainerResultsSortField, 'asc' | 'desc'];
+                        onChange({ ...value, sort, order });
+                    }}
+                >
+                    <SelectTrigger className='w-52'>
+                        <SelectValue placeholder={t('results_sort_label')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='started_at:desc'>{t('results_sort_date_desc')}</SelectItem>
+                        <SelectItem value='started_at:asc'>{t('results_sort_date_asc')}</SelectItem>
+                        <SelectItem value='score:desc'>{t('results_sort_score_desc')}</SelectItem>
+                        <SelectItem value='score:asc'>{t('results_sort_score_asc')}</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className='flex flex-col gap-1'>
