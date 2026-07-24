@@ -21,6 +21,9 @@ export const ROUTE_PERMISSIONS = {
     '/quizzes/badges': 'quizzes.badges_manage',
     '/quizzes/results': 'quizzes.results_view',
     '/trainers': 'trainers.view',
+    // Publishers (/ebooks/publishers) intentionally inherit 'ebooks.view' via the
+    // longest-prefix match — they have no permission group of their own.
+    '/ebooks': 'ebooks.view',
     '/assignments': 'assignments.view',
     '/schedules': 'schedules.view',
     '/files': 'files.view',

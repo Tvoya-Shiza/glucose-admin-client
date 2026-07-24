@@ -51,6 +51,13 @@ export const PERMISSION_CODES = [
     'trainers.publish',
     'trainers.results_view',
     'trainers.export',
+    // ebooks (Электронды кітаптар) — content library: books, publishers, pages
+    'ebooks.view',
+    'ebooks.create',
+    'ebooks.edit',
+    'ebooks.delete',
+    'ebooks.publish',
+    'ebooks.pages_manage',
     // assignments (Тапсырма) — course assignments with student submissions + grading
     'assignments.view',
     'assignments.create',
