@@ -20,6 +20,7 @@ export const ROUTE_PERMISSIONS = {
     '/quizzes': 'quizzes.view',
     '/quizzes/badges': 'quizzes.badges_manage',
     '/quizzes/results': 'quizzes.results_view',
+    '/trainers': 'trainers.view',
     '/assignments': 'assignments.view',
     '/schedules': 'schedules.view',
     '/files': 'files.view',
