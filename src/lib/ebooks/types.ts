@@ -79,6 +79,8 @@ export interface BookRow {
     publisher: BookPublisherRef | null;
     grade: number | null;
     language: string;
+    /** Credit line as printed on the cover; display only (phase 42). */
+    authors: string | null;
     year: number | null;
     cover_image: string | null;
     page_count: number;
@@ -107,6 +109,8 @@ export interface BookDetail {
     publisher: BookPublisherRef | null;
     grade: number | null;
     language: string;
+    /** Credit line as printed on the cover; display only (phase 42). */
+    authors: string | null;
     year: number | null;
     cover_image: string | null;
     /** Original import artifact (PDF) — read-only in the admin. */
@@ -136,6 +140,8 @@ export interface CreateBook {
     grade?: number;
     /** Max 8 chars; server default 'kz'. */
     language?: string;
+    /** Credit line, max 512, e.g. «Н.С. Бакина, Н.Т. Жанақова». */
+    authors?: string;
     /** 1900..2100. */
     year?: number;
     /** URL produced by the uploads surface (max 512). */
@@ -151,7 +157,7 @@ export interface CreateBook {
  * Partial update. Every field optional:
  *   - undefined → leave unchanged
  *   - null      → clear (description, subject_id, publisher_id, grade, year,
- *                 cover_image are the nullable columns)
+ *                 authors, cover_image are the nullable columns)
  *
  * `status` is intentionally ABSENT — publication goes through publishBook().
  */
@@ -162,6 +168,7 @@ export interface UpdateBook {
     publisher_id?: number | null;
     grade?: number | null;
     language?: string;
+    authors?: string | null;
     year?: number | null;
     cover_image?: string | null;
 }

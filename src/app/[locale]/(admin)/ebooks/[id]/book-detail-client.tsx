@@ -110,6 +110,7 @@ export function BookDetailClient({ bookId }: { bookId: number }) {
         publisher: data.publisher,
         grade: data.grade,
         language: data.language,
+        authors: data.authors,
         year: data.year,
         cover_image: data.cover_image,
         page_count: data.page_count,

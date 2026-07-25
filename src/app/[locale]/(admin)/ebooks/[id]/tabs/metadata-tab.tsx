@@ -44,6 +44,7 @@ const NO_GRADE = '__none__';
 const metadataSchema = z.object({
     title: z.string().min(1).max(512),
     description: z.string().max(10000),
+    authors: z.string().max(512),
     subject_id: z.string(),
     publisher_id: z.number().int().positive().nullable(),
     grade: z.string(),
@@ -58,6 +59,7 @@ function toDefaults(book: BookDetail): MetadataValues {
     return {
         title: book.title_kz ?? '',
         description: book.description_kz ?? '',
+        authors: book.authors ?? '',
         subject_id: book.subject?.id != null ? String(book.subject.id) : '',
         publisher_id: book.publisher?.id ?? null,
         grade: book.grade != null ? String(book.grade) : '',
@@ -102,6 +104,7 @@ export function MetadataTab({ book }: { book: BookDetail }) {
             const payload: UpdateBook = {
                 title: values.title.trim(),
                 description: values.description.trim() === '' ? null : values.description,
+                authors: values.authors.trim() === '' ? null : values.authors.trim(),
                 subject_id: toNullableInt(values.subject_id),
                 publisher_id: values.publisher_id,
                 grade,
@@ -137,6 +140,21 @@ export function MetadataTab({ book }: { book: BookDetail }) {
                                     <FormControl>
                                         <Input {...field} placeholder={t('title_placeholder')} />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name='authors'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('authors_label')}</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} placeholder={t('authors_placeholder')} />
+                                    </FormControl>
+                                    <FormDescription>{t('authors_hint')}</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
