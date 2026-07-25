@@ -20,6 +20,10 @@ import type {
     UpdateBook,
     UpdatePublisherResult,
     UpsertPublisher,
+    ListQuizSubjectsQuery,
+    QuizSubjectListResponse,
+    UpsertQuizSubject,
+    UpsertQuizSubjectResult,
 } from './types';
 
 /**
@@ -57,6 +61,7 @@ import type {
 
 export const EBOOKS_API_BASE = '/api/proxy/v1/admin/ebooks';
 export const PUBLISHERS_API_BASE = '/api/proxy/v1/admin/publishers';
+export const QUIZ_SUBJECTS_API_BASE = '/api/proxy/v1/admin/quiz-subjects';
 
 function buildQuery(query: Record<string, unknown> | undefined): string {
     if (!query) return '';
@@ -231,6 +236,36 @@ export async function deleteBookPage(bookId: number, pageNumber: number): Promis
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteBookPage failed: ${res.status}`));
     const json = await res.json();
     return unwrapData<DeletePageResult>(json);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Quiz subjects (справочник предметов, ТЗ 3.2.2 / 6.0)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listQuizSubjects(query?: ListQuizSubjectsQuery): Promise<QuizSubjectListResponse> {
+    const res = await fetchWithRefresh(`${QUIZ_SUBJECTS_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listQuizSubjects failed: ${res.status}`);
+    return res.json();
+}
+
+export async function createQuizSubject(payload: UpsertQuizSubject): Promise<UpsertQuizSubjectResult> {
+    const res = await fetchWithRefresh(QUIZ_SUBJECTS_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createQuizSubject failed: ${res.status}`));
+    return unwrapData<UpsertQuizSubjectResult>(await res.json());
+}
+
+export async function renameQuizSubject(id: number, payload: UpsertQuizSubject): Promise<UpsertQuizSubjectResult> {
+    const res = await fetchWithRefresh(`${QUIZ_SUBJECTS_API_BASE}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `renameQuizSubject failed: ${res.status}`));
+    return unwrapData<UpsertQuizSubjectResult>(await res.json());
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

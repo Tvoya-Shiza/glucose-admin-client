@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PublisherSelect } from '@/components/ebooks/publisher-select';
+import { SubjectSelect } from '@/components/ebooks/subject-select';
 import { usePermission } from '@/lib/access/use-permission';
 import { updateBook } from '@/lib/ebooks/api';
 import type { BookDetail, UpdateBook } from '@/lib/ebooks/types';
@@ -35,9 +36,8 @@ const NO_GRADE = '__none__';
  * update DTO's undefined-vs-null contract — since this form always submits the
  * whole surface, every field is explicitly sent (null clears).
  *
- * `subject_id` is a raw number input rather than a picker: Book.subject_id → the
- * QuizSubject table, but admin-api ships NO quiz-subjects listing endpoint, so
- * there is nothing to populate a dropdown from. `status` is deliberately absent —
+ * `subject_id` — селект по GET /quiz-subjects (phase 43; до него эндпоинта не было
+ * и предмет приходилось вписывать числовым id). `status` is deliberately absent —
  * publication goes through the header's publish button (PATCH :id/publish, which
  * runs the zero-pages gate). `source_file_url` is read-only (import artifact).
  */
@@ -203,21 +203,14 @@ export function MetadataTab({ book }: { book: BookDetail }) {
                                 <FormItem>
                                     <FormLabel>{t('subject_label')}</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            inputMode='numeric'
-                                            className='max-w-40'
-                                            value={field.value ?? ''}
-                                            onChange={(e) => field.onChange(e.target.value.replace(/[^\d]/g, ''))}
-                                            onBlur={field.onBlur}
-                                            ref={field.ref}
-                                            name={field.name}
+                                        <SubjectSelect
+                                            value={field.value === '' ? null : Number(field.value)}
+                                            onChange={(id) => field.onChange(id == null ? '' : String(id))}
+                                            noneLabel={t('subject_none')}
+                                            disabled={!canEdit}
+                                            allowCreate
                                         />
                                     </FormControl>
-                                    <FormDescription>
-                                        {book.subject?.title_kz
-                                            ? t('subject_current', { title: book.subject.title_kz })
-                                            : t('subject_hint')}
-                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}

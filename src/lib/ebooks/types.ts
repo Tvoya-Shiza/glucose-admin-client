@@ -274,6 +274,46 @@ export interface PublisherListResponse {
     pageCount: number;
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Quiz subjects (справочник предметов, ТЗ 3.2.2 / 6.0)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface QuizSubjectRow {
+    id: number;
+    /** kz-название; контентная библиотека одноязычная. */
+    title: string;
+    /** Сколько книг привязано к предмету. */
+    book_count: number;
+    /** Сколько тестов/тренажёров привязано. */
+    quiz_count: number;
+    created_at: number | null;
+    updated_at: number | null;
+}
+
+export interface QuizSubjectListResponse {
+    rows: QuizSubjectRow[];
+    total: number;
+    pageCount: number;
+}
+
+export interface ListQuizSubjectsQuery {
+    page?: number;
+    /** Capped at 200 server-side; default 50. */
+    page_size?: number;
+    /** Совпадение по названию (contains). */
+    q?: string;
+}
+
+export interface UpsertQuizSubject {
+    /** Дубликат названия отклоняется с 409 subjects.duplicate. */
+    title: string;
+}
+
+export interface UpsertQuizSubjectResult {
+    id: number;
+    title: string;
+}
+
 export interface UpsertPublisher {
     /** UNIQUE server-side — a duplicate rejects with 409 publishers.name_taken. */
     name: string;

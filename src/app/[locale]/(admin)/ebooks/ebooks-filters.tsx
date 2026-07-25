@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PublisherSelect } from '@/components/ebooks/publisher-select';
+import { SubjectSelect } from '@/components/ebooks/subject-select';
 import type { BookStatus } from '@/lib/ebooks/types';
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
@@ -23,20 +24,17 @@ export interface EbooksFiltersProps {
 }
 
 /**
- * Ebook list filter bar — debounced search + status / publisher / grade selects
- * + a numeric subject id field. Mirrors TrainersFilters ergonomics: search
+ * Ebook list filter bar — debounced search + status / publisher / grade / subject
+ * selects. Mirrors TrainersFilters ergonomics: search
  * debounces 300ms locally, selects fire immediately, shadcn `<Select>` uses the
  * '__all__' sentinel for "no filter" (empty-string values are rejected by Radix).
  *
- * `subject_id` is a raw number input, NOT a picker: admin-api exposes no
- * quiz-subjects listing endpoint (Book.subject_id → QuizSubject, but there is no
- * GET /quiz-subjects), so there is nothing to populate a dropdown from. Same
- * reason the metadata form takes a numeric subject id.
+ * `subject_id` — селект по GET /quiz-subjects (phase 43). Раньше это было поле
+ * для числового id: эндпоинта предметов не существовало.
  */
 export function EbooksFilters({ value, onChange }: EbooksFiltersProps) {
     const t = useTranslations('admin.ebooks');
     const [qLocal, setQLocal] = useState(value.q ?? '');
-    const [subjectLocal, setSubjectLocal] = useState(value.subject_id != null ? String(value.subject_id) : '');
 
     useEffect(() => {
         const id = setTimeout(() => {
@@ -47,17 +45,6 @@ export function EbooksFilters({ value, onChange }: EbooksFiltersProps) {
         return () => clearTimeout(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [qLocal]);
-
-    useEffect(() => {
-        const id = setTimeout(() => {
-            const next = subjectLocal.trim() === '' ? undefined : Number(subjectLocal);
-            if ((value.subject_id ?? undefined) !== next) {
-                onChange({ ...value, subject_id: next });
-            }
-        }, 300);
-        return () => clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [subjectLocal]);
 
     return (
         <div className='flex flex-wrap items-center gap-3 border-b p-4'>
@@ -102,12 +89,11 @@ export function EbooksFilters({ value, onChange }: EbooksFiltersProps) {
                 </SelectContent>
             </Select>
 
-            <Input
-                className='w-36'
-                inputMode='numeric'
+            <SubjectSelect
+                className='w-44'
+                value={value.subject_id ?? null}
+                onChange={(id) => onChange({ ...value, subject_id: id ?? undefined })}
                 placeholder={t('filter_subject')}
-                value={subjectLocal}
-                onChange={(e) => setSubjectLocal(e.target.value.replace(/[^\d]/g, ''))}
             />
         </div>
     );
