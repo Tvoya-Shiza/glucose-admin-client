@@ -9,6 +9,7 @@ import {
     UsersRound,
     GraduationCap,
     ClipboardList,
+    Gamepad2,
     ListChecks,
     CalendarDays,
     Award,
@@ -64,6 +65,8 @@ const NAV_SECTIONS: NavSection[] = [
         items: [
             { href: '/courses', labelKey: 'courses', icon: GraduationCap },
             { href: '/quizzes', labelKey: 'quizzes', icon: ClipboardList },
+            { href: '/trainers', labelKey: 'trainers', icon: Gamepad2 },
+            { href: '/ebooks', labelKey: 'ebooks', icon: Library },
             { href: '/quizzes/badges', labelKey: 'badges', icon: Award },
             { href: '/quizzes/results', labelKey: 'results', icon: Award },
             { href: '/credits', labelKey: 'credits', icon: BookOpenCheck },

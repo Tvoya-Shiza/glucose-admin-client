@@ -379,6 +379,8 @@ export interface QuizCategory {
     /** null = root. */
     parent_id: number | null;
     subject_id: number | null;
+    /** Фон карточки категории тренажёра (ТЗ 5.2.3); null — не задан. */
+    background_image?: string | null;
     translations: Translation[];
     /** Number of quizzes assigned to this category (Plan 03 list response). */
     quiz_count?: number;
@@ -419,6 +421,8 @@ export interface UpsertCategory {
     id?: number;
     parent_id?: number | null;
     subject_id?: number | null;
+    /** Фон карточки категории тренажёра (ТЗ 5.2.3); null очищает. */
+    background_image?: string | null;
     translations: Translation[];
 }
 

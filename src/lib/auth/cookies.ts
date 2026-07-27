@@ -26,9 +26,13 @@ export function extractLocaleFromPath(pathname: string): AdminLocale {
 }
 
 /**
- * Build a locale-prefixed login URL.
+ * Канонический URL страницы входа.
+ *
+ * Локаль одна и `localePrefix: 'as-needed'`, поэтому канонический путь — БЕЗ
+ * префикса: `/login`. Раньше здесь строился `/kz/login`, и next-intl тут же
+ * редиректил его на `/login` — пользователь получал лишний прыжок на каждом
+ * заходе в закрытый раздел.
  */
 export function buildLoginUrl(req: { url: string; nextUrl: { pathname: string } }): URL {
-    const locale = extractLocaleFromPath(req.nextUrl.pathname);
-    return new URL(`/${locale}/login`, req.url);
+    return new URL('/login', req.url);
 }

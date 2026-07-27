@@ -43,6 +43,21 @@ export const PERMISSION_CODES = [
     'quizzes.badges_manage',
     'quizzes.categories_manage',
     'quizzes.results_view',
+    // trainers (Тренажёр) — quiz-backed practice trainers: settings, publish, results
+    'trainers.view',
+    'trainers.create',
+    'trainers.edit',
+    'trainers.delete',
+    'trainers.publish',
+    'trainers.results_view',
+    'trainers.export',
+    // ebooks (Электронды кітаптар) — content library: books, publishers, pages
+    'ebooks.view',
+    'ebooks.create',
+    'ebooks.edit',
+    'ebooks.delete',
+    'ebooks.publish',
+    'ebooks.pages_manage',
     // assignments (Тапсырма) — course assignments with student submissions + grading
     'assignments.view',
     'assignments.create',

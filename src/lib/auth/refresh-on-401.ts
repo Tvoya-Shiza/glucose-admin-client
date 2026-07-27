@@ -16,7 +16,6 @@
  * /api/auth/refresh round-trip instead of fanning out N rotation calls.
  */
 
-import { extractLocaleFromPath, type AdminLocale } from './cookies';
 
 let inFlightRefresh: Promise<boolean> | null = null;
 
@@ -40,16 +39,11 @@ async function refreshTokens(): Promise<boolean> {
     return inFlightRefresh;
 }
 
-function getCurrentLocale(): AdminLocale {
-    if (typeof window === 'undefined') return 'kz';
-    return extractLocaleFromPath(window.location.pathname);
-}
-
 function redirectToLogin(): never {
     if (typeof window !== 'undefined') {
-        const locale = getCurrentLocale();
         const next = window.location.pathname + window.location.search;
-        window.location.href = `/${locale}/login?next=${encodeURIComponent(next)}`;
+        // Канонический путь входа — без префикса локали (см. buildLoginUrl).
+        window.location.href = `/login?next=${encodeURIComponent(next)}`;
     }
     throw new Error('redirected_to_login');
 }

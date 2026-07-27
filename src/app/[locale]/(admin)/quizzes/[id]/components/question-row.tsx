@@ -13,6 +13,7 @@ import { deleteQuestion, ForceConfirmRequiredError } from '@/lib/quizzes/api';
 import type { QuestionDetail } from '@/lib/quizzes/types';
 import { ForceConfirmDialog } from './force-confirm-dialog';
 import { UpsertQuestionDialog } from './upsert-question-dialog';
+import type { QuizQuestionType } from '@/lib/quizzes/types';
 
 /**
  * QuestionRow — one row in the QuestionsList (Phase 6 Plan 05).
@@ -33,6 +34,8 @@ export interface QuestionRowProps {
     quizId: number;
     question: QuestionDetail;
     index: number;
+    /** Сузить выбор типов (тренажёр — только single/multiple, ТЗ 5.2.1). */
+    allowedTypes?: QuizQuestionType[];
 }
 
 const TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -42,7 +45,7 @@ const TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
     identificative: 'outline',
 };
 
-export function QuestionRow({ quizId, question, index }: QuestionRowProps) {
+export function QuestionRow({ quizId, question, index, allowedTypes }: QuestionRowProps) {
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -161,6 +164,7 @@ export function QuestionRow({ quizId, question, index }: QuestionRowProps) {
             </div>
             {editOpen ? (
                 <UpsertQuestionDialog
+                    allowedTypes={allowedTypes}
                     quizId={quizId}
                     open={editOpen}
                     onOpenChange={setEditOpen}
