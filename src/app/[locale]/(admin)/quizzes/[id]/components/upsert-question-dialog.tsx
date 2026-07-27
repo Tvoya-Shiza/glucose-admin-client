@@ -68,16 +68,26 @@ export interface UpsertQuestionDialogProps {
     onOpenChange: (open: boolean) => void;
     /** When present, dialog is in edit mode. */
     question?: QuestionDetail | null;
+    /** Ограничить выбор типов (тренажёр — только single/multiple). */
+    allowedTypes?: QuizQuestionType[];
 }
 
 const QUESTION_TYPES: QuizQuestionType[] = ['single', 'multiple', 'descriptive', 'identificative'];
+
+/**
+ * Тренажёр умеет прогонять только single/multiple (ТЗ 5.2.1) — остальные типы
+ * сервер молча выбрасывает из раунда и флеш-карт. Поэтому вызывающий может
+ * сузить список, чтобы методист не завёл вопрос, который нигде не появится.
+ */
 
 export function UpsertQuestionDialog({
     quizId,
     open,
     onOpenChange,
     question,
+    allowedTypes,
 }: UpsertQuestionDialogProps) {
+    const types = allowedTypes ?? QUESTION_TYPES;
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
 
@@ -253,7 +263,7 @@ export function UpsertQuestionDialog({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {QUESTION_TYPES.map((qt) => (
+                                        {types.map((qt) => (
                                             <SelectItem key={qt} value={qt}>
                                                 {t(`q_type_${qt}` as 'q_type_single')}
                                             </SelectItem>

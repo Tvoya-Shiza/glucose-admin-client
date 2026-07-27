@@ -23,6 +23,7 @@ import { Can } from '@/lib/access/can';
 import { downloadQuestionsTemplate, reorderQuestions, triggerXlsxDownload } from '@/lib/quizzes/api';
 import type { QuestionDetail } from '@/lib/quizzes/types';
 import { QuestionRow } from './question-row';
+import type { QuizQuestionType } from '@/lib/quizzes/types';
 import { QuestionsImportDialog } from './questions-import-dialog';
 import { UpsertQuestionDialog } from './upsert-question-dialog';
 
@@ -44,9 +45,11 @@ import { UpsertQuestionDialog } from './upsert-question-dialog';
 export interface QuestionsListProps {
     quizId: number;
     questions: QuestionDetail[];
+    /** Сузить выбор типов вопроса (тренажёр — только single/multiple, ТЗ 5.2.1). */
+    allowedTypes?: QuizQuestionType[];
 }
 
-export function QuestionsList({ quizId, questions: incoming }: QuestionsListProps) {
+export function QuestionsList({ quizId, questions: incoming, allowedTypes }: QuestionsListProps) {
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
 
@@ -138,7 +141,7 @@ export function QuestionsList({ quizId, questions: incoming }: QuestionsListProp
                     <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
                         <div className='space-y-2'>
                             {optimistic.map((q, idx) => (
-                                <QuestionRow key={q.id} quizId={quizId} question={q} index={idx} />
+                                <QuestionRow key={q.id} quizId={quizId} question={q} index={idx} allowedTypes={allowedTypes} />
                             ))}
                         </div>
                     </SortableContext>
@@ -147,6 +150,7 @@ export function QuestionsList({ quizId, questions: incoming }: QuestionsListProp
 
             {createOpen ? (
                 <UpsertQuestionDialog
+                    allowedTypes={allowedTypes}
                     quizId={quizId}
                     open={createOpen}
                     onOpenChange={setCreateOpen}

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { listQuestions } from '@/lib/quizzes/api';
+import type { QuizQuestionType } from '@/lib/quizzes/types';
 import { QuestionsList } from '../components/questions-list';
 
 /**
@@ -19,7 +20,7 @@ import { QuestionsList } from '../components/questions-list';
  * (geonline-admin:quizzes:questions:<id>); admin mutations invalidate
  * geonline-admin:quizzes:* aggressively per D-26.
  */
-export function QuestionsTab({ quizId }: { quizId: number }) {
+export function QuestionsTab({ quizId, allowedTypes }: { quizId: number; allowedTypes?: QuizQuestionType[] }) {
     const t = useTranslations('admin.quizzes');
     const { data, isLoading, error } = useQuery({
         queryKey: ['admin.quizzes.questions', quizId],
@@ -51,7 +52,7 @@ export function QuestionsTab({ quizId }: { quizId: number }) {
 
     return (
         <div className='p-4'>
-            <QuestionsList quizId={quizId} questions={data?.rows ?? []} />
+            <QuestionsList quizId={quizId} questions={data?.rows ?? []} allowedTypes={allowedTypes} />
         </div>
     );
 }
