@@ -26,6 +26,12 @@ export interface SubjectSelectProps {
     className?: string;
     /** Показать поле «добавить предмет» под списком (форма книги — да, фильтр — нет). */
     allowCreate?: boolean;
+    /**
+     * Право, дающее инлайновое создание. Справочник предметов общий для книг и
+     * тренажёров, а группы прав у них разные — поэтому право приходит снаружи,
+     * а не зашито в компонент.
+     */
+    createPermission?: string;
 }
 
 /**
@@ -39,10 +45,19 @@ export interface SubjectSelectProps {
  * `allowCreate` добавляет инлайновое создание: справочник общий с тестами, и
  * заводить новый предмет ради книги приходится там же, где заполняешь карточку.
  */
-export function SubjectSelect({ value, onChange, noneLabel, placeholder, disabled, className, allowCreate = false }: SubjectSelectProps) {
+export function SubjectSelect({
+    value,
+    onChange,
+    noneLabel,
+    placeholder,
+    disabled,
+    className,
+    allowCreate = false,
+    createPermission = 'ebooks.edit',
+}: SubjectSelectProps) {
     const t = useTranslations('admin.ebooks');
     const qc = useQueryClient();
-    const canEdit = usePermission('ebooks.edit');
+    const canEdit = usePermission(createPermission);
     const [draft, setDraft] = useState('');
     /**
      * Только что созданный предмет, который надо выбрать. Выбрать его сразу в
