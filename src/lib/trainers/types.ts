@@ -1,3 +1,5 @@
+import type { TrainerThemePalette } from '@shared/trainers';
+
 /**
  * TS types mirroring admin-api «Тренажёр» DTO shapes (Phase 38).
  *
@@ -40,6 +42,50 @@ export type Locale = 'kz';
 export interface TrainerCategoryRef {
     id: number;
     title_kz: string | null;
+}
+
+/** Предмет тренажёра (phase-43) — по нему ученик фильтрует список. */
+export interface TrainerSubjectRef {
+    id: number;
+    title_kz: string | null;
+}
+
+/** Тема оформления игры (phase-43): фон + ключ палитры плиток. */
+export interface TrainerThemeRef {
+    id: number;
+    title: string;
+    image: string | null;
+    palette: TrainerThemePalette;
+}
+
+export interface TrainerThemeRow extends TrainerThemeRef {
+    sort_order: number;
+    is_active: boolean;
+    /** Сколько тренажёров держат эту тему по умолчанию. */
+    trainer_count: number;
+    created_at: number | null;
+    updated_at: number | null;
+}
+
+export interface TrainerThemeListResponse {
+    rows: TrainerThemeRow[];
+    total: number;
+    pageCount: number;
+}
+
+export interface ListTrainerThemesQuery {
+    page?: number;
+    page_size?: number;
+    q?: string;
+    active_only?: 'true';
+}
+
+export interface UpsertTrainerTheme {
+    title: string;
+    image?: string | null;
+    palette?: TrainerThemePalette;
+    sort_order?: number;
+    is_active?: boolean;
 }
 
 export interface TrainerCourseRef {
@@ -108,6 +154,8 @@ export interface TrainerDetail {
     title_kz: string | null;
     translations: TrainerTranslation[];
     category: TrainerCategoryRef | null;
+    subject: TrainerSubjectRef | null;
+    theme: TrainerThemeRef | null;
     publish_status: TrainerPublishStatus;
     timer_enabled: boolean;
     seconds_per_question: number | null;
@@ -137,6 +185,8 @@ export interface TrainerDetail {
 export interface CreateTrainer {
     title: string;
     category_id?: number | null;
+    subject_id?: number | null;
+    theme_id?: number | null;
     timer_enabled?: boolean;
     /** Required by the server when timer_enabled=true. 5..600. */
     seconds_per_question?: number | null;
@@ -163,6 +213,8 @@ export interface CreateTrainer {
 export interface UpdateTrainer {
     title?: string;
     category_id?: number | null;
+    subject_id?: number | null;
+    theme_id?: number | null;
     timer_enabled?: boolean;
     seconds_per_question?: number | null;
     shuffle_questions?: boolean;

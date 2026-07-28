@@ -5,6 +5,7 @@ import type {
     ExportTrainerResults,
     ListTrainerResultsQuery,
     ListTrainersQuery,
+    ListTrainerThemesQuery,
     PublishTrainer,
     PublishTrainerResult,
     TrainerDetail,
@@ -12,7 +13,9 @@ import type {
     TrainerPublishBlocked,
     TrainerResultsListResponse,
     TrainerResultsStatsResponse,
+    TrainerThemeListResponse,
     UpdateTrainer,
+    UpsertTrainerTheme,
 } from './types';
 
 /**
@@ -37,6 +40,7 @@ import type {
 
 export const TRAINERS_API_BASE = '/api/proxy/v1/admin/trainers';
 export const TRAINER_RESULTS_API_BASE = '/api/proxy/v1/admin/trainer-results';
+export const TRAINER_THEMES_API_BASE = '/api/proxy/v1/admin/trainer-themes';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -196,6 +200,37 @@ export async function exportTrainerResults(payload: ExportTrainerResults): Promi
     const blob = await res.blob();
     const ts = Math.floor(Date.now() / 1000);
     triggerDownload(blob, `trainer-results-${ts}.${payload.format}`);
+}
+
+// ---------------------------------------------------------------------------
+// Темы оформления (phase-43). Удаления нет — тему «убирают» через is_active,
+// см. TrainerThemesService.
+// ---------------------------------------------------------------------------
+
+export async function listTrainerThemes(query?: ListTrainerThemesQuery): Promise<TrainerThemeListResponse> {
+    const res = await fetchWithRefresh(`${TRAINER_THEMES_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
+    if (!res.ok) throw new Error(`listTrainerThemes failed: ${res.status}`);
+    return res.json();
+}
+
+export async function createTrainerTheme(payload: UpsertTrainerTheme): Promise<{ id: number; title: string }> {
+    const res = await fetchWithRefresh(TRAINER_THEMES_API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createTrainerTheme failed: ${res.status}`));
+    return unwrapData<{ id: number; title: string }>(await res.json());
+}
+
+export async function updateTrainerTheme(id: number, payload: UpsertTrainerTheme): Promise<{ id: number; title: string }> {
+    const res = await fetchWithRefresh(`${TRAINER_THEMES_API_BASE}/${encodeURIComponent(String(id))}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateTrainerTheme failed: ${res.status}`));
+    return unwrapData<{ id: number; title: string }>(await res.json());
 }
 
 /** Trigger a browser download for a Blob (forces the XLSX MIME if the proxy dropped it). */

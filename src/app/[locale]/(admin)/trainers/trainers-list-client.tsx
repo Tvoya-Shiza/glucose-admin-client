@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,6 +37,7 @@ import { TrainersTable } from './trainers-table';
  */
 export function TrainersListClient() {
     const t = useTranslations('admin.trainers');
+    const locale = useLocale();
     const qc = useQueryClient();
 
     const [{ page, page_size, publish_status, category_id, q }, setQ] = useQueryStates({
@@ -104,7 +106,14 @@ export function TrainersListClient() {
                 <PageHeader
                     title={t('list_title')}
                     subtitle={t('list_subtitle')}
-                    actions={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                    actions={
+                        <>
+                            <Button variant='outline' asChild>
+                                <Link href={`/${locale}/trainers/themes`}>{t('themes_manage')}</Link>
+                            </Button>
+                            {canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('create')}</Button> : null}
+                        </>
+                    }
                 />
             }
             footer={

@@ -13,8 +13,10 @@ import { FileUploader } from '@/components/ui/file-uploader';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { SubjectSelect } from '@/components/ebooks/subject-select';
 import { QuizCategoryPicker } from '@/components/quizzes/quiz-category-picker';
 import { MultiCoursePicker } from '@/components/trainers/multi-course-picker';
+import { ThemeSelect } from '@/components/trainers/theme-select';
 import { usePermission } from '@/lib/access/use-permission';
 import { updateTrainer } from '@/lib/trainers/api';
 import { localInputToUnix, unixToLocalInput } from '@/lib/trainers/datetime';
@@ -38,6 +40,8 @@ const settingsSchema = z
     .object({
         title: z.string().min(1).max(500),
         category_id: z.number().int().positive().nullable(),
+        subject_id: z.number().int().positive().nullable(),
+        theme_id: z.number().int().positive().nullable(),
         timer_enabled: z.boolean(),
         seconds_per_question: z.string(),
         shuffle_questions: z.boolean(),
@@ -69,6 +73,8 @@ function toDefaults(trainer: TrainerDetail): SettingsValues {
     return {
         title: trainer.title_kz ?? '',
         category_id: trainer.category?.id ?? null,
+        subject_id: trainer.subject?.id ?? null,
+        theme_id: trainer.theme?.id ?? null,
         timer_enabled: trainer.timer_enabled,
         seconds_per_question: trainer.seconds_per_question != null ? String(trainer.seconds_per_question) : '',
         shuffle_questions: trainer.shuffle_questions,
@@ -107,6 +113,8 @@ export function SettingsTab({ trainer }: { trainer: TrainerDetail }) {
             const payload: UpdateTrainer = {
                 title: values.title.trim(),
                 category_id: values.category_id,
+                subject_id: values.subject_id,
+                theme_id: values.theme_id,
                 timer_enabled: values.timer_enabled,
                 seconds_per_question: values.timer_enabled ? Number(values.seconds_per_question.trim()) : null,
                 shuffle_questions: values.shuffle_questions,
@@ -166,6 +174,28 @@ export function SettingsTab({ trainer }: { trainer: TrainerDetail }) {
                                             disabled={!canEdit}
                                         />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Предмет — по нему ученик фильтрует список тренажёров чипами. */}
+                        <FormField
+                            control={form.control}
+                            name='subject_id'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('field_subject')}</FormLabel>
+                                    <FormControl>
+                                        <SubjectSelect
+                                            value={field.value ?? null}
+                                            onChange={(id) => field.onChange(id)}
+                                            allowCreate
+                                            createPermission='trainers.edit'
+                                            disabled={!canEdit}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>{t('field_subject_hint')}</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -333,6 +363,22 @@ export function SettingsTab({ trainer }: { trainer: TrainerDetail }) {
                             )}
                         />
 
+                        {/* Тема задаёт и фон, и цвета плиток; ученик может сменить её в игре. */}
+                        <FormField
+                            control={form.control}
+                            name='theme_id'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t('field_theme')}</FormLabel>
+                                    <FormControl>
+                                        <ThemeSelect value={field.value ?? null} onChange={(id) => field.onChange(id)} disabled={!canEdit} />
+                                    </FormControl>
+                                    <FormDescription>{t('field_theme_hint')}</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         <FormField
                             control={form.control}
                             name='background_image'
@@ -349,6 +395,7 @@ export function SettingsTab({ trainer }: { trainer: TrainerDetail }) {
                                             disabled={!canEdit}
                                         />
                                     </FormControl>
+                                    <FormDescription>{t('field_background_legacy_hint')}</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
