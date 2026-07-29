@@ -4,6 +4,7 @@ import type {
     CategoryDeleteResult,
     CreateQuiz,
     ListQuizzesQuery,
+    GradeAnswerPayload,
     ListResultsQuery,
     QuestionImportResult,
     QuizBadgeDetail,
@@ -12,6 +13,7 @@ import type {
     QuizCategory,
     QuizDetail,
     QuizListResponse,
+    QuizResultGradingDetail,
     QuizResultsListResponse,
     ReorderBadgeItemsEntry,
     ReorderQuestions,
@@ -536,6 +538,23 @@ export async function reorderBadgeItems(badgeId: number, items: ReorderBadgeItem
 export async function listResults(query?: ListResultsQuery): Promise<QuizResultsListResponse> {
     const res = await fetchWithRefresh(`${QUIZ_RESULTS_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
     if (!res.ok) throw new Error(`listResults failed: ${res.status}`);
+    return res.json();
+}
+
+/** Phase 45 — разбор попытки: ответы ученика рядом с эталоном. */
+export async function getResultAnswers(resultId: number): Promise<QuizResultGradingDetail> {
+    const res = await fetchWithRefresh(`${QUIZ_RESULTS_API_BASE}/${encodeURIComponent(String(resultId))}/answers`);
+    if (!res.ok) throw new Error(`getResultAnswers failed: ${res.status}`);
+    return res.json();
+}
+
+/** Ручная оценка развёрнутого ответа: пересчитывает балл и статус попытки. */
+export async function gradeResultAnswer(resultId: number, questionId: number, payload: GradeAnswerPayload) {
+    const res = await fetchWithRefresh(
+        `${QUIZ_RESULTS_API_BASE}/${encodeURIComponent(String(resultId))}/answers/${encodeURIComponent(String(questionId))}`,
+        { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res, `gradeResultAnswer failed: ${res.status}`));
     return res.json();
 }
 

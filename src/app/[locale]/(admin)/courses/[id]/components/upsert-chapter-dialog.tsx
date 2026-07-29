@@ -35,6 +35,7 @@ import {
 import { upsertChapter } from '@/lib/courses/api';
 import type { Chapter, ChapterStatus, Translation } from '@/lib/courses/types';
 import { usePermission } from '@/lib/access/use-permission';
+import { MultiStudentPicker, type StudentChip } from '@/components/users/multi-student-picker';
 import { GroupWhitelistField } from './group-whitelist-field';
 
 /**
@@ -69,6 +70,10 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
 
     // Phase 33 — module group whitelist (number[], empty = visible to all).
     const [allowedGroupIds, setAllowedGroupIds] = useState<number[]>(chapter?.allowed_group_ids ?? []);
+    // Phase 44 — персональный доступ к разделу, наравне с уроком.
+    const [allowedStudents, setAllowedStudents] = useState<StudentChip[]>(
+        (chapter?.allowed_users ?? []).map((u) => ({ id: u.id, label: u.full_name ?? u.email ?? null })),
+    );
     const canEdit = usePermission('courses.edit');
 
     const form = useForm<ChapterFormValues>({
@@ -87,6 +92,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                 title: pickTitle(chapter?.translations, 'kz'),
             });
             setAllowedGroupIds(chapter?.allowed_group_ids ?? []);
+            setAllowedStudents((chapter?.allowed_users ?? []).map((u) => ({ id: u.id, label: u.full_name ?? u.email ?? null })));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, chapter?.id]);
@@ -98,6 +104,7 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                 status: values.status,
                 translations: [{ locale: 'kz', title: values.title }],
                 allowed_group_ids: allowedGroupIds,
+                allowed_user_ids: allowedStudents.map((s) => s.id),
             });
         },
         onSuccess: () => {
@@ -160,9 +167,14 @@ export function UpsertChapterDialog({ courseId, open, onOpenChange, chapter }: U
                                 </FormItem>
                             )}
                         />
-                        {/* Phase 33 — module-level group access whitelist. */}
-                        <div className='rounded border bg-muted/30 p-3'>
+                        {/* Phase 33/44 — доступ к разделу: группы и поимённо ученики. */}
+                        <div className='bg-muted/30 space-y-3 rounded border p-3'>
                             <GroupWhitelistField value={allowedGroupIds} onChange={setAllowedGroupIds} disabled={!canEdit} />
+                            <div className='space-y-1.5 border-t pt-3'>
+                                <p className='text-sm font-medium'>{t('student_access_title')}</p>
+                                <p className='text-muted-foreground text-xs'>{t('student_access_hint')}</p>
+                                <MultiStudentPicker value={allowedStudents} onChange={setAllowedStudents} disabled={!canEdit} />
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button type='button' variant='outline' onClick={() => onOpenChange(false)} disabled={mutation.isPending}>

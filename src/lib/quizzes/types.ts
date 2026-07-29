@@ -555,6 +555,8 @@ export interface ListResultsQuery {
     group_id?: number;
     user_id?: number;
     status?: QuizResultStatus;
+    /** 'true' — только попытки, ждущие ручной проверки развёрнутого ответа. */
+    needs_grading?: 'true' | 'false';
     /** Unix seconds. */
     date_from?: number;
     /** Unix seconds. */
@@ -658,6 +660,8 @@ export interface QuizResultRow {
      * destructive edit; the grader will use the OLD version's question set.
      */
     is_stale_version: boolean;
+    /** В попытке остался неоценённый развёрнутый ответ (phase-45). */
+    needs_grading: boolean;
     /** Unix seconds. */
     created_at: number;
 }
@@ -667,4 +671,34 @@ export interface QuizResultsListResponse {
     total: number;
     page: number;
     page_size: number;
+}
+
+
+/** Phase 45 — разбор попытки для ручной проверки развёрнутых ответов. */
+export interface QuizResultAnswerRow {
+    question_id: number;
+    title_kz: string | null;
+    /** Эталон; заполнен только у развёрнутых вопросов. */
+    correct_answer: string | null;
+    user_answer: string | null;
+    status: 'waiting' | 'correct' | 'incorrect';
+    grade: number;
+    max_grade: number;
+}
+
+export interface QuizResultGradingDetail {
+    id: number;
+    user: QuizResultUserRef | null;
+    quiz: { id: number; title_kz: string | null } | null;
+    status: QuizResultStatus;
+    needs_grading: boolean;
+    user_grade: number;
+    max_grade: number;
+    pass_mark: number;
+    created_at: number;
+    answers: QuizResultAnswerRow[];
+}
+
+export interface GradeAnswerPayload {
+    verdict: 'correct' | 'incorrect';
 }
