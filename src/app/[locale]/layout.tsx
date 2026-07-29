@@ -27,7 +27,12 @@ export default async function LocaleLayout({
 
     return (
         <html lang={locale}>
-            <body>
+            {/*
+             * suppressHydrationWarning только на body: расширения вроде Grammarly
+             * дописывают сюда свои data-атрибуты между рендером сервера и
+             * гидрацией — это шум браузера, а не расхождение в нашей разметке.
+             */}
+            <body suppressHydrationWarning>
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <NuqsAdapter>
                         <QueryProvider>
