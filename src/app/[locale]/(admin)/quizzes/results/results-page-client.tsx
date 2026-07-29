@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
 import { useMe } from '@/lib/access/use-me';
 import { getResultsStats, listResults } from '@/lib/quizzes/api';
 import type { QuizResultStatus, SortOrder } from '@/lib/quizzes/types';
+import { GradeAnswersDialog } from './components/grade-answers-dialog';
 import { ResultsFiltersBar, type ResultsFiltersValue } from './components/results-filters-bar';
 import { ResultsStatsPanel } from './components/results-stats-panel';
 import { ResultsTable } from './components/results-table';
@@ -30,6 +32,7 @@ export function ResultsPageClient() {
         page: parseAsInteger.withDefault(1),
         page_size: parseAsInteger.withDefault(50),
         status: parseAsString,
+        needs_grading: parseAsString,
         date_from: parseAsInteger,
         date_to: parseAsInteger,
         q: parseAsString,
@@ -39,6 +42,8 @@ export function ResultsPageClient() {
     });
 
     const status = (filters.status as QuizResultStatus | null) ?? undefined;
+    const needsGrading = filters.needs_grading === 'true' ? ('true' as const) : undefined;
+    const [gradingResultId, setGradingResultId] = useState<number | null>(null);
 
     const statsQueryArgs = useMemo(
         () => ({
@@ -63,6 +68,7 @@ export function ResultsPageClient() {
             page: filters.page,
             page_size: filters.page_size,
             status,
+            needs_grading: needsGrading,
             date_from: filters.date_from ?? undefined,
             date_to: filters.date_to ?? undefined,
             q: filters.q ?? undefined,
@@ -76,6 +82,7 @@ export function ResultsPageClient() {
             filters.page,
             filters.page_size,
             status,
+            needsGrading,
             filters.date_from,
             filters.date_to,
             filters.q,
@@ -123,6 +130,17 @@ export function ResultsPageClient() {
                 }
             />
 
+            {/* Быстрый переход к разбору: попытки, ждущие ручной проверки. */}
+            <div className='flex items-center gap-2'>
+                <Button
+                    variant={needsGrading ? 'default' : 'outline'}
+                    size='sm'
+                    onClick={() => setFilters({ page: 1, needs_grading: needsGrading ? null : 'true' })}
+                >
+                    {t('results_needs_grading_filter')}
+                </Button>
+            </div>
+
             <ResultsStatsPanel
                 data={stats.data}
                 isLoading={stats.isLoading}
@@ -140,7 +158,10 @@ export function ResultsPageClient() {
                 isFetching={list.isFetching}
                 error={list.error as Error | null}
                 onPageChange={(next) => setFilters({ page: next })}
+                onGrade={(resultId) => setGradingResultId(resultId)}
             />
+
+            <GradeAnswersDialog resultId={gradingResultId} onOpenChange={(open) => !open && setGradingResultId(null)} />
         </PageShell>
     );
 }

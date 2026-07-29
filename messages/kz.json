@@ -842,7 +842,12 @@
             "optional_items_count": "{count} қосымша",
             "required_items_label": "Міндетті элементтер",
             "schedules_count_label": "Кесте жазбалары",
-            "access_days_value": "{count} күн"
+            "access_days_value": "{count} күн",
+            "student_access_title": "Жеке оқушылар бойынша қол жеткізу",
+            "student_access_hint": "Таңдалған топтарға қосымша — осы оқушылар да көреді",
+            "students_search_placeholder": "Оқушыны іздеу",
+            "students_no_results": "Оқушы табылмады",
+            "student_remove": "Оқушыны алып тастау"
         },
         "trainers": {
             "list_title": "Тренажёрлер",
@@ -1434,7 +1439,20 @@
                 "deleted_with_repoint": "Санат жойылды. Көшірілді: тесттер {quizzes}, ішкі санаттар {children}.",
                 "generic_error": "Қате орын алды",
                 "background_image": "Санат фоны (жаттықтырғыш)"
-            }
+            },
+            "result_needs_grading_badge": "Тексерілуде",
+            "result_grade_action": "Тексеру",
+            "results_needs_grading_filter": "Тексеруді күтуде",
+            "grade_dialog_title": "Жауаптарды тексеру",
+            "grade_dialog_hint": "Эталонмен дәл сәйкес келген жауап автоматты түрде есептелген",
+            "grade_student_answer": "Оқушының жауабы",
+            "grade_expected_answer": "Дұрыс жауап",
+            "grade_mark_correct": "Дұрыс",
+            "grade_mark_incorrect": "Қате",
+            "grade_saved": "Баға сақталды",
+            "grade_status_waiting": "Тексерілуде",
+            "grade_status_correct": "Дұрыс",
+            "grade_status_incorrect": "Қате"
         },
         "stories": {
             "title": "Әңгімелер",

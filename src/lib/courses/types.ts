@@ -207,6 +207,15 @@ export interface ChapterItem {
      * the lesson dialog; read-only "no access" indicator in the schedule grid.
      */
     allowed_group_ids: number[];
+    /** Phase 44 — ученики, которым узел виден лично, вдобавок к группам. */
+    allowed_users: AllowedUserRef[];
+}
+
+/** Phase 44 — ученик в списке персонального доступа. */
+export interface AllowedUserRef {
+    id: number;
+    full_name: string | null;
+    email: string | null;
 }
 
 export interface Chapter {
@@ -220,6 +229,8 @@ export interface Chapter {
      * all; non-empty = only these groups see the module (and all its lessons).
      */
     allowed_group_ids: number[];
+    /** Phase 44 — ученики с персональным доступом к разделу. */
+    allowed_users: AllowedUserRef[];
 }
 
 export interface CourseCounts {
@@ -349,6 +360,8 @@ export interface UpsertChapterPayload {
      * (visible to all); non-empty = restrict to these groups.
      */
     allowed_group_ids?: number[];
+    /** Phase 44 — тристейт, как и у групп: не прислали — не трогаем. */
+    allowed_user_ids?: number[];
 }
 
 export interface UpsertItemPayload {
@@ -394,6 +407,8 @@ export interface UpsertItemPayload {
      * (visible to all); non-empty = restrict to these groups.
      */
     allowed_group_ids?: number[];
+    /** Phase 44 — тристейт, как и у групп: не прислали — не трогаем. */
+    allowed_user_ids?: number[];
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

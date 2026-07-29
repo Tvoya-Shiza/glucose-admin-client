@@ -34,6 +34,7 @@ type UpsertItemPayloadStorage = NonNullable<UpsertItemPayload['storage']>;
 import { usePermission } from '@/lib/access/use-permission';
 import { EntitySearchPicker } from './entity-search-picker';
 import { TiptapEditor } from './tiptap-editor';
+import { MultiStudentPicker, type StudentChip } from '@/components/users/multi-student-picker';
 import { GroupWhitelistField } from './group-whitelist-field';
 
 type FileSubType = 'rich-text' | 'image' | 'video' | 'pdf';
@@ -137,6 +138,11 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
     const [isRequired, setIsRequired] = useState<boolean>(item?.is_required ?? true);
     // Phase 33 — per-lesson group whitelist. Empty = visible to all groups.
     const [allowedGroupIds, setAllowedGroupIds] = useState<number[]>(item?.allowed_group_ids ?? []);
+    // Phase 44 — персональный доступ. Подписи берём из ответа сервера, чтобы
+    // чипы не пришлось дозапрашивать по одному.
+    const [allowedStudents, setAllowedStudents] = useState<StudentChip[]>(
+        (item?.allowed_users ?? []).map((u) => ({ id: u.id, label: u.full_name ?? u.email ?? null })),
+    );
     const canEdit = usePermission('courses.edit');
 
     // Reset state when dialog opens on a different item.
@@ -171,6 +177,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                     accessibility,
                     is_required: isRequired,
                     allowed_group_ids: allowedGroupIds,
+                    allowed_user_ids: allowedStudents.map((s) => s.id),
                     translations: [
                         { locale: 'kz' as const, title: kzTitle, description: subType === 'rich-text' ? kzHtml : undefined },
                     ],
@@ -213,6 +220,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                 is_required: isRequired,
                 accessibility,
                 allowed_group_ids: allowedGroupIds,
+                allowed_user_ids: allowedStudents.map((s) => s.id),
             });
         },
         onSuccess: () => {
@@ -583,9 +591,14 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                         />
                     </div>
 
-                    {/* Phase 33 — per-lesson group access whitelist. */}
-                    <div className='rounded border bg-muted/30 p-3'>
+                    {/* Phase 33/44 — доступ к уроку: группы и поимённо ученики. */}
+                    <div className='bg-muted/30 space-y-3 rounded border p-3'>
                         <GroupWhitelistField value={allowedGroupIds} onChange={setAllowedGroupIds} disabled={!canEdit} />
+                        <div className='space-y-1.5 border-t pt-3'>
+                            <p className='text-sm font-medium'>{t('student_access_title')}</p>
+                            <p className='text-muted-foreground text-xs'>{t('student_access_hint')}</p>
+                            <MultiStudentPicker value={allowedStudents} onChange={setAllowedStudents} disabled={!canEdit} />
+                        </div>
                     </div>
                 </div>
 

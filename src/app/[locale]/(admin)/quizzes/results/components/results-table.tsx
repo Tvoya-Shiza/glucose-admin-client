@@ -31,6 +31,8 @@ export interface ResultsTableProps {
     isFetching: boolean;
     error: Error | null;
     onPageChange: (next: number) => void;
+    /** Открыть разбор попытки для ручной проверки развёрнутых ответов. */
+    onGrade?: (resultId: number) => void;
 }
 
 /**
@@ -39,7 +41,7 @@ export interface ResultsTableProps {
  * `quizzes/[id]/components/results-list.tsx`; this file is intentionally
  * decoupled so future analytics changes don't leak there.
  */
-export function ResultsTable({ rows, total, page, page_size, isLoading, isFetching, error, onPageChange }: ResultsTableProps) {
+export function ResultsTable({ rows, total, page, page_size, isLoading, isFetching, error, onPageChange, onGrade }: ResultsTableProps) {
     const t = useTranslations('admin.quizzes');
     const locale = useLocale();
 
@@ -64,13 +66,14 @@ export function ResultsTable({ rows, total, page, page_size, isLoading, isFetchi
                                 <TableHead>{t('result_col_score')}</TableHead>
                                 <TableHead>{t('result_col_start_version')}</TableHead>
                                 <TableHead>{t('result_col_created')}</TableHead>
+                                {onGrade ? <TableHead className='w-32' /> : null}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading
                                 ? Array.from({ length: 8 }).map((_, i) => (
                                       <TableRow key={`sk-${i}`}>
-                                          <TableCell colSpan={6}>
+                                          <TableCell colSpan={onGrade ? 7 : 6}>
                                               <Skeleton className='h-6 w-full' />
                                           </TableCell>
                                       </TableRow>
@@ -109,9 +112,19 @@ export function ResultsTable({ rows, total, page, page_size, isLoading, isFetchi
                                                   </div>
                                               </TableCell>
                                               <TableCell>
-                                                  <Badge variant={statusBadgeVariant(r.status)}>
-                                                      {t(`result_status_${r.status}`)}
-                                                  </Badge>
+                                                  <div className='flex flex-wrap items-center gap-1.5'>
+                                                      <Badge variant={statusBadgeVariant(r.status)}>
+                                                          {t(`result_status_${r.status}`)}
+                                                      </Badge>
+                                                      {r.needs_grading ? (
+                                                          <Badge
+                                                              variant='secondary'
+                                                              className='border-amber-500/40 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200'
+                                                          >
+                                                              {t('result_needs_grading_badge')}
+                                                          </Badge>
+                                                      ) : null}
+                                                  </div>
                                               </TableCell>
                                               <TableCell className='tabular-nums text-sm'>
                                                   {r.user_grade == null ? '—' : r.user_grade}
@@ -142,6 +155,17 @@ export function ResultsTable({ rows, total, page, page_size, isLoading, isFetchi
                                               <TableCell className='text-sm'>
                                                   {formatUnixSecondsOrDash(r.created_at, locale)}
                                               </TableCell>
+                                              {onGrade ? (
+                                                  <TableCell>
+                                                      <Button
+                                                          variant={r.needs_grading ? 'default' : 'outline'}
+                                                          size='sm'
+                                                          onClick={() => onGrade(r.id)}
+                                                      >
+                                                          {t('result_grade_action')}
+                                                      </Button>
+                                                  </TableCell>
+                                              ) : null}
                                           </TableRow>
                                       );
                                   })}
