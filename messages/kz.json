@@ -847,7 +847,12 @@
             "student_access_hint": "Таңдалған топтарға қосымша — осы оқушылар да көреді",
             "students_search_placeholder": "Оқушыны іздеу",
             "students_no_results": "Оқушы табылмады",
-            "student_remove": "Оқушыны алып тастау"
+            "student_remove": "Оқушыны алып тастау",
+            "item_type_trainer": "Жаттықтырғыш",
+            "item_type_credit": "Зачёт",
+            "item_trainer_id_label": "Жаттықтырғыш",
+            "item_credit_id_label": "Зачёт",
+            "item_credit_hint": "Зачёт тегін — оны сатуға болмайды. Топтар мен оқушылар бойынша қол жеткізу қолданылады."
         },
         "trainers": {
             "list_title": "Тренажёрлер",

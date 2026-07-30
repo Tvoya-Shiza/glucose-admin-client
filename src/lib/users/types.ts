@@ -99,6 +99,8 @@ export interface ListUsersQuery {
     page?: number;
     page_size?: number;
     role_name?: string;
+    /** Несколько ролей сразу; перекрывает `role_name`. Уходит на сервер через запятую. */
+    role_names?: string[];
     status?: UserStatus;
     region_id?: number;
     q?: string;

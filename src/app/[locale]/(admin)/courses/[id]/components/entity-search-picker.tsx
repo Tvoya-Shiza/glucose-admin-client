@@ -10,9 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { fetchCoursePickerItems, type PickerItemKind, type PickerItemScope } from '@/lib/courses/picker-items';
 
-export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'trainer' | 'curator' | 'user-group' | 'course';
+export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'trainer' | 'credit' | 'curator' | 'user-group' | 'course';
 
-const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignment', 'file', 'trainer'];
+const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignment', 'file', 'trainer', 'credit'];
 
 /**
  * How many rows the picker pulls in one shot. 100 = the admin-api

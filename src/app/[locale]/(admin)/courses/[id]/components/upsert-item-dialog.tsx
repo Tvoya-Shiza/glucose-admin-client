@@ -265,6 +265,8 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                     <SelectItem value='file'>{t('item_type_file')}</SelectItem>
                                     <SelectItem value='quiz'>{t('item_type_quiz')}</SelectItem>
                                     <SelectItem value='assignment'>{t('item_type_assignment')}</SelectItem>
+                                    <SelectItem value='trainer'>{t('item_type_trainer')}</SelectItem>
+                                    <SelectItem value='credit'>{t('item_type_credit')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -305,6 +307,12 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                         </div>
                     ) : null}
 
+                    {/*
+                      * Phase 47 — у зачёта переключателя «Тегін / Ақылы» нет: зачёт
+                      * не продаётся, он всегда часть курса. Сервер всё равно пишет
+                      * 'free' принудительно, здесь просто не показываем выбор.
+                      */}
+                    {type !== 'credit' ? (
                     <div className='space-y-1.5'>
                         <Label>{t('item_accessibility_label')}</Label>
                         <div className='flex gap-4'>
@@ -330,6 +338,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                             </label>
                         </div>
                     </div>
+                    ) : null}
 
                     {type === 'file' && subType === 'image' ? (
                         <div className='space-y-2 rounded border p-3'>
@@ -570,6 +579,37 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                                 scope='all'
                                 selectedLabel={item?.assignment?.title || undefined}
                             />
+                        </div>
+                    ) : null}
+
+                    {type === 'trainer' ? (
+                        <div className='space-y-1.5'>
+                            <Label>{t('item_trainer_id_label')}</Label>
+                            {/* Тренажёр ищем по всему каталогу: прикрепление к главе само
+                                заведёт связь тренажёра с курсом. */}
+                            <EntitySearchPicker
+                                kind='trainer'
+                                value={fkId}
+                                onChange={setFkId}
+                                courseId={courseId}
+                                scope='all'
+                                selectedLabel={item?.trainer?.title || undefined}
+                            />
+                        </div>
+                    ) : null}
+
+                    {type === 'credit' ? (
+                        <div className='space-y-1.5'>
+                            <Label>{t('item_credit_id_label')}</Label>
+                            {/* Зачёт всегда принадлежит одному курсу — список и так сужен. */}
+                            <EntitySearchPicker
+                                kind='credit'
+                                value={fkId}
+                                onChange={setFkId}
+                                courseId={courseId}
+                                selectedLabel={item?.credit?.title || undefined}
+                            />
+                            <p className='text-muted-foreground text-xs'>{t('item_credit_hint')}</p>
                         </div>
                     ) : null}
 

@@ -6,8 +6,16 @@ import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { STUDENT_ROLE_NAMES } from '@shared/roles';
 import { listUsers } from '@/lib/users/api';
 import type { UserRow } from '@/lib/users/types';
+
+/**
+ * Ученик в базе живёт под двумя именами роли: `user` (регистрация через
+ * приложение) и `student` (импорт из админки). Фильтр только по `student`
+ * прятал почти всех реальных учеников — на проде это 2 найденных из 18.
+ */
+const STUDENT_ROLES = [...STUDENT_ROLE_NAMES];
 
 /**
  * Выбранный ученик. Подпись сохраняется в момент выбора, чтобы форма не
@@ -47,8 +55,8 @@ export function MultiStudentPicker({ value, onChange, placeholder, disabled }: M
     }, [searchQuery]);
 
     const list = useQuery({
-        queryKey: ['admin.users.list', { q: debouncedQuery, page_size: 10, role_name: 'student' }],
-        queryFn: () => listUsers({ q: debouncedQuery || undefined, page_size: 10, role_name: 'student' }),
+        queryKey: ['admin.users.list', { q: debouncedQuery, page_size: 10, role_names: STUDENT_ROLES }],
+        queryFn: () => listUsers({ q: debouncedQuery || undefined, page_size: 10, role_names: STUDENT_ROLES }),
         enabled: open && !disabled,
         staleTime: 30_000,
     });
