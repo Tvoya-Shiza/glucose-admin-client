@@ -20,6 +20,7 @@ interface PdfImportProps {
 interface ProgressState {
     total: number;
     done: number;
+    saved: number;
     current: number;
     failed: number;
     hasText: boolean;
@@ -54,7 +55,7 @@ export function PdfImport({ bookId, nextPageNumber, onImported, disabled }: PdfI
         const controller = new AbortController();
         abortRef.current = controller;
         setNoTextWarning(false);
-        setProgress({ total: 0, done: 0, current: nextPageNumber, failed: 0, hasText: false });
+        setProgress({ total: 0, done: 0, saved: 0, current: nextPageNumber, failed: 0, hasText: false });
 
         try {
             // Тяжёлый модуль pdf.js подтягиваем только здесь: держать его в общем
@@ -70,6 +71,7 @@ export function PdfImport({ bookId, nextPageNumber, onImported, disabled }: PdfI
                     setProgress({
                         total: p.total,
                         done: p.done,
+                        saved: p.saved,
                         current: p.currentBookPage,
                         failed: p.failed.length,
                         hasText: p.hasText,
@@ -129,7 +131,7 @@ export function PdfImport({ bookId, nextPageNumber, onImported, disabled }: PdfI
                     </div>
                     <p className='text-muted-foreground text-xs'>
                         {progress.total > 0
-                            ? t('pdf_import_progress', { done: progress.done, total: progress.total })
+                            ? t('pdf_import_progress', { done: progress.done, total: progress.total, saved: progress.saved })
                             : t('pdf_import_reading')}
                         {progress.failed > 0 ? ` · ${t('pdf_import_failed', { count: progress.failed })}` : ''}
                     </p>

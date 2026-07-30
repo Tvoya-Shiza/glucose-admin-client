@@ -1136,7 +1136,7 @@
             "pdf_import_running": "Жүктелуде…",
             "pdf_import_stop": "Тоқтату",
             "pdf_import_reading": "PDF оқылуда…",
-            "pdf_import_progress": "{done} / {total} бет сақталды",
+            "pdf_import_progress": "{done} / {total} бет дайын · сақталды: {saved}",
             "pdf_import_failed": "{count} бет өтпеді",
             "pdf_import_keep_open": "Импорт аяқталғанша бұл бетті жаппаңыз. Үзіліп қалса, сақталған беттер орнында қалады.",
             "pdf_import_success": "{count} бет импортталды",
