@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Plus, RefreshCw, Trash2 } from 'lucide-react';
@@ -78,21 +78,42 @@ export function PagesTab({ bookId, canManage }: { bookId: number; canManage: boo
     const qc = useQueryClient();
     const canReindex = usePermission('ebooks.edit');
 
-    const { data, isLoading, error } = useQuery({
+    const { data, isLoading, error, dataUpdatedAt } = useQuery({
         queryKey: ['admin.ebooks.pages', bookId],
         queryFn: () => listBookPages(bookId),
         refetchOnWindowFocus: false,
     });
 
-    // `null` = "not seeded yet / re-seed from the next server payload". Every
-    // successful mutation resets it so fresh server truth wins over the draft.
+    // Локальный черновик списка страниц; `null` — ещё не собран. Пересев из
+    // ответа сервера описан ниже, у `seededAtRef`.
     const [drafts, setDrafts] = useState<PageDraft[] | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<PageDraft | null>(null);
     const [confirmWipeOpen, setConfirmWipeOpen] = useState(false);
 
+    /**
+     * Метка ответа сервера, из которого собран текущий черновик.
+     *
+     * Раньше пересев делался по условию `drafts === null`, и это давало гонку:
+     * инвалидация сбрасывала черновик, эффект тут же собирал его заново из ЕЩЁ
+     * СТАРОГО кэша, а пришедший следом свежий ответ уже игнорировался — черновик
+     * перестал быть null. После импорта PDF список так и оставался пустым до
+     * перезагрузки страницы, хотя страницы были сохранены.
+     *
+     * Теперь пересеваем всякий раз, когда пришёл НОВЫЙ ответ, и только если у
+     * оператора нет несохранённых правок — их затирать нельзя.
+     */
+    const seededAtRef = useRef<number | null>(null);
+
     useEffect(() => {
-        if (data && drafts === null) setDrafts(data.rows.map(toDraft));
-    }, [data, drafts]);
+        if (!data) return;
+        if (seededAtRef.current === dataUpdatedAt) return;
+
+        const hasUnsaved = (drafts ?? []).some((r) => r.dirty);
+        if (drafts !== null && hasUnsaved) return;
+
+        seededAtRef.current = dataUpdatedAt;
+        setDrafts(data.rows.map(toDraft));
+    }, [data, dataUpdatedAt, drafts]);
 
     const rows = drafts ?? [];
     const dirtyRows = useMemo(() => rows.filter((r) => r.dirty), [rows]);
@@ -147,7 +168,9 @@ export function PagesTab({ bookId, canManage }: { bookId: number; canManage: boo
     };
 
     const invalidateAll = () => {
-        setDrafts(null);
+        // Черновик специально НЕ сбрасываем в null: пересев теперь привязан к
+        // метке свежего ответа сервера, а сброс здесь заставлял бы собирать его
+        // из ещё не обновившегося кэша.
         qc.invalidateQueries({ queryKey: ['admin.ebooks.pages', bookId] });
         qc.invalidateQueries({ queryKey: ['admin.ebooks.detail', bookId] });
         qc.invalidateQueries({ queryKey: ['admin.ebooks.list'], exact: false });
