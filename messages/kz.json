@@ -1116,7 +1116,15 @@
             "publisher_delete_title": "Баспаны жою",
             "publisher_delete_description": "Баспа жойылады, оның кітаптары сақталады",
             "publisher_delete_note": "Бұл баспаға {count} кітап байланысты — олардың баспа сілтемесі тазартылады.",
-            "publisher_delete_success": "Баспа жойылды. Сілтемесі тазартылған кітаптар: {unlinked}"
+            "publisher_delete_success": "Баспа жойылды. Сілтемесі тазартылған кітаптар: {unlinked}",
+            "bulk_upload_title": "Кітапты толық жүктеу",
+            "bulk_upload_hint": "Барлық бет суреттерін бірден таңдаңыз — олар файл атауы бойынша реттеліп, беттерге айналады. JPEG, PNG немесе WEBP, әрқайсысы 10 МБ дейін.",
+            "bulk_upload_pick": "Суреттерді таңдау",
+            "bulk_upload_running": "Жүктелуде…",
+            "bulk_upload_cancel": "Тоқтату",
+            "bulk_upload_progress": "{done} / {total} жүктелді",
+            "bulk_upload_added": "{count} бет қосылды — сақтауды ұмытпаңыз",
+            "bulk_upload_failed": "{count} файл жүктелмеді"
         },
         "quizzes": {
             "list_title": "Тесттер",

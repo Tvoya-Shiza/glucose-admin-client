@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { usePermission } from '@/lib/access/use-permission';
 import { deleteBookPage, listBookPages, reindexBook, replaceBookPages } from '@/lib/ebooks/api';
 import type { BookPageRow, ReplacePageInput } from '@/lib/ebooks/types';
+import { BulkPagesUpload, type BulkUploadedPage } from '../components/bulk-pages-upload';
 
 interface PageDraft {
     /** Stable React key — page_number is editable, so it can't be the key. */
@@ -120,6 +121,29 @@ export function PagesTab({ bookId, canManage }: { bookId: number; canManage: boo
     };
 
     const dropLocalRow = (key: string) => setDrafts((prev) => (prev ?? []).filter((r) => r.key !== key));
+
+    /**
+     * Пачка загруженных сканов превращается в строки страниц, продолжая нумерацию
+     * с последней занятой. Строки помечаются dirty и уходят обычным «Сақтау» —
+     * одним PUT на всю книгу, а не по запросу на страницу.
+     */
+    const appendUploadedPages = (uploaded: BulkUploadedPage[]) => {
+        setDrafts((prev) => {
+            const list = prev ?? [];
+            let next = list.reduce((acc, r) => Math.max(acc, Number(r.page_number) || 0), 0);
+            const added: PageDraft[] = uploaded.map((page) => ({
+                key: nextKey(),
+                page_number: String(++next),
+                image_url: page.image_url,
+                text_content: '',
+                has_text: false,
+                is_new: true,
+                dirty: true,
+            }));
+            return [...list, ...added];
+        });
+        toast.success(t('bulk_upload_added', { count: uploaded.length }));
+    };
 
     const invalidateAll = () => {
         setDrafts(null);
@@ -226,6 +250,8 @@ export function PagesTab({ bookId, canManage }: { bookId: number; canManage: boo
                     ) : null}
                 </div>
             </div>
+
+            {canManage ? <BulkPagesUpload onUploaded={appendUploadedPages} disabled={saveMutation.isPending} /> : null}
 
             {rows.length === 0 ? (
                 <Card className='p-0'>
