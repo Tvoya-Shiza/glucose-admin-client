@@ -18,20 +18,25 @@ const FLUSH_PAGES = 50;
 const FLUSH_BYTES = 4 * 1024 * 1024;
 
 /**
- * Пауза между страницами. Глобальный троттлер admin-api — 100 запросов в минуту
- * на связку «обработчик + IP»; на страницу приходится по одному запросу к
- * /uploads/token и к /uploads/file. Держим темп заведомо ниже лимита, иначе
- * импорт начнёт ловить 429 и заодно перекроет загрузку файлов остальным.
+ * Сколько страниц грузим одновременно.
+ *
+ * Рендер идёт последовательно (один холст и один поток pdf.js), а загрузка —
+ * это ожидание сети. Пока уходят предыдущие страницы, следующая уже рисуется,
+ * и общее время определяется тем, что медленнее, а не суммой того и другого.
+ * Больше шести параллельных загрузок смысла не имеет: упрёмся в исходящий канал
+ * оператора, зато вырастет число блобов, висящих в памяти.
  */
-const MIN_MS_PER_PAGE = 700;
+const UPLOAD_CONCURRENCY = 6;
 
 const MAX_RETRIES = 4;
 
 export interface PdfImportProgress {
     /** Всего страниц в PDF. */
     total: number;
-    /** Сколько уже сохранено в книге. */
+    /** Сколько страниц уже перенесено (картинка загружена). */
     done: number;
+    /** Из них закреплено на сервере последним сохранением. */
+    saved: number;
     /** Номер страницы книги, который сейчас обрабатывается. */
     currentBookPage: number;
     /** Страницы PDF, которые не удалось перенести. */
@@ -117,6 +122,7 @@ export async function runPdfImport(options: PdfImportOptions): Promise<PdfImport
     const progress: PdfImportProgress = {
         total,
         done: 0,
+        saved: 0,
         currentBookPage: startPageNumber,
         failed: [],
         hasText: false,
@@ -128,58 +134,72 @@ export async function runPdfImport(options: PdfImportOptions): Promise<PdfImport
 
     const flush = async () => {
         if (pending.length === 0) return;
-        await replaceBookPages(bookId, { pages: pending });
-        progress.done += pending.length;
+        const batch = pending;
         pending = [];
         pendingBytes = 0;
+        await replaceBookPages(bookId, { pages: batch });
+        progress.saved += batch.length;
         onProgress({ ...progress });
     };
+
+    // Загрузки идут внахлёст с рендером: пока предыдущие страницы уходят по сети,
+    // следующая уже рисуется. Множество держит незавершённые задачи, чтобы можно
+    // было притормозить рендер, когда их накопилось слишком много.
+    const inflight = new Set<Promise<void>>();
 
     try {
         for await (const page of renderPdfPages(doc, { fromPage: 1, signal })) {
             if (signal.aborted) break;
 
-            const startedAt = Date.now();
             const bookPageNumber = startPageNumber + page.pageNumber - 1;
             progress.currentBookPage = bookPageNumber;
 
             const extension = page.mime === 'image/webp' ? 'webp' : 'jpg';
             const name = `book-${bookId}-p${String(page.pageNumber).padStart(4, '0')}.${extension}`;
 
-            try {
-                const imageUrl = await uploadPage(page.blob, page.mime, name, signal);
-                if (page.text) progress.hasText = true;
+            const task = (async () => {
+                try {
+                    const imageUrl = await uploadPage(page.blob, page.mime, name, signal);
+                    if (page.text) progress.hasText = true;
 
-                pending.push({
-                    page_number: bookPageNumber,
-                    image_url: imageUrl,
-                    // Явный null, а не пропуск поля: сервер не трогает колонку,
-                    // если ключа нет, и от прежней страницы остался бы чужой
-                    // текст — он молча ушёл бы в поисковый индекс.
-                    text_content: page.text,
-                });
-                pendingBytes += (page.text?.length ?? 0) + 128;
-            } catch {
-                progress.failed.push(page.pageNumber);
-            }
+                    pending.push({
+                        page_number: bookPageNumber,
+                        image_url: imageUrl,
+                        // Явный null, а не пропуск поля: сервер не трогает колонку,
+                        // если ключа нет, и от прежней страницы остался бы чужой
+                        // текст — он молча ушёл бы в поисковый индекс.
+                        text_content: page.text,
+                    });
+                    pendingBytes += (page.text?.length ?? 0) + 128;
+                    progress.done += 1;
+                } catch {
+                    progress.failed.push(page.pageNumber);
+                }
+                onProgress({ ...progress });
+            })();
 
-            onProgress({ ...progress });
+            const tracked: Promise<void> = task.finally(() => inflight.delete(tracked));
+            inflight.add(tracked);
 
+            // Обратное давление: не рендерим быстрее, чем успеваем отгружать,
+            // иначе блобы копятся в памяти вкладки.
+            if (inflight.size >= UPLOAD_CONCURRENCY) await Promise.race(inflight);
+
+            // Сохраняем порциями по ходу дела, чтобы обрыв не стоил всей работы.
+            // Страницы приходят вразнобой — порядок неважен, номер у каждой свой.
             if (pending.length >= FLUSH_PAGES || pendingBytes >= FLUSH_BYTES) {
                 await flush();
             }
-
-            const elapsed = Date.now() - startedAt;
-            if (elapsed < MIN_MS_PER_PAGE) await sleep(MIN_MS_PER_PAGE - elapsed);
         }
 
+        await Promise.all(inflight);
         await flush();
     } finally {
         await doc.destroy().catch(() => undefined);
     }
 
     return {
-        imported: progress.done,
+        imported: progress.saved,
         failed: progress.failed,
         hasText: progress.hasText,
         aborted: signal.aborted,
