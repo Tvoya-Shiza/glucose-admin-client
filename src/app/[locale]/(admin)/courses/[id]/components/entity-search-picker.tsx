@@ -10,9 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
 import { fetchCoursePickerItems, type PickerItemKind, type PickerItemScope } from '@/lib/courses/picker-items';
 
-export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'curator' | 'user-group' | 'course';
+export type EntityKind = 'quiz' | 'assignment' | 'lesson' | 'file' | 'trainer' | 'credit' | 'curator' | 'user-group' | 'course';
 
-const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignment', 'file'];
+const COURSE_SCOPED_KINDS: readonly EntityKind[] = ['lesson', 'quiz', 'assignment', 'file', 'trainer', 'credit'];
 
 /**
  * How many rows the picker pulls in one shot. 100 = the admin-api
@@ -33,7 +33,8 @@ interface EntitySearchOption {
 }
 
 /** Catalog kinds whose `scope='all'` searches the whole catalog, not just this course. */
-const CATALOG_KINDS: readonly EntityKind[] = ['quiz', 'assignment'];
+// Зачёт в каталоге не ищут — он всегда принадлежит одному курсу.
+const CATALOG_KINDS: readonly EntityKind[] = ['quiz', 'assignment', 'trainer'];
 
 interface CourseRow {
     id: number;

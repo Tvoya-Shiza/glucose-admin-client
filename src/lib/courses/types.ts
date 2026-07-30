@@ -36,7 +36,20 @@ export type TranslationCompleteness = 'complete' | 'incomplete';
 export type CourseSortField = 'created_at' | 'updated_at' | 'teacher' | 'slug';
 export type SortOrder = 'asc' | 'desc';
 export type ChapterStatus = 'active' | 'inactive';
-export type ChapterItemType = 'file' | 'quiz' | 'assignment';
+export type ChapterItemType = 'file' | 'quiz' | 'assignment' | 'trainer' | 'credit';
+
+/** Phase 47 — тренажёр, прикреплённый к главе. */
+export interface ChapterItemTrainerRef {
+    id: number;
+    title: string;
+}
+
+/** Phase 47 — зачёт, прикреплённый к главе. */
+export interface ChapterItemCreditRef {
+    id: number;
+    title: string;
+    scheduled_at: number | null;
+}
 export type UploadKind = 'image' | 'video' | 'cover';
 export type UploadContentType =
     | 'image/jpeg'
@@ -192,6 +205,10 @@ export interface ChapterItem {
     file: ChapterItemFileRef | null;
     quiz: ChapterItemQuizRef | null;
     assignment: ChapterItemAssignmentRef | null;
+    /** Phase 47 — заполнено только при type='trainer'. */
+    trainer?: ChapterItemTrainerRef | null;
+    /** Phase 47 — заполнено только при type='credit'. */
+    credit?: ChapterItemCreditRef | null;
     /**
      * Phase 29 — non-empty when this file item is a multi-file PDF block.
      * `file` still points at the first PDF (back-compat); this is the full list.

@@ -847,7 +847,12 @@
             "student_access_hint": "Таңдалған топтарға қосымша — осы оқушылар да көреді",
             "students_search_placeholder": "Оқушыны іздеу",
             "students_no_results": "Оқушы табылмады",
-            "student_remove": "Оқушыны алып тастау"
+            "student_remove": "Оқушыны алып тастау",
+            "item_type_trainer": "Жаттықтырғыш",
+            "item_type_credit": "Зачёт",
+            "item_trainer_id_label": "Жаттықтырғыш",
+            "item_credit_id_label": "Зачёт",
+            "item_credit_hint": "Зачёт тегін — оны сатуға болмайды. Топтар мен оқушылар бойынша қол жеткізу қолданылады."
         },
         "trainers": {
             "list_title": "Тренажёрлер",
@@ -982,7 +987,18 @@
             "field_theme": "Әдепкі тақырып",
             "field_theme_hint": "Ойын осы безендірумен ашылады",
             "field_theme_none": "Тақырыпсыз",
-            "field_background_legacy_hint": "Тақырып таңдалмаған кезде ғана қолданылады"
+            "field_background_legacy_hint": "Тақырып таңдалмаған кезде ғана қолданылады",
+            "answers_title": "Жауаптарды талдау",
+            "answers_loading": "Жүктелуде…",
+            "answers_error": "Жауаптарды жүктеу мүмкін болмады",
+            "answers_empty": "Бұл әрекетте жауаптар жоқ",
+            "answers_open_hint": "Жауаптарды көру үшін басыңыз",
+            "answers_score": "{score} / {max} ұпай",
+            "answers_rounds": "{rounds} раунд",
+            "answers_outcome_correct": "Дұрыс",
+            "answers_outcome_incorrect": "Қате",
+            "answers_outcome_skipped": "Өткізілді",
+            "answers_outcome_pending": "Жауап берілмеді"
         },
         "ebooks": {
             "list_title": "Электронды кітаптар",
@@ -1105,7 +1121,15 @@
             "publisher_delete_title": "Баспаны жою",
             "publisher_delete_description": "Баспа жойылады, оның кітаптары сақталады",
             "publisher_delete_note": "Бұл баспаға {count} кітап байланысты — олардың баспа сілтемесі тазартылады.",
-            "publisher_delete_success": "Баспа жойылды. Сілтемесі тазартылған кітаптар: {unlinked}"
+            "publisher_delete_success": "Баспа жойылды. Сілтемесі тазартылған кітаптар: {unlinked}",
+            "bulk_upload_title": "Кітапты толық жүктеу",
+            "bulk_upload_hint": "Барлық бет суреттерін бірден таңдаңыз — олар файл атауы бойынша реттеліп, беттерге айналады. JPEG, PNG немесе WEBP, әрқайсысы 10 МБ дейін.",
+            "bulk_upload_pick": "Суреттерді таңдау",
+            "bulk_upload_running": "Жүктелуде…",
+            "bulk_upload_cancel": "Тоқтату",
+            "bulk_upload_progress": "{done} / {total} жүктелді",
+            "bulk_upload_added": "{count} бет қосылды — сақтауды ұмытпаңыз",
+            "bulk_upload_failed": "{count} файл жүктелмеді"
         },
         "quizzes": {
             "list_title": "Тесттер",
@@ -2416,10 +2440,12 @@
             "kind_quiz": "Тест",
             "kind_assignment": "Тапсырма",
             "kind_file": "Файл",
+            "kind_trainer": "Тренажёр",
             "kind_lesson_short": "Сабақ",
             "kind_quiz_short": "Тест",
             "kind_assignment_short": "Тапсырма",
             "kind_file_short": "Файл",
+            "kind_trainer_short": "трен",
             "col_when": "Уақыт",
             "col_curator": "Куратор",
             "col_group": "Ағым",
