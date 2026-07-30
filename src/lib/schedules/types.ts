@@ -1,7 +1,7 @@
 export const SCHEDULE_STATUSES = ['draft', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const;
 export type ScheduleStatus = (typeof SCHEDULE_STATUSES)[number];
 
-export const SCHEDULE_KINDS = ['lesson', 'quiz', 'assignment', 'file'] as const;
+export const SCHEDULE_KINDS = ['lesson', 'quiz', 'assignment', 'file', 'trainer'] as const;
 export type ScheduleItemKind = (typeof SCHEDULE_KINDS)[number];
 
 export interface ScheduleItem {

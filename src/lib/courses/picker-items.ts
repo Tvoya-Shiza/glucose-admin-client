@@ -14,7 +14,7 @@ import { fetchWithRefresh } from '@/lib/auth/refresh-on-401';
  * keep this file in lockstep with that DTO.
  */
 
-export type PickerItemKind = 'lesson' | 'quiz' | 'assignment' | 'file';
+export type PickerItemKind = 'lesson' | 'quiz' | 'assignment' | 'file' | 'trainer';
 export type PickerItemScope = 'course' | 'all';
 
 export interface PickerItem {
