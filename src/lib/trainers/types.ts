@@ -344,3 +344,47 @@ export interface ExportTrainerResults {
     sort?: TrainerResultsSortField;
     order?: SortOrder;
 }
+
+/**
+ * Разбор попытки по вопросам (GET /trainer-results/:id/answers).
+ *
+ * Строится из снапшота вопроса, записанного при старте попытки, — поэтому
+ * показывает ровно то, что видел ученик, даже если банк вопросов потом правили.
+ */
+export interface TrainerAnswerOption {
+    id: number;
+    title: string;
+    image: string | null;
+    is_correct: boolean;
+    is_chosen: boolean;
+}
+
+export interface TrainerAttemptAnswer {
+    question_id: number;
+    position: number;
+    type: string;
+    title: string;
+    image: string | null;
+    outcome: string;
+    points_awarded: number;
+    points_possible: number;
+    time_spent_sec: number | null;
+    options: TrainerAnswerOption[];
+}
+
+export interface TrainerAttemptAnswers {
+    id: string;
+    user: { id: number; full_name: string | null; email: string | null } | null;
+    trainer: { id: number; title_kz: string | null } | null;
+    status: TrainerAttemptStatus;
+    attempt_number: number | null;
+    score: number;
+    max_score: number;
+    correct_count: number;
+    incorrect_count: number;
+    skipped_count: number;
+    rounds_played: number;
+    elapsed_sec: number;
+    finished_at: number | null;
+    answers: TrainerAttemptAnswer[];
+}

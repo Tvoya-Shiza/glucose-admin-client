@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -17,6 +17,7 @@ import { exportTrainerResults, getTrainerResultsStats, listTrainerResults } from
 import { formatUnixDateTimeOrDash, formatElapsed } from '@/lib/trainers/datetime';
 import type { ExportTrainerResults, TrainerAttemptStatus, TrainerResultRow, TrainerResultsSortField } from '@/lib/trainers/types';
 import { TrainerResultsFilters, type TrainerResultsFiltersValue } from './trainer-results-filters';
+import { AttemptAnswersDialog } from './attempt-answers-dialog';
 
 function statusVariant(status: TrainerAttemptStatus): 'success' | 'secondary' | 'outline' | 'muted' {
     switch (status) {
@@ -47,6 +48,8 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
     const t = useTranslations('admin.trainers');
     const locale = useLocale();
     const canExport = usePermission('trainers.export');
+    /** Открытая попытка в диалоге разбора ответов; null — диалог закрыт. */
+    const [answersAttemptId, setAnswersAttemptId] = useState<string | null>(null);
 
     const [{ page, page_size, group_id, course_id, date_from, date_to, status, sort, order }, setQ] = useQueryStates({
         page: parseAsInteger.withDefault(1),
@@ -184,7 +187,12 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
                                       r.user?.full_name?.trim() || r.user?.mobile?.trim() || (r.user ? `#${r.user.id}` : '—');
                                   const subtitle = r.user?.full_name && r.user?.mobile ? r.user.mobile : null;
                                   return (
-                                      <TableRow key={r.id}>
+                                      <TableRow
+                                          key={r.id}
+                                          onClick={() => setAnswersAttemptId(String(r.id))}
+                                          className='hover:bg-muted/50 cursor-pointer'
+                                          title={t('answers_open_hint')}
+                                      >
                                           <TableCell>
                                               <div className='flex flex-col gap-0.5'>
                                                   <span className='text-sm'>{studentLabel}</span>
@@ -227,6 +235,8 @@ export function TrainerResultsList({ trainerId }: { trainerId: number }) {
                     onPageSizeChange={(size) => setQ({ page: 1, page_size: size })}
                 />
             ) : null}
+
+            <AttemptAnswersDialog attemptId={answersAttemptId} onOpenChange={(open) => !open && setAnswersAttemptId(null)} />
         </div>
     );
 }

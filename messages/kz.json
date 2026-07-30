@@ -982,7 +982,18 @@
             "field_theme": "Әдепкі тақырып",
             "field_theme_hint": "Ойын осы безендірумен ашылады",
             "field_theme_none": "Тақырыпсыз",
-            "field_background_legacy_hint": "Тақырып таңдалмаған кезде ғана қолданылады"
+            "field_background_legacy_hint": "Тақырып таңдалмаған кезде ғана қолданылады",
+            "answers_title": "Жауаптарды талдау",
+            "answers_loading": "Жүктелуде…",
+            "answers_error": "Жауаптарды жүктеу мүмкін болмады",
+            "answers_empty": "Бұл әрекетте жауаптар жоқ",
+            "answers_open_hint": "Жауаптарды көру үшін басыңыз",
+            "answers_score": "{score} / {max} ұпай",
+            "answers_rounds": "{rounds} раунд",
+            "answers_outcome_correct": "Дұрыс",
+            "answers_outcome_incorrect": "Қате",
+            "answers_outcome_skipped": "Өткізілді",
+            "answers_outcome_pending": "Жауап берілмеді"
         },
         "ebooks": {
             "list_title": "Электронды кітаптар",

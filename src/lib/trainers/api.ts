@@ -8,6 +8,7 @@ import type {
     ListTrainerThemesQuery,
     PublishTrainer,
     PublishTrainerResult,
+    TrainerAttemptAnswers,
     TrainerDetail,
     TrainerListResponse,
     TrainerPublishBlocked,
@@ -175,6 +176,12 @@ export async function listTrainerResults(query?: ListTrainerResultsQuery): Promi
     const res = await fetchWithRefresh(`${TRAINER_RESULTS_API_BASE}${buildQuery(query as Record<string, unknown> | undefined)}`);
     if (!res.ok) throw new Error(`listTrainerResults failed: ${res.status}`);
     return res.json();
+}
+
+export async function getTrainerAttemptAnswers(attemptId: string | number): Promise<TrainerAttemptAnswers> {
+    const res = await fetchWithRefresh(`${TRAINER_RESULTS_API_BASE}/${encodeURIComponent(String(attemptId))}/answers`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getTrainerAttemptAnswers failed: ${res.status}`));
+    return unwrapData<TrainerAttemptAnswers>(await res.json());
 }
 
 export async function getTrainerResultsStats(query?: ListTrainerResultsQuery): Promise<TrainerResultsStatsResponse> {
