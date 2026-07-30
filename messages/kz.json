@@ -1129,7 +1129,20 @@
             "bulk_upload_cancel": "Тоқтату",
             "bulk_upload_progress": "{done} / {total} жүктелді",
             "bulk_upload_added": "{count} бет қосылды — сақтауды ұмытпаңыз",
-            "bulk_upload_failed": "{count} файл жүктелмеді"
+            "bulk_upload_failed": "{count} файл жүктелмеді",
+            "pdf_import_title": "PDF-тен жүктеу",
+            "pdf_import_hint": "Бір PDF файлын таңдаңыз — кітап беттерге автоматты түрде бөлінеді. Беттерді қолмен қосудың қажеті жоқ.",
+            "pdf_import_pick": "PDF таңдау",
+            "pdf_import_running": "Жүктелуде…",
+            "pdf_import_stop": "Тоқтату",
+            "pdf_import_reading": "PDF оқылуда…",
+            "pdf_import_progress": "{done} / {total} бет сақталды",
+            "pdf_import_failed": "{count} бет өтпеді",
+            "pdf_import_keep_open": "Импорт аяқталғанша бұл бетті жаппаңыз. Үзіліп қалса, сақталған беттер орнында қалады.",
+            "pdf_import_success": "{count} бет импортталды",
+            "pdf_import_partial": "{count} бет импортталды, {failed} бет өтпеді",
+            "pdf_import_stopped": "Тоқтатылды. {count} бет сақталды",
+            "pdf_import_no_text": "Бұл PDF-те мәтін қабаты жоқ (сканерленген кітап). Беттер суреттер ретінде сақталды, бірақ кітап ішінен іздеу жұмыс істемейді."
         },
         "quizzes": {
             "list_title": "Тесттер",

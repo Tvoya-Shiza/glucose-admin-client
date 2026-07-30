@@ -20,6 +20,7 @@ import { usePermission } from '@/lib/access/use-permission';
 import { deleteBookPage, listBookPages, reindexBook, replaceBookPages } from '@/lib/ebooks/api';
 import type { BookPageRow, ReplacePageInput } from '@/lib/ebooks/types';
 import { BulkPagesUpload, type BulkUploadedPage } from '../components/bulk-pages-upload';
+import { PdfImport } from '../components/pdf-import';
 
 interface PageDraft {
     /** Stable React key — page_number is editable, so it can't be the key. */
@@ -250,6 +251,15 @@ export function PagesTab({ bookId, canManage }: { bookId: number; canManage: boo
                     ) : null}
                 </div>
             </div>
+
+            {canManage ? (
+                <PdfImport
+                    bookId={bookId}
+                    nextPageNumber={rows.reduce((acc, r) => Math.max(acc, Number(r.page_number) || 0), 0) + 1}
+                    onImported={invalidateAll}
+                    disabled={saveMutation.isPending}
+                />
+            ) : null}
 
             {canManage ? <BulkPagesUpload onUploaded={appendUploadedPages} disabled={saveMutation.isPending} /> : null}
 
