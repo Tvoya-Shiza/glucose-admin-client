@@ -91,6 +91,7 @@ export function QuestionsImportDialog({ quizId, open, onOpenChange }: QuestionsI
     });
 
     const failedRows: QuestionImportRow[] = result ? result.rows.filter((r) => r.status === 'error') : [];
+    const unmatchedTopics = result ? result.rows.filter((r) => r.topic_unmatched).length : 0;
 
     const downloadErrors = async () => {
         try {
@@ -172,6 +173,19 @@ export function QuestionsImportDialog({ quizId, open, onOpenChange }: QuestionsI
                                     </Button>
                                 ) : null}
                             </div>
+
+                            {/* Ненайденные темы и разорванные блоки — не ошибки строк:
+                                вопросы загружены, но требуют внимания методиста. */}
+                            {unmatchedTopics > 0 && (
+                                <p className='bg-warning/10 rounded-md p-3 text-sm'>
+                                    {t('topic_unmatched_notice', { count: unmatchedTopics })}
+                                </p>
+                            )}
+                            {(result?.passage_contiguity_violations?.length ?? 0) > 0 && (
+                                <p className='text-destructive bg-destructive/10 rounded-md p-3 text-sm'>
+                                    {t('passage_not_contiguous_notice')}
+                                </p>
+                            )}
 
                             {failedRows.length > 0 ? (
                                 <div className='max-h-[360px] overflow-auto rounded-md border'>

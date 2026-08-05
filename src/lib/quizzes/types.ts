@@ -358,6 +358,10 @@ export interface QuestionImportRow {
     /** Machine reason code on failure (localized client-side via the reason map). */
     reason: string | null;
     question_id: number | null;
+    /** Название темы, как его написал оператор (phase-51). */
+    topic_name: string | null;
+    /** Тема указана, но в справочнике не найдена — вопрос загружен без темы. */
+    topic_unmatched: boolean;
 }
 
 export interface QuestionImportResult {
@@ -366,6 +370,8 @@ export interface QuestionImportResult {
     failed: number;
     imported_answers: number;
     rows: QuestionImportRow[];
+    /** Блоки, вопросы которых после импорта разорваны (phase-52). */
+    passage_contiguity_violations?: Array<{ passage_id: number; positions: number[] }>;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
