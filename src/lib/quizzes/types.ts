@@ -1,3 +1,4 @@
+import type { PassMarkType } from '@shared/quiz-scoring';
 /**
  * TS types mirroring admin-api Quizzes DTO shapes (Phase 6 Plan 01).
  *
@@ -91,6 +92,10 @@ export interface QuizRow {
     /** Seconds. null = no time limit. */
     time: number | null;
     pass_mark: number;
+    /** Как читать pass_mark: абсолютные баллы или процент от максимума (phase-48). */
+    pass_mark_type: PassMarkType;
+    /** Максимум за тест — сумма баллов вопросов. */
+    total_mark: number;
     /** null = unlimited attempts. */
     attempt: number | null;
     certificate: boolean;
@@ -202,6 +207,10 @@ export interface QuizDetail {
     /** Seconds. null = no time limit. */
     time: number | null;
     pass_mark: number;
+    /** Как читать pass_mark: абсолютные баллы или процент от максимума (phase-48). */
+    pass_mark_type: PassMarkType;
+    /** Максимум за тест — сумма баллов вопросов. */
+    total_mark: number;
     /** null = unlimited attempts. */
     attempt: number | null;
     certificate: boolean;
@@ -236,6 +245,8 @@ export interface CreateQuiz {
     /** Seconds. null|0 = no limit. */
     time?: number | null;
     pass_mark: number;
+    /** Как читать pass_mark (phase-48). Форма новых тестов шлёт 'percent'. */
+    pass_mark_type?: PassMarkType;
     /** null = unlimited. */
     attempt?: number | null;
     certificate?: boolean;
@@ -258,6 +269,7 @@ export interface UpdateQuiz {
     subject_id?: number | null;
     time?: number | null;
     pass_mark?: number;
+    pass_mark_type?: PassMarkType;
     attempt?: number | null;
     certificate?: boolean;
     display_questions_randomly?: boolean;

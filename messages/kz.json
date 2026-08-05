@@ -1494,7 +1494,11 @@
             "grade_saved": "Баға сақталды",
             "grade_status_waiting": "Тексерілуде",
             "grade_status_correct": "Дұрыс",
-            "grade_status_incorrect": "Қате"
+            "grade_status_incorrect": "Қате",
+            "pass_mark_type_label": "Өту шегі қалай есептеледі",
+            "pass_mark_type_points": "Балмен",
+            "pass_mark_type_percent": "Пайызбен (%)",
+            "pass_mark_preview": "Өту шегі: {max} балдан {threshold}"
         },
         "stories": {
             "title": "Әңгімелер",

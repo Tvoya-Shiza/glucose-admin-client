@@ -12,6 +12,7 @@ import { listCategories, updateQuiz } from '@/lib/quizzes/api';
 import { usePermission } from '@/lib/access/use-permission';
 import type { QuizDetail, QuizStatus, Translation, UpdateQuiz } from '@/lib/quizzes/types';
 import { QuizTranslationForm } from '../components/translation-form';
+import { resolvePassThreshold, type PassMarkType } from '@shared/quiz-scoring';
 
 export interface OverviewTabProps {
     quiz: QuizDetail;
@@ -178,6 +179,35 @@ export function OverviewTab({ quiz, role }: OverviewTabProps) {
                         disabled={isReadOnly}
                         nullable={false}
                     />
+
+                    {/* Режим появился потому, что методисты вводили сюда процент, а
+                        сервер сравнивал с абсолютной суммой — так на проде возникли
+                        тесты с порогом 50 при максимуме 3 балла. */}
+                    <FieldRow label={t('pass_mark_type_label')}>
+                        <Select
+                            value={quiz.pass_mark_type}
+                            onValueChange={(v) => patch({ pass_mark_type: v as PassMarkType })}
+                            disabled={isReadOnly}
+                        >
+                            <SelectTrigger className='w-full'>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value='points'>{t('pass_mark_type_points')}</SelectItem>
+                                <SelectItem value='percent'>{t('pass_mark_type_percent')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className='text-muted-foreground text-xs'>
+                            {t('pass_mark_preview', {
+                                threshold: resolvePassThreshold(
+                                    quiz.pass_mark,
+                                    quiz.pass_mark_type,
+                                    quiz.total_mark,
+                                ),
+                                max: quiz.total_mark,
+                            })}
+                        </p>
+                    </FieldRow>
 
                     <DebouncedNumberField
                         label={t('expiry_days_label')}

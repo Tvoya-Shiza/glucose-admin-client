@@ -58,6 +58,7 @@ const createQuizSchema = z
             .refine((v) => Number.isFinite(Number(v.trim())) && Number(v.trim()) >= 0, {
                 message: 'invalid_number',
             }),
+        pass_mark_type: z.enum(['points', 'percent']),
         time: z.string().optional(),
         attempt: z.string().optional(),
         certificate: z.boolean(),
@@ -106,6 +107,9 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
             status: 'active',
             category_id: null,
             pass_mark: '0',
+            // Новые тесты по умолчанию считают порог процентом: методисты и так
+            // вводили сюда проценты, просто сервер об этом не знал (phase-48).
+            pass_mark_type: 'percent',
             time: '',
             attempt: '',
             certificate: false,
@@ -124,6 +128,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                 status: 'active',
                 category_id: null,
                 pass_mark: '0',
+                pass_mark_type: 'percent',
                 time: '',
                 attempt: '',
                 certificate: false,
@@ -143,6 +148,7 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                 status: values.status as QuizStatus,
                 category_id: values.category_id,
                 pass_mark: Number(values.pass_mark.trim()),
+                pass_mark_type: values.pass_mark_type,
                 certificate: values.certificate,
                 time:
                     values.time && values.time.trim() !== ''
@@ -231,6 +237,27 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                                                 ref={field.ref}
                                                 name={field.name}
                                             />
+                            <FormField
+                                control={form.control}
+                                name='pass_mark_type'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('pass_mark_type_label')}</FormLabel>
+                                        <Select value={field.value} onValueChange={field.onChange}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value='percent'>{t('pass_mark_type_percent')}</SelectItem>
+                                                <SelectItem value='points'>{t('pass_mark_type_points')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
