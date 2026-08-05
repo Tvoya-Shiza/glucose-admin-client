@@ -2726,7 +2726,12 @@
             "result_texts_ru_label": "Мәтін (орысша)",
             "result_texts_required": "Мәтін бос болмауы керек",
             "result_texts_saved": "Сақталды",
-            "session_status_completed": "Аяқталды"
+            "session_status_completed": "Аяқталды",
+            "pause_action": "Кідірту",
+            "resume_action": "Жалғастыру",
+            "extend_action": "+{minutes} мин",
+            "extend_hint": "Уақытты {minutes} минутқа ұзарту",
+            "paused_notice": "Сессия кідіртілді. Таймер тоқтады, жалғастырғанда қалған уақыт сақталады."
         },
         "credit_questions": {
             "list_title": "Сұрақтар базасы",
