@@ -184,3 +184,25 @@ export interface ResolveResultRow {
 export interface ResolveMembersResult {
     rows: ResolveResultRow[];
 }
+
+/**
+ * GRP-08 — кандидат в участники потока.
+ *
+ * Приходит из `GET /:id/member-candidates`, который сознательно не применяет
+ * скоуп пользователей: иначе куратор не найдёт ученика, которого ещё нет в его
+ * потоках. Взамен ответ урезан — без email, телефон только хвостом.
+ */
+export interface MemberCandidate {
+    user_id: number;
+    full_name: string | null;
+    /** Последние 4 цифры телефона — чтобы различить тёзок. */
+    mobile_tail: string | null;
+    status: 'active' | 'inactive' | 'pending';
+    in_this_group: boolean;
+}
+
+export interface MemberCandidatesResult {
+    rows: MemberCandidate[];
+    /** Сколько нашлось всего — показывается как «показаны первые N из M». */
+    total: number;
+}

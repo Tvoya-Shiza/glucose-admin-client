@@ -125,6 +125,8 @@ export function QuizDetailClient({ quizId }: { quizId: number }) {
             : null,
         time: data.time,
         pass_mark: data.pass_mark,
+        pass_mark_type: data.pass_mark_type,
+        total_mark: data.counts.total_mark,
         attempt: data.attempt,
         certificate: data.certificate,
         is_listed: data.is_listed,

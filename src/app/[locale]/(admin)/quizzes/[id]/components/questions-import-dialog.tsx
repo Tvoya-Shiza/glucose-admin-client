@@ -91,6 +91,7 @@ export function QuestionsImportDialog({ quizId, open, onOpenChange }: QuestionsI
     });
 
     const failedRows: QuestionImportRow[] = result ? result.rows.filter((r) => r.status === 'error') : [];
+    const unmatchedTopics = result ? result.rows.filter((r) => r.topic_unmatched).length : 0;
 
     const downloadErrors = async () => {
         try {
@@ -98,15 +99,23 @@ export function QuestionsImportDialog({ quizId, open, onOpenChange }: QuestionsI
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet(t('errors_sheet_name'));
             ws.columns = [
+                { header: t('col_seq'), key: 'seq', width: 8 },
                 { header: t('col_sheet'), key: 'sheet', width: 20 },
-                { header: t('col_row'), key: 'row', width: 10 },
+                { header: t('col_row'), key: 'row', width: 12 },
                 { header: t('col_type'), key: 'type', width: 18 },
                 { header: t('col_title'), key: 'title', width: 50 },
                 { header: t('col_reason'), key: 'reason', width: 44 },
             ];
             ws.getRow(1).font = { bold: true };
             for (const r of failedRows) {
-                ws.addRow({ sheet: r.sheet, row: r.row, type: typeLabel(r.type), title: r.title, reason: reasonLabel(r.reason) });
+                ws.addRow({
+                    seq: r.seq ?? '—',
+                    sheet: r.sheet,
+                    row: r.row,
+                    type: typeLabel(r.type),
+                    title: r.title,
+                    reason: reasonLabel(r.reason),
+                });
             }
             const ab = await wb.xlsx.writeBuffer();
             triggerXlsxDownload(new Blob([ab]), t('errors_filename'));
@@ -165,21 +174,39 @@ export function QuestionsImportDialog({ quizId, open, onOpenChange }: QuestionsI
                                 ) : null}
                             </div>
 
+                            {/* Ненайденные темы и разорванные блоки — не ошибки строк:
+                                вопросы загружены, но требуют внимания методиста. */}
+                            {unmatchedTopics > 0 && (
+                                <p className='bg-warning/10 rounded-md p-3 text-sm'>
+                                    {t('topic_unmatched_notice', { count: unmatchedTopics })}
+                                </p>
+                            )}
+                            {(result?.passage_contiguity_violations?.length ?? 0) > 0 && (
+                                <p className='text-destructive bg-destructive/10 rounded-md p-3 text-sm'>
+                                    {t('passage_not_contiguous_notice')}
+                                </p>
+                            )}
+
                             {failedRows.length > 0 ? (
                                 <div className='max-h-[360px] overflow-auto rounded-md border'>
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead className='w-[160px]'>{t('col_sheet')}</TableHead>
-                                                <TableHead className='w-[80px]'>{t('col_row')}</TableHead>
+                                                {/* Two different numbers, and conflating them is what made
+                                                    operators read "question 1 failed" as "question 2 failed":
+                                                    «№» is theirs, «Жол» is the physical Excel row. */}
+                                                <TableHead className='w-[64px]'>{t('col_seq')}</TableHead>
+                                                <TableHead className='w-[150px]'>{t('col_sheet')}</TableHead>
+                                                <TableHead className='w-[96px]'>{t('col_row')}</TableHead>
                                                 <TableHead>{t('col_reason')}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {failedRows.map((r) => (
                                                 <TableRow key={`${r.sheet}-${r.row}`}>
+                                                    <TableCell className='font-mono text-xs'>{r.seq ?? '—'}</TableCell>
                                                     <TableCell className='text-xs'>{r.sheet}</TableCell>
-                                                    <TableCell className='font-mono text-xs'>{r.row}</TableCell>
+                                                    <TableCell className='text-muted-foreground font-mono text-xs'>{r.row}</TableCell>
                                                     <TableCell className='text-muted-foreground text-xs'>
                                                         {reasonLabel(r.reason)}
                                                     </TableCell>

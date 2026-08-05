@@ -1,3 +1,4 @@
+import type { PassMarkType } from '@shared/quiz-scoring';
 /**
  * TS types mirroring admin-api Quizzes DTO shapes (Phase 6 Plan 01).
  *
@@ -91,6 +92,10 @@ export interface QuizRow {
     /** Seconds. null = no time limit. */
     time: number | null;
     pass_mark: number;
+    /** Как читать pass_mark: абсолютные баллы или процент от максимума (phase-48). */
+    pass_mark_type: PassMarkType;
+    /** Максимум за тест — сумма баллов вопросов. */
+    total_mark: number;
     /** null = unlimited attempts. */
     attempt: number | null;
     certificate: boolean;
@@ -159,6 +164,10 @@ export interface QuestionDetail {
     id: number;
     type: QuizQuestionType;
     grade: number;
+    /** Тема из справочника (phase-51). null — вопрос без темы. */
+    topic_id: number | null;
+    /** Название темы — чтобы форма не ждала загрузки всего справочника. */
+    topic_name: string | null;
     image: string | null;
     video: string | null;
     answer_video_url: string | null;
@@ -202,6 +211,10 @@ export interface QuizDetail {
     /** Seconds. null = no time limit. */
     time: number | null;
     pass_mark: number;
+    /** Как читать pass_mark: абсолютные баллы или процент от максимума (phase-48). */
+    pass_mark_type: PassMarkType;
+    /** Максимум за тест — сумма баллов вопросов. */
+    total_mark: number;
     /** null = unlimited attempts. */
     attempt: number | null;
     certificate: boolean;
@@ -236,6 +249,8 @@ export interface CreateQuiz {
     /** Seconds. null|0 = no limit. */
     time?: number | null;
     pass_mark: number;
+    /** Как читать pass_mark (phase-48). Форма новых тестов шлёт 'percent'. */
+    pass_mark_type?: PassMarkType;
     /** null = unlimited. */
     attempt?: number | null;
     certificate?: boolean;
@@ -258,6 +273,7 @@ export interface UpdateQuiz {
     subject_id?: number | null;
     time?: number | null;
     pass_mark?: number;
+    pass_mark_type?: PassMarkType;
     attempt?: number | null;
     certificate?: boolean;
     display_questions_randomly?: boolean;
@@ -297,6 +313,8 @@ export interface UpsertQuestion {
     translations: UpsertQuestionTranslation[];
     /** Force-confirm JWT — only required on destructive edits with open attempts. */
     force_confirm_token?: string;
+    /** Тема из справочника (phase-51); null — без темы. */
+    topic_id?: number | null;
 }
 
 export interface UpsertAnswerTranslation {
@@ -330,14 +348,20 @@ export interface UpsertAnswer {
 export interface QuestionImportRow {
     /** Russian sheet name the row came from. */
     sheet: string;
-    /** Real spreadsheet row number (1-based). */
+    /** Real spreadsheet row number (1-based) — one more than «№» because of the header. */
     row: number;
+    /** The operator's own «№» value; null when the column was left empty. */
+    seq: number | null;
     type: QuizQuestionType;
     title: string;
     status: 'ok' | 'error';
     /** Machine reason code on failure (localized client-side via the reason map). */
     reason: string | null;
     question_id: number | null;
+    /** Название темы, как его написал оператор (phase-51). */
+    topic_name: string | null;
+    /** Тема указана, но в справочнике не найдена — вопрос загружен без темы. */
+    topic_unmatched: boolean;
 }
 
 export interface QuestionImportResult {
@@ -346,6 +370,8 @@ export interface QuestionImportResult {
     failed: number;
     imported_answers: number;
     rows: QuestionImportRow[];
+    /** Блоки, вопросы которых после импорта разорваны (phase-52). */
+    passage_contiguity_violations?: Array<{ passage_id: number; positions: number[] }>;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -701,4 +727,48 @@ export interface QuizResultGradingDetail {
 
 export interface GradeAnswerPayload {
     verdict: 'correct' | 'incorrect';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Справочник тем (phase-51) — mirrors admin-api quiz-topic.dto.ts
+// ──────────────────────────────────────────────────────────────────────────────
+
+export type QuizTopicStatus = 'active' | 'archived';
+
+export interface QuizTopicNode {
+    id: number;
+    parent_id: number | null;
+    name: string;
+    position: number;
+    status: QuizTopicStatus;
+    /** Сколько вопросов помечено темой — виден её вес перед удалением. */
+    question_count: number;
+    child_count: number;
+}
+
+export interface CreateQuizTopic {
+    parent_id?: number | null;
+    name: string;
+    position?: number;
+}
+
+export interface UpdateQuizTopic {
+    name?: string;
+    parent_id?: number | null;
+    position?: number;
+    status?: QuizTopicStatus;
+}
+
+/** Строка разбора результата по темам (phase-51). */
+export interface QuizTopicBreakdownRow {
+    /** null — сборная строка «без темы». */
+    topic_id: number | null;
+    topic_name: string | null;
+    question_count: number;
+    correct_count: number;
+    /** Ждут ручной проверки: процент по ним ещё изменится. */
+    pending_count: number;
+    score: number;
+    max_score: number;
+    percent: number;
 }

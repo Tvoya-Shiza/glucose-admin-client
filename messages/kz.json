@@ -414,7 +414,11 @@
                     "too_many_rows": "Жолдар тым көп (2000-нан аспауы керек)",
                     "no_data_rows": "Файлда деректер жоқ"
                 }
-            }
+            },
+            "search_hint": "Ағымдағы тізімде студент болмаса, аты-жөнін немесе телефонын енгізіңіз (кемінде 3 таңба) — іздеу барлық студенттер бойынша жүреді.",
+            "already_member": "ағымдағы ағында",
+            "col_phone_tail": "Телефон (соңғы 4)",
+            "candidates_found": "{total} студенттің {shown} көрсетілді"
         },
         "course_access": {
             "list_title": "Курстарға қол жеткізу",
@@ -1369,7 +1373,7 @@
                 "download_template": "Үлгіні жүктеу",
                 "upload_excel": "Excel жүктеу",
                 "dialog_title": "Excel арқылы сұрақтарды жүктеу",
-                "dialog_description": "Толтырылған үлгіні жүктеңіз. Жарамды жолдар жүктеледі, ал қателі жолдар есепте көрсетіледі.",
+                "dialog_description": "Толтырылған үлгіні жүктеңіз. «№» бағанасы сұрақтардың кезегін белгілейді (барлық парақтар бойынша сквозной). Жарамды жолдар жүктеледі, ал қателі жолдар есепте көрсетіледі.",
                 "select_file": "Файлды таңдау",
                 "upload": "Жүктеу",
                 "uploading": "Жүктелуде…",
@@ -1388,7 +1392,7 @@
                 "summary_failed": "Қателі",
                 "summary_answers": "Жауаптар",
                 "col_sheet": "Парақ",
-                "col_row": "Жол",
+                "col_row": "Файлдағы жол",
                 "col_type": "Түрі",
                 "col_title": "Сұрақ",
                 "col_reason": "Себебі",
@@ -1414,7 +1418,10 @@
                     "matching_correct_invalid": "«Дұрыс» мәні 1–4 аралығында болуы керек",
                     "option_too_long": "Жауап мәтіні тым ұзын (1000 таңбадан аспауы керек)",
                     "db_error": "Дерекқорға сақтау кезінде қате"
-                }
+                },
+                "col_seq": "№",
+                "topic_unmatched_notice": "{count} сұрақтың тақырыбы анықтамалықтан табылмады — олар тақырыпсыз жүктелді. Атауын тексеріп, сұрақтарды қолмен байлаңыз.",
+                "passage_not_contiguous_notice": "Бір мәтінге жататын сұрақтар қатар тұрған жоқ. Оқушыда мәтін жоғалып, қайта пайда болады — сұрақтардың ретін түзетіңіз."
             },
             "answers_count": "Жауаптар: {count}",
             "destructive_edit_warning": "Деструктивті өзгеріс — тест нұсқасын арттырады",
@@ -1489,7 +1496,31 @@
             "grade_saved": "Баға сақталды",
             "grade_status_waiting": "Тексерілуде",
             "grade_status_correct": "Дұрыс",
-            "grade_status_incorrect": "Қате"
+            "grade_status_incorrect": "Қате",
+            "pass_mark_type_label": "Өту шегі қалай есептеледі",
+            "pass_mark_type_points": "Балмен",
+            "pass_mark_type_percent": "Пайызбен (%)",
+            "pass_mark_preview": "Өту шегі: {max} балдан {threshold}",
+            "topics_page_title": "Тақырыптар",
+            "topics_page_subtitle": "Сұрақтарды тақырыпқа байлаңыз — сонда студент нәтижесінде тақырып бойынша талдау көрінеді.",
+            "topics_empty": "Тақырыптар әлі жоқ",
+            "topics_empty_hint": "Бірінші тақырыпты қосыңыз, содан кейін оны сұрақтарға байлауға болады.",
+            "topic_add": "Тақырып қосу",
+            "topic_add_child": "Ішкі тақырып қосу",
+            "topic_create_title": "Жаңа тақырып",
+            "topic_edit_title": "Тақырыпты өңдеу",
+            "topic_name_label": "Атауы",
+            "topic_parent_label": "Аталық тақырып",
+            "topic_parent_root": "— жоқ (жоғарғы деңгей) —",
+            "topic_question_count": "{count} сұрақ",
+            "topic_created": "Тақырып құрылды",
+            "topic_updated": "Тақырып жаңартылды",
+            "topic_deleted": "Тақырып жойылды",
+            "topic_not_empty": "Тақырыпты жою мүмкін емес: ішінде {children} ішкі тақырып және {questions} сұрақ бар.",
+            "question_topic_label": "Тақырып",
+            "question_topic_none": "— тақырыпсыз —",
+            "col_topic": "Тақырып",
+            "import_topic_unmatched": "Тақырып анықтамалықтан табылмады — сұрақ тақырыпсыз жүктелді"
         },
         "stories": {
             "title": "Әңгімелер",
@@ -2717,7 +2748,12 @@
             "result_texts_ru_label": "Мәтін (орысша)",
             "result_texts_required": "Мәтін бос болмауы керек",
             "result_texts_saved": "Сақталды",
-            "session_status_completed": "Аяқталды"
+            "session_status_completed": "Аяқталды",
+            "pause_action": "Кідірту",
+            "resume_action": "Жалғастыру",
+            "extend_action": "+{minutes} мин",
+            "extend_hint": "Уақытты {minutes} минутқа ұзарту",
+            "paused_notice": "Сессия кідіртілді. Таймер тоқтады, жалғастырғанда қалған уақыт сақталады."
         },
         "credit_questions": {
             "list_title": "Сұрақтар базасы",
@@ -2935,7 +2971,11 @@
             "edit_confirm_overwrite": "Ағымдағы мән қайта жазылады.",
             "date_from_label": "Күні (бастап)",
             "date_to_label": "Күні (дейін)",
-            "date_clear": "Күнді тазарту"
+            "period_all": "Барлық кезең",
+            "period_current_week": "Ағымдағы апта",
+            "period_hint_all": "Барлық кезең көрсетілген.",
+            "period_hint_week": "Ағымдағы апта көрсетілген: {range}. Толық тізім үшін «Барлық кезең» түймесін басыңыз.",
+            "period_hint_custom": "Көрсетілген кезең: {range}."
         },
         "creditResults": {
             "list_title": "Зачет нәтижелері",

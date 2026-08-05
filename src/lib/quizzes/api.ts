@@ -565,3 +565,46 @@ export async function getResultsStats(query?: ResultsStatsQuery): Promise<Result
     if (!res.ok) throw new Error(`getResultsStats failed: ${res.status}`);
     return res.json();
 }
+
+// ── Справочник тем (phase-51) ────────────────────────────────────────────────
+
+const TOPICS_BASE = '/api/proxy/v1/admin/quiz-topics';
+
+export async function listQuizTopics(includeArchived = false): Promise<import('./types').QuizTopicNode[]> {
+    const qs = includeArchived ? '?include_archived=true' : '';
+    const res = await fetchWithRefresh(`${TOPICS_BASE}${qs}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `listQuizTopics failed: ${res.status}`));
+    const json = await res.json();
+    return unwrapData<{ topics: import('./types').QuizTopicNode[] }>(json).topics;
+}
+
+export async function createQuizTopic(
+    payload: import('./types').CreateQuizTopic,
+): Promise<import('./types').QuizTopicNode> {
+    const res = await fetchWithRefresh(TOPICS_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createQuizTopic failed: ${res.status}`));
+    return unwrapData<{ topic: import('./types').QuizTopicNode }>(await res.json()).topic;
+}
+
+export async function updateQuizTopic(
+    id: number,
+    payload: import('./types').UpdateQuizTopic,
+): Promise<import('./types').QuizTopicNode> {
+    const res = await fetchWithRefresh(`${TOPICS_BASE}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateQuizTopic failed: ${res.status}`));
+    return unwrapData<{ topic: import('./types').QuizTopicNode }>(await res.json()).topic;
+}
+
+/** 409 `quizzes.topic_not_empty`, пока у темы есть дети или вопросы. */
+export async function deleteQuizTopic(id: number): Promise<void> {
+    const res = await fetchWithRefresh(`${TOPICS_BASE}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuizTopic failed: ${res.status}`));
+}

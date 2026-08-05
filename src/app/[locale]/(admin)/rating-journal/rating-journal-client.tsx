@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { ClipboardCheck, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { CalendarRange, ClipboardCheck, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
@@ -30,6 +30,44 @@ function dayToUnix(day: string | null, endOfDay: boolean): number | undefined {
     const ms = d.getTime();
     return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
 }
+
+/**
+ * Local 'YYYY-MM-DD'. Deliberately not toISOString().slice(0, 10) — that converts
+ * to UTC first, so in Almaty (UTC+5) every moment before 05:00 would yield the
+ * previous day and the journal would open on the wrong week.
+ */
+function toLocalDay(d: Date): string {
+    const month = `${d.getMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getDate()}`.padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Понедельник–воскресенье текущей недели. getDay() отдаёт 0 для воскресенья,
+ * поэтому (getDay() + 6) % 7 — это число дней, прошедших с понедельника.
+ * Date сам нормализует отрицательные числа и переход через границу месяца.
+ */
+function currentWeekRange(): { from: string; to: string } {
+    const now = new Date();
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    return { from: toLocalDay(monday), to: toLocalDay(sunday) };
+}
+
+/**
+ * Явный маркер «весь период» в URL.
+ *
+ * Пустая строка тут не годится: раз у параметра есть непустой дефолт (текущая
+ * неделя), «выключено» нужно чем-то записать — а пустой query-параметр по пути
+ * через историю браузера легко теряется, и журнал молча вернулся бы на неделю.
+ * Слово в URL переживает перезагрузку и читается человеком.
+ */
+const ALL_PERIOD = 'all';
+
+/** Значение фильтра → день для запроса; маркер «весь период» снимает границу. */
+function periodBound(value: string): string | null {
+    return !value || value === ALL_PERIOD ? null : value;
+}
 import { CellHistoryDialog, type CellHistoryTarget } from './components/cell-history-dialog';
 import { CreateColumnDialog } from './components/create-column-dialog';
 import { EditColumnDialog } from './components/edit-column-dialog';
@@ -44,15 +82,44 @@ import { JournalGrid } from './components/journal-grid';
  */
 export function RatingJournalClient() {
     const t = useTranslations('admin.ratingJournal');
+    const locale = useLocale();
     const qc = useQueryClient();
 
-    const [{ group_id, course_id, date_from, date_to }, setSel] = useQueryStates({
-        group_id: parseAsInteger,
-        course_id: parseAsInteger,
-        // Calendar filter (item 5) — YYYY-MM-DD strings; converted to unix at query time.
-        date_from: parseAsString,
-        date_to: parseAsString,
-    });
+    // Computed once per mount so the nuqs defaults stay referentially stable.
+    const week = useMemo(currentWeekRange, []);
+
+    const [{ group_id, course_id, date_from, date_to }, setSel] = useQueryStates(
+        useMemo(
+            () => ({
+                group_id: parseAsInteger,
+                course_id: parseAsInteger,
+                // Calendar filter (item 5) — YYYY-MM-DD strings; converted to unix at query time.
+                // Defaults to the current week: the curator almost always wants "what
+                // happened this week", and the unfiltered grid grows unreadable over a
+                // semester. ALL_PERIOD is the explicit escape — distinct from "not
+                // set", which is what withDefault fills in.
+                date_from: parseAsString.withDefault(week.from),
+                date_to: parseAsString.withDefault(week.to),
+            }),
+            [week],
+        ),
+    );
+
+    const fromDay = periodBound(date_from);
+    const toDay = periodBound(date_to);
+    const isCurrentWeek = date_from === week.from && date_to === week.to;
+    const isAllPeriod = fromDay === null && toDay === null;
+
+    // «5–11 тамыз» — the range the grid actually shows, spelled out so the default
+    // filter can never be mistaken for "the journal is empty".
+    const periodLabel = useMemo(() => {
+        if (isAllPeriod) return null;
+        const lang = locale === 'kz' ? 'kk-KZ' : 'ru-RU';
+        const fmt = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long' });
+        const from = fromDay ? fmt.format(new Date(`${fromDay}T00:00:00`)) : '…';
+        const to = toDay ? fmt.format(new Date(`${toDay}T00:00:00`)) : '…';
+        return `${from} — ${to}`;
+    }, [fromDay, toDay, isAllPeriod, locale]);
 
     const canEdit = usePermission('rating_journal.edit');
     const canManage = usePermission('rating_journal.columns_manage');
@@ -61,8 +128,8 @@ export function RatingJournalClient() {
     const ready = group_id != null && course_id != null;
 
     // date_from → start of its day; date_to → end of its day (inclusive).
-    const dateFromUnix = useMemo(() => dayToUnix(date_from, false), [date_from]);
-    const dateToUnix = useMemo(() => dayToUnix(date_to, true), [date_to]);
+    const dateFromUnix = useMemo(() => dayToUnix(fromDay, false), [fromDay]);
+    const dateToUnix = useMemo(() => dayToUnix(toDay, true), [toDay]);
 
     const gridQueryKey = useMemo(
         () => ['admin.rating-journal.grid', { group_id, course_id, date_from, date_to }] as const,
@@ -92,7 +159,7 @@ export function RatingJournalClient() {
             // filter is active, writing it straight into the cache would show
             // out-of-range cells + inflated totals — so refetch to re-apply the
             // filter instead. Without a filter, the fresh grid is authoritative.
-            if (date_from || date_to) {
+            if (!isAllPeriod) {
                 qc.invalidateQueries({ queryKey: gridQueryKey });
             } else {
                 qc.setQueryData(gridQueryKey, fresh);
@@ -229,9 +296,9 @@ export function RatingJournalClient() {
                         <label className='text-muted-foreground mb-1 block text-xs font-medium'>{t('date_from_label')}</label>
                         <Input
                             type='date'
-                            value={date_from ?? ''}
-                            max={date_to ?? undefined}
-                            onChange={(e) => setSel({ date_from: e.target.value || null })}
+                            value={fromDay ?? ''}
+                            max={toDay ?? undefined}
+                            onChange={(e) => setSel({ date_from: e.target.value })}
                             disabled={!ready}
                             className='w-40'
                         />
@@ -240,25 +307,39 @@ export function RatingJournalClient() {
                         <label className='text-muted-foreground mb-1 block text-xs font-medium'>{t('date_to_label')}</label>
                         <Input
                             type='date'
-                            value={date_to ?? ''}
-                            min={date_from ?? undefined}
-                            onChange={(e) => setSel({ date_to: e.target.value || null })}
+                            value={toDay ?? ''}
+                            min={fromDay ?? undefined}
+                            onChange={(e) => setSel({ date_to: e.target.value })}
                             disabled={!ready}
                             className='w-40'
                         />
                     </div>
-                    {date_from || date_to ? (
+                    {isAllPeriod ? (
                         <Button
                             variant='ghost'
                             size='sm'
-                            onClick={() => setSel({ date_from: null, date_to: null })}
+                            onClick={() => setSel({ date_from: week.from, date_to: week.to })}
                             disabled={!ready}
                         >
-                            <X className='mr-1 h-4 w-4' />
-                            {t('date_clear')}
+                            <CalendarRange className='mr-1 h-4 w-4' />
+                            {t('period_current_week')}
                         </Button>
-                    ) : null}
+                    ) : (
+                        <Button variant='ghost' size='sm' onClick={() => setSel({ date_from: ALL_PERIOD, date_to: ALL_PERIOD })} disabled={!ready}>
+                            <X className='mr-1 h-4 w-4' />
+                            {t('period_all')}
+                        </Button>
+                    )}
                 </div>
+                {/* The default filter is invisible otherwise: a curator who sees three
+                    columns instead of thirty must be told it is a date range, not a bug. */}
+                <p className='text-muted-foreground mt-3 text-xs'>
+                    {isAllPeriod
+                        ? t('period_hint_all')
+                        : isCurrentWeek
+                          ? t('period_hint_week', { range: periodLabel ?? '' })
+                          : t('period_hint_custom', { range: periodLabel ?? '' })}
+                </p>
             </Card>
 
             {!ready ? (

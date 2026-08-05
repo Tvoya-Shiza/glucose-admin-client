@@ -131,15 +131,10 @@ export function AddQuizToBadgeDialog({
                     ) : (
                         rows.map((row) => {
                             const inBadge = existingSet.has(row.id);
-                            const ruTitle =
-                                row.translation_completeness === 'complete'
-                                    ? // Best effort — list rows don't always carry translations[];
-                                      // the title can come from the existing list shape on the
-                                      // admin-api side. Fall back to "#id" if missing.
-                                      `#${row.id}`
-                                    : `#${row.id}`;
-                            // QuizRow doesn't carry full translations[], but the row itself
-                            // surfaces enough metadata for the picker UX.
+                            // title_kz comes straight from the QuizTranslation join on the
+                            // list row; it is null only when the quiz has no KZ translation
+                            // at all, and then "#id" is the honest thing to show.
+                            const title = row.title_kz ?? `#${row.id}`;
                             return (
                                 <div
                                     key={row.id}
@@ -148,7 +143,7 @@ export function AddQuizToBadgeDialog({
                                     <div className='min-w-0 flex-1 space-y-0.5'>
                                         <div className='flex items-center gap-2'>
                                             <span className='truncate font-medium'>
-                                                {ruTitle}
+                                                {title}
                                             </span>
                                             <Badge
                                                 variant='outline'

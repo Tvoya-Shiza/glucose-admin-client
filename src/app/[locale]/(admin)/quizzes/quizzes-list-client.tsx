@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { Award, ClipboardList, FolderTree } from 'lucide-react';
+import { Award, ClipboardList, FolderTree, Tags } from 'lucide-react';
 import { EmptyState } from '@/components/admin/empty-state';
 import { PageHeader } from '@/components/admin/page-header';
 import { PageShell } from '@/components/admin/page-shell';
@@ -175,6 +175,13 @@ export function QuizzesListClient() {
                                 <Link href={`/${locale}/quizzes/categories`}>
                                     <FolderTree className='mr-2 h-4 w-4' />
                                     {t('categories_page_title')}
+                                </Link>
+                            </Button>
+                            {/* Рядом с «Категориялар» и «Байқау», как просил заказчик. */}
+                            <Button asChild variant='outline' size='sm'>
+                                <Link href={`/${locale}/quizzes/topics`}>
+                                    <Tags className='mr-2 h-4 w-4' />
+                                    {t('topics_page_title')}
                                 </Link>
                             </Button>
                             <Button asChild variant='outline' size='sm'>

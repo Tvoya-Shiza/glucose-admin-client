@@ -12,9 +12,13 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { DryRunDialog } from '@/components/users/dry-run-dialog';
 import { useBulkSelection } from '@/hooks/use-bulk-selection';
 import { useDryRunPreview } from '@/hooks/use-dry-run-preview';
-import { bulkAddMembers } from '@/lib/groups/api';
+import { bulkAddMembers, listMemberCandidates } from '@/lib/groups/api';
 import { listUsers } from '@/lib/users/api';
 import type { UserRow } from '@/lib/users/types';
+import { STUDENT_ROLE_NAMES } from '@shared/roles';
+
+/** Mirrors MIN_QUERY_LENGTH in admin-api's member-candidates.dto.ts. */
+const CANDIDATE_MIN_QUERY = 3;
 
 export interface BulkAddMembersSheetProps {
     open: boolean;
@@ -77,23 +81,64 @@ export function BulkAddMembersSheet({ open, onOpenChange, groupId }: BulkAddMemb
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
+    // Two data sources, deliberately. Browsing (empty search) lists users through the
+    // usual scoped endpoint. Searching switches to member-candidates, which skips the
+    // user scope — a curator only ever sees people already in their own streams, so
+    // without it the person they are trying to add is unfindable by construction.
+    const searchTerm = search.trim();
+    const isSearching = searchTerm.length >= CANDIDATE_MIN_QUERY;
+
     const usersQuery = useQuery({
-        queryKey: ['admin.users.picker', groupId, page, page_size, search],
+        queryKey: ['admin.users.picker', groupId, page, page_size],
         queryFn: () =>
             listUsers({
                 page,
                 page_size,
-                role_name: 'user',
-                status: 'active',
-                q: search || undefined,
+                // Both student role names, and no status filter: users created by the
+                // admin import land as role 'student' + status 'pending', so the old
+                // `role_name: 'user'` + `status: 'active'` pair excluded them twice —
+                // exactly the people a curator is trying to add to a stream.
+                role_names: [...STUDENT_ROLE_NAMES],
                 sort: 'created_at',
                 order: 'desc',
             }),
-        enabled: open, // do not preload; only when sheet is open
+        enabled: open && !isSearching,
     });
 
-    const rows: UserRow[] = usersQuery.data?.rows ?? [];
-    const idRows = rows.map((r) => ({ id: r.id }));
+    const candidatesQuery = useQuery({
+        queryKey: ['admin.groups.member-candidates', groupId, searchTerm],
+        queryFn: () => listMemberCandidates(groupId, searchTerm, page_size),
+        enabled: open && isSearching,
+    });
+
+    const isLoading = isSearching ? candidatesQuery.isLoading : usersQuery.isLoading;
+
+    /** Both sources normalized to what the table actually renders. */
+    interface PickerRow {
+        id: number;
+        full_name: string | null;
+        /** Email when browsing, masked phone tail when searching. */
+        hint: string;
+        /** Already a member — shown, but not selectable. */
+        inGroup: boolean;
+    }
+
+    const rows: PickerRow[] = isSearching
+        ? (candidatesQuery.data?.rows ?? []).map((c) => ({
+              id: c.user_id,
+              full_name: c.full_name,
+              hint: c.mobile_tail ? `···${c.mobile_tail}` : '—',
+              inGroup: c.in_this_group,
+          }))
+        : (usersQuery.data?.rows ?? []).map((u: UserRow) => ({
+              id: u.id,
+              full_name: u.full_name,
+              hint: u.email ?? '—',
+              inGroup: false,
+          }));
+
+    // Rows already in the group must not be bulk-selected by "select page".
+    const idRows = rows.filter((r) => !r.inGroup).map((r) => ({ id: r.id }));
     const isPageAllSelected = pickSelection.isPageAllSelected(idRows);
     const selectedUserIds = Array.from(pickSelection.selected);
 
@@ -162,6 +207,7 @@ export function BulkAddMembersSheet({ open, onOpenChange, groupId }: BulkAddMemb
                                 }}
                                 placeholder={tUsers('search_placeholder')}
                             />
+                            <p className='text-muted-foreground text-xs'>{t('search_hint')}</p>
                         </div>
 
                         <div className='max-h-72 overflow-auto rounded-md border'>
@@ -178,11 +224,13 @@ export function BulkAddMembersSheet({ open, onOpenChange, groupId }: BulkAddMemb
                                             />
                                         </th>
                                         <th className='p-2 text-left'>{tUsers('col_name')}</th>
-                                        <th className='p-2 text-left'>{tUsers('col_email')}</th>
+                                        <th className='p-2 text-left'>
+                                            {isSearching ? t('col_phone_tail') : tUsers('col_email')}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {usersQuery.isLoading ? (
+                                    {isLoading ? (
                                         <tr>
                                             <td colSpan={3} className='p-4 text-muted-foreground'>
                                                 {tUsers('loading')}
@@ -200,16 +248,22 @@ export function BulkAddMembersSheet({ open, onOpenChange, groupId }: BulkAddMemb
                                                 <td className='p-2'>
                                                     <Checkbox
                                                         checked={pickSelection.isSelected(r.id)}
+                                                        disabled={r.inGroup}
                                                         onCheckedChange={() =>
                                                             pickSelection.toggle(r.id)
                                                         }
                                                         aria-label={`select ${r.id}`}
                                                     />
                                                 </td>
-                                                <td className='p-2'>{r.full_name ?? '—'}</td>
-                                                <td className='p-2 text-muted-foreground'>
-                                                    {r.email ?? '—'}
+                                                <td className='p-2'>
+                                                    {r.full_name ?? '—'}
+                                                    {r.inGroup ? (
+                                                        <span className='text-muted-foreground ml-2 text-xs'>
+                                                            {t('already_member')}
+                                                        </span>
+                                                    ) : null}
                                                 </td>
+                                                <td className='p-2 text-muted-foreground'>{r.hint}</td>
                                             </tr>
                                         ))
                                     )}
@@ -218,27 +272,38 @@ export function BulkAddMembersSheet({ open, onOpenChange, groupId }: BulkAddMemb
                         </div>
 
                         <div className='flex items-center justify-between'>
-                            <div className='flex items-center gap-2'>
-                                <Button
-                                    variant='outline'
-                                    size='sm'
-                                    disabled={page <= 1}
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                >
-                                    ‹
-                                </Button>
-                                <span className='text-xs text-muted-foreground'>
-                                    {page} / {Math.max(1, Math.ceil((usersQuery.data?.total ?? 0) / page_size))}
-                                </span>
-                                <Button
-                                    variant='outline'
-                                    size='sm'
-                                    disabled={page * page_size >= (usersQuery.data?.total ?? 0)}
-                                    onClick={() => setPage((p) => p + 1)}
-                                >
-                                    ›
-                                </Button>
-                            </div>
+                            {/* Search returns a single capped page — paging it would imply
+                                a total the server deliberately does not paginate. */}
+                            {isSearching ? (
+                                <div className='text-muted-foreground text-xs'>
+                                    {t('candidates_found', {
+                                        shown: rows.length,
+                                        total: candidatesQuery.data?.total ?? rows.length,
+                                    })}
+                                </div>
+                            ) : (
+                                <div className='flex items-center gap-2'>
+                                    <Button
+                                        variant='outline'
+                                        size='sm'
+                                        disabled={page <= 1}
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    >
+                                        ‹
+                                    </Button>
+                                    <span className='text-xs text-muted-foreground'>
+                                        {page} / {Math.max(1, Math.ceil((usersQuery.data?.total ?? 0) / page_size))}
+                                    </span>
+                                    <Button
+                                        variant='outline'
+                                        size='sm'
+                                        disabled={page * page_size >= (usersQuery.data?.total ?? 0)}
+                                        onClick={() => setPage((p) => p + 1)}
+                                    >
+                                        ›
+                                    </Button>
+                                </div>
+                            )}
                             <div className='text-xs text-muted-foreground'>
                                 {tUsers('bulk_selected', { count: selectedUserIds.length })}
                             </div>

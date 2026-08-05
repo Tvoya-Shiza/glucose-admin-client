@@ -514,3 +514,36 @@ export async function updateCreditResultTexts(ranges: CreditResultTextRange[]): 
     if (Array.isArray(data)) return data;
     return data?.ranges ?? ranges;
 }
+
+/**
+ * Пауза сессии (phase-50). Таймер у ученика замирает, `ends_at` сдвинется
+ * вперёд при возобновлении ровно на длительность простоя.
+ */
+export async function pauseCreditSession(id: string): Promise<CreditSessionDetail> {
+    const res = await fetchWithRefresh(`${CREDIT_SESSIONS_API_BASE}/${encodeURIComponent(id)}/pause`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+    });
+    if (!res.ok) return throwApiError(res, `pauseCreditSession failed: ${res.status}`);
+    return unwrapSession(await res.json());
+}
+
+export async function resumeCreditSession(id: string): Promise<CreditSessionDetail> {
+    const res = await fetchWithRefresh(`${CREDIT_SESSIONS_API_BASE}/${encodeURIComponent(id)}/resume`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+    });
+    if (!res.ok) return throwApiError(res, `resumeCreditSession failed: ${res.status}`);
+    return unwrapSession(await res.json());
+}
+
+/** Продление времени. Только вперёд: рывок таймера назад читается как поломка. */
+export async function extendCreditSession(id: string, seconds: number): Promise<CreditSessionDetail> {
+    const res = await fetchWithRefresh(`${CREDIT_SESSIONS_API_BASE}/${encodeURIComponent(id)}/extend`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ seconds }),
+    });
+    if (!res.ok) return throwApiError(res, `extendCreditSession failed: ${res.status}`);
+    return unwrapSession(await res.json());
+}

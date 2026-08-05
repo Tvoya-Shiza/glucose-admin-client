@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { ArrowRight, Flag, Play, UserRound } from 'lucide-react';
+import { ArrowRight, Flag, Pause, Play, TimerReset, UserRound } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { usePermission } from '@/lib/access/use-permission';
 import {
     CreditApiError,
+    extendCreditSession,
     finishCreditSession,
     getCreditSession,
     markCreditSessionQuestion,
+    pauseCreditSession,
+    resumeCreditSession,
     setCreditSessionCurrent,
     startCreditSession,
 } from '@/lib/credits/api';
@@ -56,6 +59,10 @@ function nextUnmarkedPosition(questions: CreditSessionQuestionDetail[], fromPos:
  * Mutation responses carry the FULL fresh session detail → setQueryData
  * (contract decision); 409 session_expired/session_finished → toast + refetch.
  */
+/** Шаг продления одним нажатием. Диалог с вводом числа посреди устного зачёта
+ *  куратор не откроет — ему нужно смотреть на ученика, а не на форму. */
+const EXTEND_STEP_SEC = 5 * 60;
+
 export function SessionConsole({
     sessionId,
     creditId,
@@ -135,6 +142,24 @@ export function SessionConsole({
         onError: onMutationError,
     });
 
+    const pauseMutation = useMutation({
+        mutationFn: () => pauseCreditSession(sessionId),
+        onSuccess: applySession,
+        onError: onMutationError,
+    });
+
+    const resumeMutation = useMutation({
+        mutationFn: () => resumeCreditSession(sessionId),
+        onSuccess: applySession,
+        onError: onMutationError,
+    });
+
+    const extendMutation = useMutation({
+        mutationFn: (seconds: number) => extendCreditSession(sessionId, seconds),
+        onSuccess: applySession,
+        onError: onMutationError,
+    });
+
     const finishMutation = useMutation({
         mutationFn: () => finishCreditSession(sessionId),
         onSuccess: (session) => {
@@ -166,7 +191,13 @@ export function SessionConsole({
         );
     }
 
-    const busy = markMutation.isPending || currentMutation.isPending || finishMutation.isPending;
+    const busy =
+        markMutation.isPending ||
+        currentMutation.isPending ||
+        finishMutation.isPending ||
+        pauseMutation.isPending ||
+        resumeMutation.isPending ||
+        extendMutation.isPending;
     const unmarkedCount = data.questions.filter((q) => q.mark === 'pending').length;
 
     // ── pending ──────────────────────────────────────────────────────────────
@@ -200,7 +231,8 @@ export function SessionConsole({
     }
 
     // ── in_progress ──────────────────────────────────────────────────────────
-    if (data.status === 'in_progress') {
+    if (data.status === 'in_progress' || data.status === 'paused') {
+        const isPaused = data.status === 'paused';
         const currentQuestion = data.questions.find((q) => q.position === data.current_position) ?? data.questions[0] ?? null;
         return (
             <div className='space-y-4'>
@@ -210,15 +242,49 @@ export function SessionConsole({
                         <Badge variant='outline'>{t('attempt_label', { n: data.attempt_number })}</Badge>
                     </div>
                     <div className='flex items-center gap-2'>
-                        <SessionTimer remainingSec={data.remaining_sec} dataUpdatedAt={dataUpdatedAt} />
+                        {/* На паузе таймер не тикает: сервер отдаёт остаток, замерший
+                            на моменте паузы, и dataUpdatedAt его не сдвигает. */}
+                        <SessionTimer
+                            remainingSec={data.remaining_sec}
+                            dataUpdatedAt={isPaused ? 0 : dataUpdatedAt}
+                        />
                         {canConduct ? (
-                            <Button variant='destructive' onClick={() => setFinishOpen(true)} disabled={busy}>
-                                <Flag className='mr-2 h-4 w-4' />
-                                {t('finish_action')}
-                            </Button>
+                            <>
+                                <Button
+                                    variant='outline'
+                                    onClick={() => extendMutation.mutate(EXTEND_STEP_SEC)}
+                                    disabled={busy || data.remaining_sec == null}
+                                    title={t('extend_hint', { minutes: EXTEND_STEP_SEC / 60 })}
+                                >
+                                    <TimerReset className='mr-2 h-4 w-4' />
+                                    {t('extend_action', { minutes: EXTEND_STEP_SEC / 60 })}
+                                </Button>
+                                {isPaused ? (
+                                    <Button onClick={() => resumeMutation.mutate()} disabled={busy}>
+                                        <Play className='mr-2 h-4 w-4' />
+                                        {t('resume_action')}
+                                    </Button>
+                                ) : (
+                                    <Button variant='outline' onClick={() => pauseMutation.mutate()} disabled={busy}>
+                                        <Pause className='mr-2 h-4 w-4' />
+                                        {t('pause_action')}
+                                    </Button>
+                                )}
+                                <Button variant='destructive' onClick={() => setFinishOpen(true)} disabled={busy}>
+                                    <Flag className='mr-2 h-4 w-4' />
+                                    {t('finish_action')}
+                                </Button>
+                            </>
                         ) : null}
                     </div>
                 </div>
+
+                {isPaused ? (
+                    <Alert>
+                        <Pause className='h-4 w-4' />
+                        <AlertDescription>{t('paused_notice')}</AlertDescription>
+                    </Alert>
+                ) : null}
 
                 <SessionProgressStrip
                     questions={data.questions}
