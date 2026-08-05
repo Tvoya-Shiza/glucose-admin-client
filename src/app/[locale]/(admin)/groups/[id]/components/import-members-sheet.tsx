@@ -23,6 +23,7 @@ import {
 } from '@/lib/groups/excel-import';
 import { listUsers } from '@/lib/users/api';
 import type { UserRow } from '@/lib/users/types';
+import { STUDENT_ROLE_NAMES } from '@shared/roles';
 
 export interface ImportMembersSheetProps {
     open: boolean;
@@ -522,7 +523,16 @@ function ManualSearch({
     const query = useQuery({
         queryKey: ['admin.groups.import.search', q],
         queryFn: () =>
-            listUsers({ page: 1, page_size: 8, role_name: 'user', q: q.trim(), sort: 'created_at', order: 'desc' }),
+            // role_names, not role_name: imported students carry 'student'. See the
+            // note on STUDENT_ROLE_NAMES — filtering on one name hides half the roster.
+            listUsers({
+                page: 1,
+                page_size: 8,
+                role_names: [...STUDENT_ROLE_NAMES],
+                q: q.trim(),
+                sort: 'created_at',
+                order: 'desc',
+            }),
         enabled,
     });
     const rows: UserRow[] = query.data?.rows ?? [];

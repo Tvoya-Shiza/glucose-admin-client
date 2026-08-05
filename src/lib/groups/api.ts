@@ -8,6 +8,7 @@ import type {
     GroupDetail,
     GroupListResponse,
     ListGroupsQuery,
+    MemberCandidatesResult,
     MemberListResponse,
     MemberProgressResponse,
     ResolveMembersResult,
@@ -196,6 +197,30 @@ export async function resolveMembers(
     if (!res.ok) {
         const json = await res.json().catch(() => ({}) as Record<string, unknown>);
         const msg = (json as { message?: string })?.message ?? `resolveMembers failed: ${res.status}`;
+        throw new Error(msg);
+    }
+    return res.json();
+}
+
+/**
+ * Поиск учеников для добавления в поток (GRP-08).
+ *
+ * Отдельно от `listUsers`, потому что тот сужен скоупом до людей, уже
+ * состоящих в потоках куратора, — нового ученика он не покажет никогда.
+ * Сервер требует запрос от трёх символов; вызывать с более коротким не нужно.
+ */
+export async function listMemberCandidates(
+    id: number | string,
+    q: string,
+    limit = 20,
+): Promise<MemberCandidatesResult> {
+    const usp = new URLSearchParams({ q, limit: String(limit) });
+    const res = await fetchWithRefresh(
+        `${BASE}/${encodeURIComponent(String(id))}/member-candidates?${usp.toString()}`,
+    );
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        const msg = (json as { message?: string })?.message ?? `listMemberCandidates failed: ${res.status}`;
         throw new Error(msg);
     }
     return res.json();
