@@ -164,6 +164,10 @@ export interface QuestionDetail {
     id: number;
     type: QuizQuestionType;
     grade: number;
+    /** Тема из справочника (phase-51). null — вопрос без темы. */
+    topic_id: number | null;
+    /** Название темы — чтобы форма не ждала загрузки всего справочника. */
+    topic_name: string | null;
     image: string | null;
     video: string | null;
     answer_video_url: string | null;
@@ -309,6 +313,8 @@ export interface UpsertQuestion {
     translations: UpsertQuestionTranslation[];
     /** Force-confirm JWT — only required on destructive edits with open attempts. */
     force_confirm_token?: string;
+    /** Тема из справочника (phase-51); null — без темы. */
+    topic_id?: number | null;
 }
 
 export interface UpsertAnswerTranslation {
@@ -715,4 +721,48 @@ export interface QuizResultGradingDetail {
 
 export interface GradeAnswerPayload {
     verdict: 'correct' | 'incorrect';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Справочник тем (phase-51) — mirrors admin-api quiz-topic.dto.ts
+// ──────────────────────────────────────────────────────────────────────────────
+
+export type QuizTopicStatus = 'active' | 'archived';
+
+export interface QuizTopicNode {
+    id: number;
+    parent_id: number | null;
+    name: string;
+    position: number;
+    status: QuizTopicStatus;
+    /** Сколько вопросов помечено темой — виден её вес перед удалением. */
+    question_count: number;
+    child_count: number;
+}
+
+export interface CreateQuizTopic {
+    parent_id?: number | null;
+    name: string;
+    position?: number;
+}
+
+export interface UpdateQuizTopic {
+    name?: string;
+    parent_id?: number | null;
+    position?: number;
+    status?: QuizTopicStatus;
+}
+
+/** Строка разбора результата по темам (phase-51). */
+export interface QuizTopicBreakdownRow {
+    /** null — сборная строка «без темы». */
+    topic_id: number | null;
+    topic_name: string | null;
+    question_count: number;
+    correct_count: number;
+    /** Ждут ручной проверки: процент по ним ещё изменится. */
+    pending_count: number;
+    score: number;
+    max_score: number;
+    percent: number;
 }
