@@ -330,8 +330,10 @@ export interface UpsertAnswer {
 export interface QuestionImportRow {
     /** Russian sheet name the row came from. */
     sheet: string;
-    /** Real spreadsheet row number (1-based). */
+    /** Real spreadsheet row number (1-based) — one more than «№» because of the header. */
     row: number;
+    /** The operator's own «№» value; null when the column was left empty. */
+    seq: number | null;
     type: QuizQuestionType;
     title: string;
     status: 'ok' | 'error';
