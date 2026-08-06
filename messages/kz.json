@@ -1520,7 +1520,11 @@
             "question_topic_label": "Тақырып",
             "question_topic_none": "— тақырыпсыз —",
             "col_topic": "Тақырып",
-            "import_topic_unmatched": "Тақырып анықтамалықтан табылмады — сұрақ тақырыпсыз жүктелді"
+            "import_topic_unmatched": "Тақырып анықтамалықтан табылмады — сұрақ тақырыпсыз жүктелді",
+            "question_subtopic_label": "Ішкі тақырып",
+            "question_subtopic_all": "— бүкіл тақырып —",
+            "question_subtopic_pick_parent": "Алдымен тақырыпты таңдаңыз",
+            "question_subtopic_none_available": "Ішкі тақырыптар жоқ"
         },
         "stories": {
             "title": "Әңгімелер",

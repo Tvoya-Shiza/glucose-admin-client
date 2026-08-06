@@ -24,6 +24,13 @@ import {
 } from '@/components/ui/select';
 import { MathInput } from '@/components/ui/math-input';
 import { ForceConfirmRequiredError, listQuestions, listQuizTopics, upsertQuestion } from '@/lib/quizzes/api';
+import {
+    TOPIC_NONE,
+    childTopicsOf,
+    resolveTopicId,
+    rootTopicsOf,
+    seedTopicSelection,
+} from '@/lib/quizzes/topic-selection';
 import type {
     QuestionDetail,
     QuizQuestionType,
@@ -80,9 +87,6 @@ const QUESTION_TYPES: QuizQuestionType[] = ['single', 'multiple', 'descriptive',
  * сузить список, чтобы методист не завёл вопрос, который нигде не появится.
  */
 
-/** Значение селекта «без темы»: пустая строка в shadcn Select недопустима. */
-const TOPIC_NONE = '__none__';
-
 export function UpsertQuestionDialog({
     quizId,
     open,
@@ -125,7 +129,12 @@ export function UpsertQuestionDialog({
     const [grade, setGrade] = useState<string>(String(question?.grade ?? 1));
     // Тема (phase-51): нужна ради разбора результата по темам. Необязательна —
     // все существующие вопросы созданы без неё.
-    const [topicId, setTopicId] = useState<string>(question?.topic_id == null ? TOPIC_NONE : String(question.topic_id));
+    //
+    // Справочник иерархический, поэтому выбор разделён на два поля. В базу
+    // уходит ОДИН `topic_id` — самый конкретный из выбранных: подтема, если
+    // она указана, иначе родительская тема.
+    const [parentTopicId, setParentTopicId] = useState<string>(TOPIC_NONE);
+    const [childTopicId, setChildTopicId] = useState<string>(TOPIC_NONE);
     const [imageUrl, setImageUrl] = useState<string | null>(question?.image ?? null);
     const [videoUrl, setVideoUrl] = useState<string>(question?.video ?? '');
     const [answerVideoUrl, setAnswerVideoUrl] = useState<string>(question?.answer_video_url ?? '');
@@ -151,7 +160,9 @@ export function UpsertQuestionDialog({
         setCreatedQuestion(null);
         setType(question?.type ?? 'single');
         setGrade(String(question?.grade ?? 1));
-        setTopicId(question?.topic_id == null ? TOPIC_NONE : String(question.topic_id));
+        const seeded = seedTopicSelection(question?.topic_id ?? null, topicsQuery.data ?? []);
+        setParentTopicId(seeded.parent);
+        setChildTopicId(seeded.child);
         setImageUrl(question?.image ?? null);
         setVideoUrl(question?.video ?? '');
         setAnswerVideoUrl(question?.answer_video_url ?? '');
@@ -162,7 +173,20 @@ export function UpsertQuestionDialog({
         setPendingPayload(null);
         setPendingToken(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, question?.id]);
+    }, [open, question?.id, topicsQuery.data]);
+
+    const allTopics = topicsQuery.data ?? [];
+    const rootTopics = rootTopicsOf(allTopics);
+    const childTopics = childTopicsOf(allTopics, parentTopicId);
+
+    /**
+     * Смена родительской темы сбрасывает подтему: оставить прежнюю значило бы
+     * сохранить вопрос в подтему, которая новому родителю не принадлежит.
+     */
+    const onParentTopicChange = (next: string) => {
+        setParentTopicId(next);
+        setChildTopicId(TOPIC_NONE);
+    };
 
     const buildPayload = (): UpsertQuestion | null => {
         const gradeNum = Number(grade);
@@ -177,7 +201,7 @@ export function UpsertQuestionDialog({
         return {
             id: effectiveQuestion?.id,
             grade: gradeNum,
-            topic_id: topicId === TOPIC_NONE ? null : Number(topicId),
+            topic_id: resolveTopicId(parentTopicId, childTopicId),
             type,
             image: imageUrl ?? null,
             video: videoUrl.trim().length > 0 ? videoUrl.trim() : null,
@@ -298,23 +322,62 @@ export function UpsertQuestionDialog({
                         </div>
 
                         {/* Тема из справочника: по ней собирается разбор результата.
-                            Отдельной строкой, а не в ряду с типом и баллом — название
-                            темы длинное и в половину ширины не читается. */}
-                        <div className='space-y-1.5'>
-                            <Label>{t('question_topic_label')}</Label>
-                            <Select value={topicId} onValueChange={setTopicId}>
-                                <SelectTrigger className='w-full'>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={TOPIC_NONE}>{t('question_topic_none')}</SelectItem>
-                                    {(topicsQuery.data ?? []).map((topic) => (
-                                        <SelectItem key={topic.id} value={String(topic.id)}>
-                                            {topic.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            Два поля, а не одно: справочник иерархический, и плоский
+                            список сваливал «Ботанику» и её подтемы в одну кучу —
+                            по нему нельзя было понять, что чему принадлежит.
+                            Отдельной строкой от типа и балла: названия тем длинные
+                            и в половину ширины не читаются. */}
+                        <div className='grid gap-3 sm:grid-cols-2'>
+                            <div className='space-y-1.5'>
+                                <Label>{t('question_topic_label')}</Label>
+                                <Select value={parentTopicId} onValueChange={onParentTopicChange}>
+                                    <SelectTrigger className='w-full'>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={TOPIC_NONE}>{t('question_topic_none')}</SelectItem>
+                                        {rootTopics.map((topic) => (
+                                            <SelectItem key={topic.id} value={String(topic.id)}>
+                                                {topic.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className='space-y-1.5'>
+                                <Label>{t('question_subtopic_label')}</Label>
+                                <Select
+                                    value={childTopicId}
+                                    onValueChange={setChildTopicId}
+                                    disabled={childTopics.length === 0}
+                                >
+                                    <SelectTrigger className='w-full'>
+                                        {/* Своя подпись вместо SelectValue: у пустого значения
+                                            SelectValue показывает пустоту, а нужно объяснить,
+                                            почему поле неактивно. */}
+                                        <span className={childTopicId === TOPIC_NONE ? 'text-muted-foreground' : ''}>
+                                            {childTopicId === TOPIC_NONE
+                                                ? parentTopicId === TOPIC_NONE
+                                                    ? t('question_subtopic_pick_parent')
+                                                    : childTopics.length === 0
+                                                      ? t('question_subtopic_none_available')
+                                                      : t('question_subtopic_all')
+                                                : (childTopics.find((x) => String(x.id) === childTopicId)?.name ?? '')}
+                                        </span>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {/* «Вся тема целиком» — вопрос относится к родителю,
+                                            а не к какой-то одной подтеме. */}
+                                        <SelectItem value={TOPIC_NONE}>{t('question_subtopic_all')}</SelectItem>
+                                        {childTopics.map((topic) => (
+                                            <SelectItem key={topic.id} value={String(topic.id)}>
+                                                {topic.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
                         {/* Image uploader (question-level, optional) */}
