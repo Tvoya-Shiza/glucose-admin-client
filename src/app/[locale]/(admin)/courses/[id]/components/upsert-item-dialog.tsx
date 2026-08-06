@@ -60,6 +60,11 @@ export interface UpsertItemDialogProps {
     onOpenChange: (open: boolean) => void;
     /** When present, dialog is in edit mode. */
     item?: ChapterItem | null;
+    /**
+     * Вставить созданный элемент сразу после этого (кнопка «+» у строки).
+     * В режиме правки не используется.
+     */
+    afterItemId?: number;
 }
 
 /**
@@ -86,7 +91,7 @@ export interface UpsertItemDialogProps {
  * sanitize-html.ts). The admin-api ALSO sanitizes server-side (sanitize-html-server.ts)
  * as the final gate (T-05-30 — defense in depth).
  */
-export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item }: UpsertItemDialogProps) {
+export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item, afterItemId }: UpsertItemDialogProps) {
     const t = useTranslations('admin.courses');
     const qc = useQueryClient();
     const isEdit = !!item;
@@ -172,6 +177,8 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
                 const base: UpsertItemPayload = {
                     id: item?.id,
                     chapter_id: chapterId,
+                    // Только на создание: при правке порядок трогать нельзя.
+                    after_item_id: item ? undefined : afterItemId,
                     type: 'file' as ChapterItemType,
                     item_id: item?.file?.id ?? 0,
                     accessibility,
@@ -215,6 +222,7 @@ export function UpsertItemDialog({ courseId, chapterId, open, onOpenChange, item
             return upsertItem(courseId, {
                 id: item?.id,
                 chapter_id: chapterId,
+                after_item_id: item ? undefined : afterItemId,
                 type,
                 item_id: fkNumeric,
                 is_required: isRequired,

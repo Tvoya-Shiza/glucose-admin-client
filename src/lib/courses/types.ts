@@ -391,6 +391,11 @@ export interface UpsertItemPayload {
      *  the (file_url, file_type, volume, storage) bundle below. */
     item_id: number;
     order?: number;
+    /**
+     * Вставить новый элемент сразу ПОСЛЕ указанного (кнопка «+» у строки).
+     * Порядок и сдвиг соседей считает сервер. Только на создание.
+     */
+    after_item_id?: number;
     /** Only honored when type='file' (maps to FileTranslations). Ignored otherwise. */
     translations?: Translation[];
     /**

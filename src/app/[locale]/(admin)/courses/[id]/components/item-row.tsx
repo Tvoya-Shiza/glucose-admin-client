@@ -5,7 +5,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, BookOpen, Image as ImageIcon, Video as VideoIcon, ClipboardList, FilePen, Pencil, Trash } from 'lucide-react';
+import {
+    GripVertical,
+    BookOpen,
+    Image as ImageIcon,
+    Video as VideoIcon,
+    ClipboardList,
+    FilePen,
+    Pencil,
+    Plus,
+    Trash,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { deleteItem } from '@/lib/courses/api';
@@ -18,6 +28,10 @@ import { UpsertItemDialog } from './upsert-item-dialog';
  * Drag handle uses dnd-kit's `attributes`+`listeners` from useSortable. Body of
  * the row (title, edit, delete) is NOT inside the draggable region so click
  * events on action buttons don't initiate a drag.
+ *
+ * Кнопка «+» в строке создаёт новый элемент СРАЗУ ПОСЛЕ неё: сервер получает
+ * `after_item_id` и сам сдвигает соседей. Кнопка в шапке главы по-прежнему
+ * добавляет в конец.
  *
  * Type icon resolution:
  *   - type='file' + file.file_type startsWith 'image/' → ImageIcon
@@ -41,6 +55,9 @@ export function ItemRow({ courseId, chapterId, item }: ItemRowProps) {
     });
 
     const [editOpen, setEditOpen] = useState(false);
+    // Отдельное состояние, а не переиспользование editOpen: диалог должен
+    // открыться в режиме СОЗДАНИЯ, но со ссылкой на эту строку как на якорь.
+    const [insertOpen, setInsertOpen] = useState(false);
 
     const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
@@ -109,6 +126,16 @@ export function ItemRow({ courseId, chapterId, item }: ItemRowProps) {
                     {t('item_optional_badge')}
                 </span>
             ) : null}
+            <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => setInsertOpen(true)}
+                aria-label={t('insert_item_after')}
+                title={t('insert_item_after')}
+            >
+                <Plus className='h-4 w-4' />
+            </Button>
             <Button type='button' variant='ghost' size='sm' onClick={() => setEditOpen(true)} aria-label={t('edit')}>
                 <Pencil className='h-4 w-4' />
             </Button>
@@ -129,6 +156,15 @@ export function ItemRow({ courseId, chapterId, item }: ItemRowProps) {
                     item={item}
                     open={editOpen}
                     onOpenChange={setEditOpen}
+                />
+            ) : null}
+            {insertOpen ? (
+                <UpsertItemDialog
+                    courseId={courseId}
+                    chapterId={chapterId}
+                    afterItemId={item.id}
+                    open={insertOpen}
+                    onOpenChange={setInsertOpen}
                 />
             ) : null}
         </div>

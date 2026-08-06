@@ -745,6 +745,7 @@
             "item_already_linked": "басқа курсқа байланған",
             "save_item": "Элементті сақтау",
             "delete_item_confirm": "Бұл элементті жоюды растайсыз ба?",
+            "insert_item_after": "Кейін қосу",
             "delete_item_warning": "Байланысты файл базада қалады, элемент тараудан ғана айырылады.",
             "tiptap_bold": "Қалың",
             "tiptap_italic": "Көлбеу",
