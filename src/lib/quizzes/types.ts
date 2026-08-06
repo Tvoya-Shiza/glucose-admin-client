@@ -317,6 +317,11 @@ export interface UpsertQuestion {
     force_confirm_token?: string;
     /** Тема из справочника (phase-51); null — без темы. */
     topic_id?: number | null;
+    /**
+     * Контекст из справочника (phase-53); null — самостоятельный вопрос.
+     * Отсутствие поля сервер трактует как «не трогать».
+     */
+    passage_id?: number | null;
 }
 
 export interface UpsertAnswerTranslation {
@@ -773,4 +778,45 @@ export interface QuizTopicBreakdownRow {
     score: number;
     max_score: number;
     percent: number;
+}
+
+// ── Справочник контекстов (phase-53) ─────────────────────────────────────────
+
+/**
+ * Контекст — стимульный текст формата ҰБТ, общий для нескольких вопросов.
+ *
+ * Справочник глобальный: один контекст переиспользуется в разных тестах.
+ * `title` — внутренняя подпись для поиска, ученику она не уходит.
+ */
+export interface QuizPassage {
+    id: number;
+    title: string | null;
+    /** Tiptap HTML. */
+    body: string;
+    image: string | null;
+    /** Сколько вопросов привязано — виден вес перед удалением. */
+    question_count: number;
+    /** В скольких тестах используется. */
+    quiz_count: number;
+}
+
+export interface QuizPassageListResponse {
+    passages: QuizPassage[];
+    total: number;
+    page: number;
+    per_page: number;
+    pageCount: number;
+}
+
+export interface CreateQuizPassage {
+    title?: string | null;
+    /** Обязателен: контекст без текста бессмыслен. */
+    body: string;
+    image?: string | null;
+}
+
+export interface UpdateQuizPassage {
+    title?: string | null;
+    body?: string;
+    image?: string | null;
 }

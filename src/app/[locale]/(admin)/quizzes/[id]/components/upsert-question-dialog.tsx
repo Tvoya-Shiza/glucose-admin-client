@@ -23,7 +23,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { MathInput } from '@/components/ui/math-input';
-import { ForceConfirmRequiredError, listQuestions, listQuizTopics, upsertQuestion } from '@/lib/quizzes/api';
+import {
+    ForceConfirmRequiredError,
+    getQuizPassage,
+    listQuestions,
+    listQuizPassages,
+    listQuizTopics,
+    upsertQuestion,
+} from '@/lib/quizzes/api';
 import {
     TOPIC_NONE,
     childTopicsOf,
@@ -31,6 +38,9 @@ import {
     rootTopicsOf,
     seedTopicSelection,
 } from '@/lib/quizzes/topic-selection';
+
+/** «Без контекста». Пустая строка в Radix Select значением быть не может. */
+const PASSAGE_NONE = '__none__';
 import type {
     QuestionDetail,
     QuizQuestionType,
@@ -135,6 +145,39 @@ export function UpsertQuestionDialog({
     // она указана, иначе родительская тема.
     const [parentTopicId, setParentTopicId] = useState<string>(TOPIC_NONE);
     const [childTopicId, setChildTopicId] = useState<string>(TOPIC_NONE);
+
+    // Контекст (phase-53). Справочник глобальный и может быть большим, поэтому
+    // в выпадающем списке лежат только совпадения с поиском — плюс отдельно
+    // подтянутый выбранный, иначе он исчезал бы из списка при вводе запроса.
+    const [passageId, setPassageId] = useState<string>(PASSAGE_NONE);
+    const [passageQuery, setPassageQuery] = useState('');
+    const [passageQueryDebounced, setPassageQueryDebounced] = useState('');
+
+    useEffect(() => {
+        const id = setTimeout(() => setPassageQueryDebounced(passageQuery.trim()), 300);
+        return () => clearTimeout(id);
+    }, [passageQuery]);
+
+    const passagesQuery = useQuery({
+        queryKey: ['admin.quiz-passages.picker', passageQueryDebounced],
+        queryFn: () => listQuizPassages({ q: passageQueryDebounced, per_page: 20 }),
+        enabled: open,
+    });
+
+    // Выбранный контекст догружаем отдельно: при непустом поиске его может не
+    // быть в выдаче, и тогда Select показал бы пустоту вместо привязки.
+    const selectedPassageQuery = useQuery({
+        queryKey: ['admin.quiz-passages.detail', passageId],
+        queryFn: () => getQuizPassage(Number(passageId)),
+        enabled: open && passageId !== PASSAGE_NONE,
+    });
+
+    const passageOptions = (() => {
+        const rows = passagesQuery.data?.passages ?? [];
+        const selected = selectedPassageQuery.data;
+        if (!selected || rows.some((r) => r.id === selected.id)) return rows;
+        return [selected, ...rows];
+    })();
     const [imageUrl, setImageUrl] = useState<string | null>(question?.image ?? null);
     const [videoUrl, setVideoUrl] = useState<string>(question?.video ?? '');
     const [answerVideoUrl, setAnswerVideoUrl] = useState<string>(question?.answer_video_url ?? '');
@@ -163,6 +206,9 @@ export function UpsertQuestionDialog({
         const seeded = seedTopicSelection(question?.topic_id ?? null, topicsQuery.data ?? []);
         setParentTopicId(seeded.parent);
         setChildTopicId(seeded.child);
+        setPassageId(question?.passage_id == null ? PASSAGE_NONE : String(question.passage_id));
+        setPassageQuery('');
+        setPassageQueryDebounced('');
         setImageUrl(question?.image ?? null);
         setVideoUrl(question?.video ?? '');
         setAnswerVideoUrl(question?.answer_video_url ?? '');
@@ -202,6 +248,7 @@ export function UpsertQuestionDialog({
             id: effectiveQuestion?.id,
             grade: gradeNum,
             topic_id: resolveTopicId(parentTopicId, childTopicId),
+            passage_id: passageId === PASSAGE_NONE ? null : Number(passageId),
             type,
             image: imageUrl ?? null,
             video: videoUrl.trim().length > 0 ? videoUrl.trim() : null,
@@ -378,6 +425,33 @@ export function UpsertQuestionDialog({
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+
+                        {/* Контекст (phase-53) — стимульный текст над вопросом.
+                            Справочник глобальный и может быть большим, поэтому
+                            рядом стоит поиск по названию: список показывает
+                            совпадения, а не весь справочник целиком. */}
+                        <div className='space-y-1.5'>
+                            <Label>{t('question_passage_label')}</Label>
+                            <Input
+                                value={passageQuery}
+                                onChange={(e) => setPassageQuery(e.target.value)}
+                                placeholder={t('question_passage_search')}
+                                maxLength={255}
+                            />
+                            <Select value={passageId} onValueChange={setPassageId}>
+                                <SelectTrigger className='w-full'>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={PASSAGE_NONE}>{t('question_passage_none')}</SelectItem>
+                                    {passageOptions.map((row) => (
+                                        <SelectItem key={row.id} value={String(row.id)}>
+                                            {row.title || t('passage_untitled')}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Image uploader (question-level, optional) */}

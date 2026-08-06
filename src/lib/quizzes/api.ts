@@ -608,3 +608,59 @@ export async function deleteQuizTopic(id: number): Promise<void> {
     const res = await fetchWithRefresh(`${TOPICS_BASE}/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuizTopic failed: ${res.status}`));
 }
+
+// ── Справочник контекстов (phase-53) ─────────────────────────────────────────
+
+const PASSAGES_BASE = '/api/proxy/v1/admin/quiz-passages';
+
+export async function listQuizPassages(params: {
+    q?: string;
+    page?: number;
+    per_page?: number;
+} = {}): Promise<import('./types').QuizPassageListResponse> {
+    const qs = new URLSearchParams();
+    if (params.q?.trim()) qs.set('q', params.q.trim());
+    if (params.page) qs.set('page', String(params.page));
+    if (params.per_page) qs.set('per_page', String(params.per_page));
+    const suffix = qs.toString() ? `?${qs}` : '';
+    const res = await fetchWithRefresh(`${PASSAGES_BASE}${suffix}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `listQuizPassages failed: ${res.status}`));
+    return unwrapData<import('./types').QuizPassageListResponse>(await res.json());
+}
+
+export async function getQuizPassage(id: number): Promise<import('./types').QuizPassage> {
+    const res = await fetchWithRefresh(`${PASSAGES_BASE}/${id}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res, `getQuizPassage failed: ${res.status}`));
+    return unwrapData<{ passage: import('./types').QuizPassage }>(await res.json()).passage;
+}
+
+export async function createQuizPassage(
+    payload: import('./types').CreateQuizPassage,
+): Promise<import('./types').QuizPassage> {
+    const res = await fetchWithRefresh(PASSAGES_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `createQuizPassage failed: ${res.status}`));
+    return unwrapData<{ passage: import('./types').QuizPassage }>(await res.json()).passage;
+}
+
+export async function updateQuizPassage(
+    id: number,
+    payload: import('./types').UpdateQuizPassage,
+): Promise<import('./types').QuizPassage> {
+    const res = await fetchWithRefresh(`${PASSAGES_BASE}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `updateQuizPassage failed: ${res.status}`));
+    return unwrapData<{ passage: import('./types').QuizPassage }>(await res.json()).passage;
+}
+
+/** 409 `quizzes.passage_in_use`, пока к контексту привязан хоть один вопрос. */
+export async function deleteQuizPassage(id: number): Promise<void> {
+    const res = await fetchWithRefresh(`${PASSAGES_BASE}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuizPassage failed: ${res.status}`));
+}
