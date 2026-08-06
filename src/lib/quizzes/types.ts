@@ -168,6 +168,8 @@ export interface QuestionDetail {
     topic_id: number | null;
     /** Название темы — чтобы форма не ждала загрузки всего справочника. */
     topic_name: string | null;
+    /** Текстовый блок (phase-52). null — самостоятельный вопрос. */
+    passage_id: number | null;
     image: string | null;
     video: string | null;
     answer_video_url: string | null;
