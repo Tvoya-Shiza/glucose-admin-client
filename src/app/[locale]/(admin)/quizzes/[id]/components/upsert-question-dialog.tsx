@@ -399,19 +399,15 @@ export function UpsertQuestionDialog({
                                     onValueChange={setChildTopicId}
                                     disabled={childTopics.length === 0}
                                 >
+                                    {/* Внутри триггера обязан стоять именно SelectValue.
+                                        Radix выравнивает выпадающий список по этому узлу
+                                        (position='item-aligned' — умолчание нашего
+                                        SelectContent), и без него позиционирование не
+                                        отрабатывает: список открывается невидимым, а поле
+                                        выглядит «не нажимается». Здесь раньше стоял свой
+                                        <span> с пояснением — пояснение переехало под поле. */}
                                     <SelectTrigger className='w-full'>
-                                        {/* Своя подпись вместо SelectValue: у пустого значения
-                                            SelectValue показывает пустоту, а нужно объяснить,
-                                            почему поле неактивно. */}
-                                        <span className={childTopicId === TOPIC_NONE ? 'text-muted-foreground' : ''}>
-                                            {childTopicId === TOPIC_NONE
-                                                ? parentTopicId === TOPIC_NONE
-                                                    ? t('question_subtopic_pick_parent')
-                                                    : childTopics.length === 0
-                                                      ? t('question_subtopic_none_available')
-                                                      : t('question_subtopic_all')
-                                                : (childTopics.find((x) => String(x.id) === childTopicId)?.name ?? '')}
-                                        </span>
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {/* «Вся тема целиком» — вопрос относится к родителю,
@@ -424,6 +420,15 @@ export function UpsertQuestionDialog({
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {/* Пояснение, почему поле неактивно, — под полем, а не
+                                    вместо значения в триггере. */}
+                                {childTopics.length === 0 ? (
+                                    <p className='text-muted-foreground text-xs'>
+                                        {parentTopicId === TOPIC_NONE
+                                            ? t('question_subtopic_pick_parent')
+                                            : t('question_subtopic_none_available')}
+                                    </p>
+                                ) : null}
                             </div>
                         </div>
 
