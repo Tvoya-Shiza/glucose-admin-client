@@ -237,6 +237,21 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                                                 ref={field.ref}
                                                 name={field.name}
                                             />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            {/*
+                             * Отдельное поле, СОСЕД `pass_mark`, а не его потомок.
+                             *
+                             * До этого блок стоял внутри <FormControl> поля
+                             * `pass_mark` — то есть Slot получал двух детей вместо
+                             * одного и падал с «React.Children.only expected to
+                             * receive a single React element child», унося за собой
+                             * всю вкладку. TypeScript такое не ловит: дети JSX
+                             * любого количества типобезопасны, и сборка проходит.
+                             */}
                             <FormField
                                 control={form.control}
                                 name='pass_mark_type'
@@ -254,11 +269,6 @@ export function CreateQuizDialog({ open, onOpenChange }: CreateQuizDialogProps) 
                                                 <SelectItem value='points'>{t('pass_mark_type_points')}</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
