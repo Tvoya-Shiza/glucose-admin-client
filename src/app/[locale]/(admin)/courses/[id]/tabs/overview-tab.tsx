@@ -28,6 +28,7 @@ import { usePermission } from '@/lib/access/use-permission';
 import type { CourseDetail } from '@/lib/courses/types';
 import { CoverImageUploader } from '../components/cover-image-uploader';
 import { EditCourseForm } from '../components/edit-course-form';
+import { RichMathContent } from '@/components/ui/rich-math-content';
 
 export interface OverviewTabProps {
     course: CourseDetail;
@@ -255,11 +256,12 @@ export function OverviewTab({ course }: OverviewTabProps) {
                 </CardHeader>
                 <CardContent className='space-y-3'>
                     {kzTr?.description && kzTr.description.length > 0 ? (
-                        <div
+                        // RichMathContent держит разметку стабильной по ссылке —
+                        // иначе React 19 переписывает innerHTML на каждом рендере
+                        // и картинки внутри описания перекачиваются заново.
+                        <RichMathContent
                             className='prose prose-sm dark:prose-invert max-w-none'
-                            // The description is rich-text HTML from TiptapEditor, sanitized server-side.
-                            // eslint-disable-next-line react/no-danger
-                            dangerouslySetInnerHTML={{ __html: kzTr.description }}
+                            html={kzTr.description}
                         />
                     ) : (
                         <p className='text-muted-foreground text-sm italic'>{t('no_description_kz')}</p>

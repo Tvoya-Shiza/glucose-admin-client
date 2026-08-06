@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface RichMathContentProps {
@@ -19,6 +19,21 @@ interface RichMathContentProps {
  */
 export function RichMathContent({ html, className }: RichMathContentProps) {
     const ref = useRef<HTMLDivElement>(null);
+
+    /**
+     * Объект для `dangerouslySetInnerHTML` обязан быть стабильным по ссылке.
+     *
+     * React 19 сравнивает этот проп ПО ССЫЛКЕ и при несовпадении безусловно
+     * присваивает `innerHTML`, не глядя на содержимое. Литерал прямо в JSX
+     * создаётся заново на каждом рендере — значит разметка переписывалась
+     * всегда, а вместе с ней пересоздавались `<img>` внутри, и браузер слал
+     * новый запрос за картинкой. На вкладке вопросов теста это давало поток
+     * запросов за одной и той же картинкой и в итоге вешало вкладку.
+     *
+     * Ту же правку сделали на клиенте ученика (`shared/ui/rich-content.tsx`);
+     * здесь она осталась незакрытой, хотя жалоба была именно про админку.
+     */
+    const markup = useMemo(() => ({ __html: html }), [html]);
 
     useEffect(() => {
         if (!ref.current || !html) return;
@@ -46,7 +61,7 @@ export function RichMathContent({ html, className }: RichMathContentProps) {
                 '[&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto',
                 className
             )}
-            dangerouslySetInnerHTML={{ __html: html }}
+            dangerouslySetInnerHTML={markup}
         />
     );
 }
