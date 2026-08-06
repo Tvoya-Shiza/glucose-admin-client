@@ -11,6 +11,19 @@ export function generateStaticParams() {
     return routing.locales.map((locale) => ({ locale }));
 }
 
+/**
+ * Локаль в адресах у нас `kz`, но это НЕ код языка: по BCP-47 казахский — `kk`.
+ * С неизвестным тегом браузер не верит разметке и определяет язык сам по
+ * содержимому — а дальше предлагает или сразу включает перевод.
+ */
+const HTML_LANG: Record<string, string> = { kz: 'kk', ru: 'ru' };
+
+export const metadata = {
+    // Дублируем запрет перевода мета-тегом: атрибут translate понимают не все
+    // движки перевода, этот тег — понимают.
+    other: { google: 'notranslate' },
+};
+
 export default async function LocaleLayout({
     children,
     params,
@@ -26,7 +39,21 @@ export default async function LocaleLayout({
     const messages = await getMessages();
 
     return (
-        <html lang={locale}>
+        /*
+         * translate="no" — не косметика, а защита от падения всей вкладки.
+         *
+         * Встроенный переводчик Chrome и Edge заменяет каждый текстовый узел на
+         * <font>…</font>. React 19 держит ссылки на прежние узлы, и при первой
+         * же перерисовке падает с «React.Children.only expected to receive a
+         * single React element child», после чего вкладка уходит в цикл и
+         * браузер показывает «This page couldn't load».
+         *
+         * Ловушка срабатывала у методистов с русским интерфейсом браузера:
+         * админка на казахском, значит Edge считает её иноязычной и переводит.
+         * Режим InPrivate не спасает — перевод это функция браузера, а не
+         * расширение. Воспроизведено на проде 06.08.2026.
+         */
+        <html lang={HTML_LANG[locale] ?? locale} translate="no" className="notranslate">
             {/*
              * suppressHydrationWarning только на body: расширения вроде Grammarly
              * дописывают сюда свои data-атрибуты между рендером сервера и
