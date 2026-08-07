@@ -45,10 +45,13 @@ export interface StoryRow {
 }
 
 export interface StoryDetail extends StoryRow {
-    enable_comment: boolean;
     link_type: string | null;
     page_type: string | null;
     link: string | null;
+    /** Показывать ли кнопку перехода (phase-54). Куда ведёт — `link`. */
+    show_more_button: boolean;
+    /** Длительность показа видео в секундах; null — не задано. */
+    video_duration: number | null;
     translations: StoryTranslationRow[];
 }
 
@@ -68,6 +71,10 @@ export interface StoryUpsertInput {
     link_type?: string | null;
     page_type?: string | null;
     link?: string | null;
+    /** Показывать ли кнопку перехода (phase-54). Куда ведёт — `link`. */
+    show_more_button?: boolean;
+    /** Длительность показа видео в секундах; null — не задано. */
+    video_duration?: number | null;
     translations: StoryTranslationRow[];
 }
 

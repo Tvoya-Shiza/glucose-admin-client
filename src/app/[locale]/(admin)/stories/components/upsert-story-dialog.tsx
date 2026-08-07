@@ -18,13 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { createStory, updateStory } from '@/lib/stories/api';
@@ -53,14 +47,26 @@ const upsertStorySchema = z.object({
     icon: z.string().max(255).optional(),
     video: z.string().max(255).optional(),
     status: z.enum(['pending', 'publish']),
-    enable_comment: z.boolean(),
     link_type: z.string().max(255).optional(),
     page_type: z.string().max(255).optional(),
     link: z.string().max(255).optional(),
+    show_more_button: z.boolean(),
+    // Строкой, а не числом: пустое поле должно означать «не задано», а
+    // z.number() на пустой строке даёт NaN и невнятную ошибку валидации.
+    video_duration: z
+        .string()
+        .max(6)
+        .refine((v) => v === '' || /^[1-9]\d*$/.test(v), { message: 'video_duration_invalid' })
+        .optional(),
     title: z.string().min(1).max(255),
     description: z.string().max(2000),
     content: z.string().max(50000),
-});
+})
+    // Кнопка без адреса ведёт в никуда — не даём сохранить такое.
+    .refine((v) => !v.show_more_button || (v.link ?? '').trim().length > 0, {
+        path: ['link'],
+        message: 'link_required_for_button',
+    });
 
 type UpsertStoryValues = z.infer<typeof upsertStorySchema>;
 
@@ -79,10 +85,11 @@ function defaultValues(story: StoryDetail | null | undefined): UpsertStoryValues
         icon: story?.icon ?? '',
         video: story?.video ?? '',
         status: (story?.status as StoryStatus) ?? 'pending',
-        enable_comment: story?.enable_comment ?? true,
         link_type: story?.link_type ?? '',
         page_type: story?.page_type ?? '',
         link: story?.link ?? '',
+        show_more_button: story?.show_more_button ?? false,
+        video_duration: story?.video_duration == null ? '' : String(story.video_duration),
         title: kz?.title ?? '',
         description: kz?.description ?? '',
         content: kz?.content ?? '',
@@ -124,10 +131,11 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
         icon: values.icon || null,
         video: values.video || null,
         status: values.status,
-        enable_comment: values.enable_comment,
         link_type: values.link_type || null,
         page_type: values.page_type || null,
         link: values.link || null,
+        show_more_button: values.show_more_button,
+        video_duration: values.video_duration ? Number(values.video_duration) : null,
         translations: [
             {
                 locale: 'kz',
@@ -194,7 +202,9 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                             )}
                         />
 
-                        <div className='grid grid-cols-2 gap-3'>
+                        {/* Одна колонка: рядом со статусом стояло поле
+                            «Пікірлерге рұқсат», убранное по просьбе заказчика. */}
+                        <div className='grid grid-cols-1 gap-3'>
                             <FormField
                                 control={form.control}
                                 name='status'
@@ -232,32 +242,6 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                                                     : 'status_hint_pending'
                                             )}
                                         </p>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name='enable_comment'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t('enable_comment_label')}</FormLabel>
-                                        <Select
-                                            value={field.value ? '1' : '0'}
-                                            onValueChange={(v) => field.onChange(v === '1')}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value='1'>
-                                                    {t('enable_comment_label')}
-                                                </SelectItem>
-                                                <SelectItem value='0'>—</SelectItem>
-                                            </SelectContent>
-                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -318,6 +302,79 @@ export function UpsertStoryDialog({ open, onOpenChange, story }: UpsertStoryDial
                                             onClear={() => field.onChange('')}
                                             pickFromLibrary
                                         />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            {/* Длительность вводится руками: считать её на
+                                сервере нечем (ffprobe в образах нет), а из
+                                браузера не выйдет для видео, выбранного из
+                                библиотеки — локального файла у формы нет. */}
+                            <FormField
+                                control={form.control}
+                                name='video_duration'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('video_duration_label')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                inputMode='numeric'
+                                                placeholder={t('video_duration_placeholder')}
+                                                value={field.value ?? ''}
+                                                onChange={(e) =>
+                                                    field.onChange(e.target.value.replace(/[^\d]/g, ''))
+                                                }
+                                                onBlur={field.onBlur}
+                                                name={field.name}
+                                                ref={field.ref}
+                                            />
+                                        </FormControl>
+                                        <p className='text-muted-foreground text-xs'>
+                                            {t('video_duration_help')}
+                                        </p>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {/* Кнопка перехода. Галочка и адрес идут парой: кнопка
+                            без адреса ведёт в никуда, поэтому схема формы такое
+                            сочетание не пропускает. */}
+                        <div className='space-y-3 rounded border p-3'>
+                            <FormField
+                                control={form.control}
+                                name='show_more_button'
+                                render={({ field }) => (
+                                    <FormItem className='flex flex-row items-center gap-2 space-y-0'>
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={(v) => field.onChange(!!v)}
+                                            />
+                                        </FormControl>
+                                        <FormLabel className='!mt-0 cursor-pointer'>
+                                            {t('show_more_button_label')}
+                                        </FormLabel>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='link'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{t('link_label')}</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder={t('link_placeholder')}
+                                                value={field.value ?? ''}
+                                                onChange={(e) => field.onChange(e.target.value)}
+                                                onBlur={field.onBlur}
+                                                name={field.name}
+                                                ref={field.ref}
+                                            />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
