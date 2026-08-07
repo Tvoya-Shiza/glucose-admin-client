@@ -1526,6 +1526,14 @@
             "question_subtopic_all": "— бүкіл тақырып —",
             "question_subtopic_pick_parent": "Алдымен тақырыпты таңдаңыз",
             "question_subtopic_none_available": "Ішкі тақырыптар жоқ",
+            "bulk_topic": {
+                "select_row": "Сұрақты таңдау",
+                "select_all": "Барлығын таңдау",
+                "selected": "Таңдалды: {count}",
+                "apply": "Тақырыпты тағайындау",
+                "clear": "Таңдауды тазалау",
+                "done": "{count} сұраққа тақырып тағайындалды"
+            },
             "passages_page_title": "Контекстер",
             "passages_page_subtitle": "Бірнеше сұраққа ортақ мәтін. Бір рет жасап, кез келген тестте пайдаланыңыз.",
             "passages_empty": "Контекстер әлі жоқ",

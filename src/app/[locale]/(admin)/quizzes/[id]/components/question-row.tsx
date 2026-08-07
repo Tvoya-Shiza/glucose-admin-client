@@ -9,6 +9,7 @@ import { GripVertical, Pencil, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { deleteQuestion, ForceConfirmRequiredError } from '@/lib/quizzes/api';
 import type { QuestionDetail } from '@/lib/quizzes/types';
 import { ForceConfirmDialog } from './force-confirm-dialog';
@@ -36,6 +37,9 @@ export interface QuestionRowProps {
     index: number;
     /** Сузить выбор типов (тренажёр — только single/multiple, ТЗ 5.2.1). */
     allowedTypes?: QuizQuestionType[];
+    /** Выбран ли вопрос для массовой операции. undefined — выбор выключен. */
+    selected?: boolean;
+    onToggleSelect?: (id: number, shiftKey: boolean) => void;
 }
 
 const TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -45,7 +49,7 @@ const TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
     identificative: 'outline',
 };
 
-export function QuestionRow({ quizId, question, index, allowedTypes }: QuestionRowProps) {
+export function QuestionRow({ quizId, question, index, allowedTypes, selected, onToggleSelect }: QuestionRowProps) {
     const t = useTranslations('admin.quizzes');
     const qc = useQueryClient();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -117,6 +121,18 @@ export function QuestionRow({ quizId, question, index, allowedTypes }: QuestionR
     return (
         <>
             <div ref={setNodeRef} style={style} className='bg-card flex items-center gap-2 rounded-lg border p-3'>
+                {onToggleSelect ? (
+                    /* stopPropagation на pointerdown обязателен: PointerSensor
+                       настроен с activationConstraint distance 4, и клик по
+                       галочке иначе уезжает в перетаскивание строки. */
+                    <span
+                        className='shrink-0 pl-1'
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => onToggleSelect(question.id, e.shiftKey)}
+                    >
+                        <Checkbox checked={!!selected} aria-label={t('bulk_topic.select_row')} />
+                    </span>
+                ) : null}
                 <button
                     type='button'
                     className='text-muted-foreground hover:text-foreground cursor-grab touch-none p-1.5'
@@ -136,6 +152,13 @@ export function QuestionRow({ quizId, question, index, allowedTypes }: QuestionR
                     {question.grade}
                 </Badge>
                 <div className='min-w-0 flex-1 truncate text-sm'>{truncatedTitle}</div>
+                {/* Текущая тема: без неё методист не видит, что уже размечено,
+                    и проходит по одним и тем же вопросам дважды. */}
+                {question.topic_name ? (
+                    <Badge variant='secondary' className='shrink-0 max-w-40 truncate text-xs'>
+                        {question.topic_name}
+                    </Badge>
+                ) : null}
                 {!hasKz ? (
                     <Badge variant='destructive' className='shrink-0 text-xs'>
                         {t('missing_kz')}

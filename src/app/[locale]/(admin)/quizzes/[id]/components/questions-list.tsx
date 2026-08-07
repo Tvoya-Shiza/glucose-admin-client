@@ -23,6 +23,9 @@ import { Can } from '@/lib/access/can';
 import { downloadQuestionsTemplate, reorderQuestions, triggerXlsxDownload } from '@/lib/quizzes/api';
 import type { QuestionDetail } from '@/lib/quizzes/types';
 import { QuestionRow } from './question-row';
+import { BulkTopicBar } from './bulk-topic-bar';
+import { useBulkSelection } from '@/hooks/use-bulk-selection';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { QuizQuestionType } from '@/lib/quizzes/types';
 import { QuestionsImportDialog } from './questions-import-dialog';
 import { UpsertQuestionDialog } from './upsert-question-dialog';
@@ -57,6 +60,26 @@ export function QuestionsList({ quizId, questions: incoming, allowedTypes }: Que
     const snapshotRef = useRef<QuestionDetail[] | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
+
+    const selection = useBulkSelection<number>();
+    // Индекс последнего клика — для выделения диапазона с Shift. Без него
+    // размечать сотни вопросов пришлось бы по одной галочке, и массовая
+    // операция теряет смысл.
+    const lastClickedRef = useRef<number | null>(null);
+
+    const toggleWithRange = (id: number, shiftKey: boolean) => {
+        const idx = optimistic.findIndex((q) => q.id === id);
+        if (shiftKey && lastClickedRef.current != null && idx >= 0) {
+            const from = Math.min(lastClickedRef.current, idx);
+            const to = Math.max(lastClickedRef.current, idx);
+            for (const q of optimistic.slice(from, to + 1)) {
+                if (!selection.isSelected(q.id)) selection.toggle(q.id);
+            }
+        } else {
+            selection.toggle(id);
+        }
+        if (idx >= 0) lastClickedRef.current = idx;
+    };
 
     const handleTemplate = async () => {
         try {
@@ -132,6 +155,26 @@ export function QuestionsList({ quizId, questions: incoming, allowedTypes }: Que
                 </div>
             </div>
 
+            {optimistic.length > 0 ? (
+                <div className='flex items-center gap-2 text-sm'>
+                    <Checkbox
+                        checked={selection.isPageAllSelected(optimistic)}
+                        onCheckedChange={() => selection.togglePageScoped(optimistic)}
+                        aria-label={t('bulk_topic.select_all')}
+                    />
+                    <span className='text-muted-foreground'>{t('bulk_topic.select_all')}</span>
+                </div>
+            ) : null}
+
+            {selection.selectedCount > 0 ? (
+                <BulkTopicBar
+                    quizId={quizId}
+                    selectedIds={[...selection.selected]}
+                    onDone={() => selection.clear()}
+                    onClear={() => selection.clear()}
+                />
+            ) : null}
+
             {optimistic.length === 0 ? (
                 <div className='text-muted-foreground rounded border border-dashed p-6 text-center text-sm'>
                     {t('no_questions_yet')}
@@ -141,7 +184,15 @@ export function QuestionsList({ quizId, questions: incoming, allowedTypes }: Que
                     <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
                         <div className='space-y-2'>
                             {optimistic.map((q, idx) => (
-                                <QuestionRow key={q.id} quizId={quizId} question={q} index={idx} allowedTypes={allowedTypes} />
+                                <QuestionRow
+                                    key={q.id}
+                                    quizId={quizId}
+                                    question={q}
+                                    index={idx}
+                                    allowedTypes={allowedTypes}
+                                    selected={selection.isSelected(q.id)}
+                                    onToggleSelect={toggleWithRange}
+                                />
                             ))}
                         </div>
                     </SortableContext>

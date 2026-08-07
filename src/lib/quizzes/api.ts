@@ -664,3 +664,21 @@ export async function deleteQuizPassage(id: number): Promise<void> {
     const res = await fetchWithRefresh(`${PASSAGES_BASE}/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(await readErrorMessage(res, `deleteQuizPassage failed: ${res.status}`));
 }
+
+/**
+ * Массовая простановка темы вопросам теста (phase-55).
+ * `topicId = null` снимает тему.
+ */
+export async function assignQuestionsTopic(
+    quizId: number,
+    questionIds: number[],
+    topicId: number | null,
+): Promise<{ affected: number; topic_id: number | null }> {
+    const res = await fetchWithRefresh(`${QUIZZES_API_BASE}/${quizId}/questions-bulk/topic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_ids: questionIds, topic_id: topicId }),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res, `assignQuestionsTopic failed: ${res.status}`));
+    return unwrapData<{ affected: number; topic_id: number | null }>(await res.json());
+}
